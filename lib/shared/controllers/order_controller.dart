@@ -128,17 +128,6 @@ class OrderController extends GetxController {
         }
         
         _orders.value = List<Map<String, dynamic>>.from(result['data']);
-        
-        // DEBUG: Imprimir datos de órdenes
-        if (kDebugMode) {
-          print('=== DEBUG ÓRDENES ===');
-          print('Total órdenes: ${_orders.length}');
-          if (_orders.isNotEmpty) {
-            print('Primera orden: ${_orders.first}');
-            print('Campos disponibles: ${_orders.first.keys.toList()}');
-          }
-          print('====================');
-        }
       } else {
         _errorMessage.value = result['message'] ?? 'Error cargando órdenes';
         Get.snackbar(

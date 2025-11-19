@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get/get.dart';
 import '../../core/constants/app_colors.dart';
@@ -229,19 +228,9 @@ class DashboardPage extends StatelessWidget {
             SizedBox(
               height: 300,
               child: Obx(() {
-                // DEBUG
-                if (kDebugMode) {
-                  print('=== DEBUG SALES CHART ===');
-                  print('Total órdenes: ${orderController.orders.length}');
-                  if (orderController.orders.isNotEmpty) {
-                    print('Primera orden: ${orderController.orders.first}');
-                  }
-                }
-
                 // Agrupar órdenes por día de los últimos 30 días
                 final now = DateTime.now();
                 final salesByDay = List<double>.filled(30, 0.0);
-                int processedOrders = 0;
 
                 for (var order in orderController.orders) {
                   try {
@@ -249,27 +238,12 @@ class DashboardPage extends StatelessWidget {
                     final date = order['date'];
                     final dateStr = createdAt ?? date ?? '';
 
-                    if (kDebugMode && processedOrders < 3) {
-                      print(
-                        'Procesando orden: createdAt=$createdAt, date=$date, dateStr=$dateStr',
-                      );
-                    }
-
                     if (dateStr.isEmpty) {
-                      if (kDebugMode && processedOrders < 3) {
-                        print('  Orden sin fecha, saltando');
-                      }
                       continue;
                     }
 
                     final orderDate = DateTime.parse(dateStr);
                     final daysDiff = now.difference(orderDate).inDays;
-
-                    if (kDebugMode && processedOrders < 3) {
-                      print(
-                        '  Fecha orden: $orderDate, días diferencia: $daysDiff',
-                      );
-                    }
 
                     if (daysDiff >= 0 && daysDiff < 30) {
                       final index =
@@ -281,33 +255,10 @@ class DashboardPage extends StatelessWidget {
                                   0)
                               .toDouble();
                       salesByDay[index] += total;
-                      processedOrders++;
-
-                      if (kDebugMode && processedOrders <= 5) {
-                        print(
-                          '  ✅ Agregada: \$${total} en index $index (hace $daysDiff días)',
-                        );
-                      }
-                    } else {
-                      if (kDebugMode && processedOrders < 3) {
-                        print('  ❌ Fuera de rango: hace $daysDiff días');
-                      }
                     }
                   } catch (e) {
-                    if (kDebugMode) {
-                      print('  ⚠️ Error procesando orden: $e');
-                    }
+                    // Silenciado
                   }
-                }
-
-                if (kDebugMode) {
-                  print('Total órdenes procesadas: $processedOrders');
-                  print(
-                    'Suma total ventas: \$${salesByDay.reduce((a, b) => a + b)}',
-                  );
-                  final nonZeroDays = salesByDay.where((v) => v > 0).length;
-                  print('Días con ventas: $nonZeroDays de 30');
-                  print('========================');
                 }
 
                 // Calcular el máximo para el intervalo del eje Y
@@ -433,25 +384,11 @@ class DashboardPage extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.spacing16),
             Obx(() {
-              // DEBUG
-              if (kDebugMode) {
-                print('=== DEBUG TOP PRODUCTOS ===');
-                print(
-                  'Total órdenes para productos: ${orderController.orders.length}',
-                );
-              }
-
               // Calcular ventas por producto
               final Map<String, Map<String, dynamic>> productSales = {};
 
               for (var order in orderController.orders) {
                 final items = order['items'] as List? ?? [];
-
-                if (kDebugMode && items.isNotEmpty) {
-                  print(
-                    'Orden ${order['_id']?.substring(0, 6)}: ${items.length} items',
-                  );
-                }
 
                 for (var item in items) {
                   final productName =
@@ -459,12 +396,6 @@ class DashboardPage extends StatelessWidget {
                   final quantity = (item['quantity'] as num? ?? 0).toInt();
                   final price = (item['price'] as num? ?? 0).toDouble();
                   final revenue = quantity * price;
-
-                  if (kDebugMode) {
-                    print(
-                      '  - $productName: $quantity x \$$price = \$$revenue',
-                    );
-                  }
 
                   if (productSales.containsKey(productName)) {
                     productSales[productName]!['sales'] += quantity;
@@ -477,11 +408,6 @@ class DashboardPage extends StatelessWidget {
                     };
                   }
                 }
-              }
-
-              if (kDebugMode) {
-                print('Total productos únicos: ${productSales.length}');
-                print('===========================');
               }
 
               // Ordenar por ventas y tomar los top 5
@@ -599,17 +525,6 @@ class DashboardPage extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.spacing16),
             Obx(() {
-              // DEBUG
-              if (kDebugMode) {
-                print('=== DEBUG ÓRDENES RECIENTES ===');
-                print('Total órdenes: ${orderController.orders.length}');
-                if (orderController.orders.isNotEmpty) {
-                  final firstOrder = orderController.orders.first;
-                  print('Primera orden completa: $firstOrder');
-                }
-                print('================================');
-              }
-
               // Tomar las últimas 5 órdenes
               final recentOrders = orderController.orders.take(5).toList();
 

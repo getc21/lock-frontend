@@ -16,8 +16,8 @@ class OrdersPage extends StatefulWidget {
 }
 
 class _OrdersPageState extends State<OrdersPage> {
+  late final OrderController _orderController;
   String _paymentFilter = 'Todos';
-  final OrderController _orderController = Get.find<OrderController>();
   late final ScrollController _scrollController;
   
   // Variables para optimizar rendimiento
@@ -27,6 +27,7 @@ class _OrdersPageState extends State<OrdersPage> {
   @override
   void initState() {
     super.initState();
+    _orderController = Get.find<OrderController>();
     _scrollController = ScrollController();
     
     // Cargar datos de forma no bloqueante
@@ -44,14 +45,18 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   Future<void> _loadOrdersOptimized() async {
-    _hasInitialized = true;
-    // Solo cargar si no hay datos ya cargados
-    if (_orderController.orders.isEmpty) {
+    // Solo ejecutar la carga si no hay órdenes cargadas todavía
+    if (_orderController.orders.isEmpty && !_orderController.isLoading) {
       await _orderController.loadOrdersForCurrentStore();
     }
-    if (mounted) {
-      _updateFilteredOrders();
-    }
+    // Marcar como inicializado solo después de que se complete la carga
+    // o cuando ya hay órdenes disponibles
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _hasInitialized = true;
+        _updateFilteredOrders();
+      }
+    });
   }
 
   void _updateFilteredOrders() {
@@ -104,7 +109,8 @@ class _OrdersPageState extends State<OrdersPage> {
           
           // Orders Table
           Obx(() {
-            if (_orderController.isLoading) {
+            // Mostrar loading mientras se cargan datos O si no está inicializado aún
+            if (_orderController.isLoading || !_hasInitialized) {
               return SizedBox(
                 height: 600,
                 child: Card(

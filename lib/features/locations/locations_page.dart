@@ -17,7 +17,7 @@ class LocationsPage extends StatefulWidget {
 }
 
 class _LocationsPageState extends State<LocationsPage> {
-  final LocationController _locationController = Get.find<LocationController>();
+  late final LocationController _locationController;
   final StoreController _storeController = Get.find<StoreController>();
   final ProductController _productController = Get.find<ProductController>();
   bool _hasInitialized = false;
@@ -25,6 +25,8 @@ class _LocationsPageState extends State<LocationsPage> {
   @override
   void initState() {
     super.initState();
+    _locationController = Get.find<LocationController>();
+    
     // Cargar ubicaciones después de que el widget esté montado
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasInitialized && mounted) {

@@ -4,8 +4,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../controllers/store_controller.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/dashboard_collapse_controller.dart';
 
-class DashboardLayout extends StatefulWidget {
+class DashboardLayout extends StatelessWidget {
   final Widget child;
   final String title;
   final String currentRoute;
@@ -17,14 +18,7 @@ class DashboardLayout extends StatefulWidget {
     required this.currentRoute,
   });
 
-  @override
-  State<DashboardLayout> createState() => _DashboardLayoutState();
-}
-
-class _DashboardLayoutState extends State<DashboardLayout> {
-  bool _isSidebarCollapsed = false;
-
-  void _confirmLogout() {
+  void _confirmLogout(BuildContext context) {
     Get.dialog(
       AlertDialog(
         title: const Text('Cerrar sesión'),
@@ -54,12 +48,15 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= AppSizes.tabletBreakpoint;
     
+    // Inicializar o obtener el controlador de collapse
+    final collapseController = Get.put(DashboardCollapseController());
+    
     return Scaffold(
       body: Row(
         children: [
           // Sidebar
           if (isDesktop)
-            _buildSidebar()
+            _buildSidebar(collapseController)
           else
             NavigationRail(
               selectedIndex: _getSelectedIndex(),
@@ -85,7 +82,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                         constraints: const BoxConstraints(
                           maxWidth: AppSizes.maxContentWidth,
                         ),
-                        child: widget.child,
+                        child: child,
                       ),
                     ),
                   ),
@@ -98,194 +95,16 @@ class _DashboardLayoutState extends State<DashboardLayout> {
     );
   }
 
-  Widget _buildSidebar() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      width: _isSidebarCollapsed 
-          ? AppSizes.sidebarCollapsedWidth 
-          : AppSizes.sidebarWidth,
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        border: Border(
-          right: BorderSide(color: AppColors.border),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Logo
-          Container(
-            height: AppSizes.appBarHeight,
-            padding: EdgeInsets.symmetric(
-              horizontal: _isSidebarCollapsed ? AppSizes.spacing4 : AppSizes.spacing16,
-            ),
-            decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: AppColors.border),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: _isSidebarCollapsed ? MainAxisSize.min : MainAxisSize.max,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.secondary],
-                    ),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                  ),
-                  child: const Icon(Icons.spa, color: AppColors.white, size: 24),
-                ),
-                if (!_isSidebarCollapsed) ...[
-                  const SizedBox(width: AppSizes.spacing12),
-                  const Expanded(
-                    child: Text(
-                      'BellezApp',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          
-          // Navigation Items
-          Expanded(
-            child: Obx(() {
-              final authController = Get.find<AuthController>();
-              final isAdmin = authController.currentUser?['role'] == 'admin';
-              
-              return ListView(
-                padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
-                children: [
-                  _buildNavItem(
-                    icon: Icons.dashboard_outlined,
-                    label: 'Dashboard',
-                    route: '/dashboard',
-                  ),
-                  _buildNavItem(
-                    icon: Icons.inventory_2_outlined,
-                    label: 'Productos',
-                    route: '/products',
-                  ),
-                  _buildNavItem(
-                    icon: Icons.category_outlined,
-                    label: 'Categorías',
-                    route: '/categories',
-                  ),
-                  _buildNavItem(
-                    icon: Icons.local_shipping_outlined,
-                    label: 'Proveedores',
-                    route: '/suppliers',
-                  ),
-                  _buildNavItem(
-                    icon: Icons.location_on_outlined,
-                    label: 'Ubicaciones',
-                    route: '/locations',
-                  ),
-                  _buildNavItem(
-                    icon: Icons.receipt_long_outlined,
-                    label: 'Órdenes',
-                    route: '/orders',
-                  ),
-                  _buildNavItem(
-                    icon: Icons.people_outline,
-                    label: 'Clientes',
-                    route: '/customers',
-                  ),
-                  // ⭐ SOLO MOSTRAR USUARIOS Y REPORTES PARA ADMINISTRADORES
-                  if (isAdmin) ...[
-                    _buildNavItem(
-                      icon: Icons.person_outline,
-                      label: 'Usuarios',
-                      route: '/users',
-                    ),
-                    _buildNavItem(
-                      icon: Icons.analytics_outlined,
-                      label: 'Reportes',
-                      route: '/reports',
-                    ),
-                  ],
-                ],
-              );
-            }),
-          ),
-          
-          // Bottom Actions
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(AppSizes.spacing8),
-            child: IconButton(
-              icon: Icon(_isSidebarCollapsed 
-                  ? Icons.chevron_right 
-                  : Icons.chevron_left),
-              onPressed: () {
-                setState(() {
-                  _isSidebarCollapsed = !_isSidebarCollapsed;
-                });
-              },
-              tooltip: _isSidebarCollapsed ? 'Expandir menú' : 'Colapsar menú',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required String route,
-  }) {
-    final isSelected = widget.currentRoute == route;
+  Widget _buildSidebar(DashboardCollapseController collapseController) {
+    // Precalcular isAdmin FUERA del Obx para evitar reconstrucciones
+    final authController = Get.find<AuthController>();
+    final isAdmin = authController.currentUser?['role'] == 'admin';
     
-    return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppSizes.spacing8,
-        vertical: AppSizes.spacing4,
-      ),
-      child: Material(
-        color: isSelected ? AppColors.primaryLight.withOpacity(0.1) : Colors.transparent,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        child: InkWell(
-          onTap: () => Get.offNamed(route),
-          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: _isSidebarCollapsed ? AppSizes.spacing4 : AppSizes.spacing16,
-              vertical: AppSizes.spacing12,
-            ),
-            child: Row(
-              mainAxisSize: _isSidebarCollapsed ? MainAxisSize.min : MainAxisSize.max,
-              children: [
-                Icon(
-                  icon,
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                  size: AppSizes.iconLarge,
-                ),
-                if (!_isSidebarCollapsed) ...[
-                  const SizedBox(width: AppSizes.spacing12),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
+    // Widget AISLADO para el sidebar que SOLO depende del controlador de collapse
+    return _SidebarWidget(
+      collapseController: collapseController,
+      isAdmin: isAdmin,
+      currentRoute: currentRoute,
     );
   }
 
@@ -305,7 +124,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
       child: Row(
         children: [
           Text(
-            widget.title,
+            title,
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -444,10 +263,12 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                 const SizedBox(width: AppSizes.spacing8),
                 
                 // Botón de cerrar sesión
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: _confirmLogout,
-                  tooltip: 'Cerrar sesión',
+                Builder(
+                  builder: (context) => IconButton(
+                    icon: const Icon(Icons.logout),
+                    onPressed: () => _confirmLogout(context),
+                    tooltip: 'Cerrar sesión',
+                  ),
                 ),
               ],
             );
@@ -461,7 +282,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
     final authController = Get.find<AuthController>();
     final isAdmin = authController.currentUser?['role'] == 'admin';
     
-    switch (widget.currentRoute) {
+    switch (currentRoute) {
       case '/dashboard':
         return 0;
       case '/products':
@@ -560,5 +381,269 @@ class _DashboardLayoutState extends State<DashboardLayout> {
     }
     
     return destinations;
+  }
+}
+
+// ============================================================================
+// WIDGET AISLADO PARA EL SIDEBAR
+// Este widget está COMPLETAMENTE aislado y SOLO observa al
+// DashboardCollapseController. Cualquier cambio en collapse NO afecta
+// a otros widgets del árbol.
+// ============================================================================
+
+class _SidebarWidget extends StatelessWidget {
+  final DashboardCollapseController collapseController;
+  final bool isAdmin;
+  final String currentRoute;
+
+  const _SidebarWidget({
+    required this.collapseController,
+    required this.isAdmin,
+    required this.currentRoute,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final isSidebarCollapsed = collapseController.isSidebarCollapsed.value;
+
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        width: isSidebarCollapsed
+            ? AppSizes.sidebarCollapsedWidth
+            : AppSizes.sidebarWidth,
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          border: Border(
+            right: BorderSide(color: AppColors.border),
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(0),
+            bottomRight: Radius.circular(0),
+          ),
+          child: Column(
+            children: [
+              // Logo
+              Container(
+                height: AppSizes.appBarHeight,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isSidebarCollapsed
+                      ? AppSizes.spacing4
+                      : AppSizes.spacing16,
+                ),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: AppColors.border),
+                  ),
+                ),
+                child: isSidebarCollapsed
+                    ? Center(
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                AppColors.primary,
+                                AppColors.secondary
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(
+                                AppSizes.radiusMedium),
+                          ),
+                          child: const Icon(Icons.spa,
+                              color: AppColors.white, size: 20),
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    AppColors.primary,
+                                    AppColors.secondary
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                    AppSizes.radiusMedium),
+                              ),
+                              child: const Icon(Icons.spa,
+                                  color: AppColors.white, size: 20),
+                            ),
+                            const SizedBox(width: AppSizes.spacing12),
+                            const Text(
+                              'BellezApp',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+              // Navigation Items
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 0),
+                  children: [
+                    _buildNavItem(
+                      icon: Icons.dashboard_outlined,
+                      label: 'Dashboard',
+                      route: '/dashboard',
+                      isSidebarCollapsed: isSidebarCollapsed,
+                    ),
+                    _buildNavItem(
+                      icon: Icons.inventory_2_outlined,
+                      label: 'Productos',
+                      route: '/products',
+                      isSidebarCollapsed: isSidebarCollapsed,
+                    ),
+                    _buildNavItem(
+                      icon: Icons.category_outlined,
+                      label: 'Categorías',
+                      route: '/categories',
+                      isSidebarCollapsed: isSidebarCollapsed,
+                    ),
+                    _buildNavItem(
+                      icon: Icons.local_shipping_outlined,
+                      label: 'Proveedores',
+                      route: '/suppliers',
+                      isSidebarCollapsed: isSidebarCollapsed,
+                    ),
+                    _buildNavItem(
+                      icon: Icons.location_on_outlined,
+                      label: 'Ubicaciones',
+                      route: '/locations',
+                      isSidebarCollapsed: isSidebarCollapsed,
+                    ),
+                    _buildNavItem(
+                      icon: Icons.receipt_long_outlined,
+                      label: 'Órdenes',
+                      route: '/orders',
+                      isSidebarCollapsed: isSidebarCollapsed,
+                    ),
+                    _buildNavItem(
+                      icon: Icons.people_outline,
+                      label: 'Clientes',
+                      route: '/customers',
+                      isSidebarCollapsed: isSidebarCollapsed,
+                    ),
+                    // ⭐ SOLO MOSTRAR USUARIOS Y REPORTES PARA ADMINISTRADORES
+                    if (isAdmin) ...[
+                      _buildNavItem(
+                        icon: Icons.person_outline,
+                        label: 'Usuarios',
+                        route: '/users',
+                        isSidebarCollapsed: isSidebarCollapsed,
+                      ),
+                      _buildNavItem(
+                        icon: Icons.analytics_outlined,
+                        label: 'Reportes',
+                        route: '/reports',
+                        isSidebarCollapsed: isSidebarCollapsed,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              // Bottom Actions
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing8),
+                child: IconButton(
+                  icon: Icon(isSidebarCollapsed
+                      ? Icons.chevron_right
+                      : Icons.chevron_left),
+                  onPressed: () {
+                    collapseController.toggleSidebar();
+                  },
+                  tooltip: isSidebarCollapsed
+                      ? 'Expandir menú'
+                      : 'Colapsar menú',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required String route,
+    required bool isSidebarCollapsed,
+  }) {
+    final isSelected = currentRoute == route;
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: isSidebarCollapsed ? 0 : AppSizes.spacing8,
+        vertical: AppSizes.spacing4,
+      ),
+      child: Material(
+        color: isSelected
+            ? AppColors.primaryLight.withOpacity(0.1)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        child: InkWell(
+          onTap: () => Get.offNamed(route),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: isSidebarCollapsed ? AppSizes.spacing4 : AppSizes.spacing16,
+              vertical: AppSizes.spacing8,
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    size: AppSizes.iconMedium,
+                  ),
+                  if (!isSidebarCollapsed) ...[
+                    const SizedBox(width: AppSizes.spacing12),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.textPrimary,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
