@@ -34,7 +34,6 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
   Widget build(BuildContext context) {
     final locationState = ref.watch(locationProvider);
     final storeState = ref.watch(storeProvider);
-    final productState = ref.watch(productProvider);
 
     return DashboardLayout(
       title: 'Ubicaciones',
@@ -118,7 +117,7 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
                               final locationDescription = location['description'] ?? '-';
                               
                               return DataRow2(
-                                onTap: () => _showLocationProducts(location, productState.products),
+                                onTap: () => _showLocationProducts(location),
                                 cells: [
                                   DataCell(Text(locationName)),
                                   DataCell(Text(locationDescription)),
