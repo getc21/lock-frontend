@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
-import '../../shared/providers/product_provider.dart';
-import '../../shared/providers/customer_provider.dart';
-import '../../shared/providers/order_provider.dart';
-import '../../shared/providers/store_provider.dart';
+import '../../shared/providers/riverpod/product_notifier.dart';
+import '../../shared/providers/riverpod/customer_notifier.dart';
+import '../../shared/providers/riverpod/order_notifier.dart';
+import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 
 class CreateOrderPage extends ConsumerStatefulWidget {
@@ -289,7 +289,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                 return Container(
                   padding: const EdgeInsets.all(AppSizes.spacing12),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryLight.withOpacity(0.1),
+                    color: AppColors.primaryLight.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                     border: Border.all(color: AppColors.primary),
                   ),
@@ -570,10 +570,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
 
     final lowerQuery = query.toLowerCase();
     final productState = ref.read(productProvider);
-    final products = productState.maybeWhen(
-      data: (products) => products,
-      orElse: () => [],
-    );
+    final products = productState.products;
     
     _filteredProducts.value = products
         .where((product) {
@@ -683,10 +680,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
 
       final lowerQuery = query.toLowerCase();
       final customerState = ref.read(customerProvider);
-      final customers = customerState.maybeWhen(
-        data: (customers) => customers,
-        orElse: () => [],
-      );
+      final customers = customerState.customers;
       
       filteredCustomers.value = customers
           .where((customer) {
@@ -803,10 +797,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
 
       // Obtener el ID de la tienda actual
       final storeState = ref.read(storeProvider);
-      final currentStoreId = storeState.maybeWhen(
-        data: (store) => store?['_id'] as String?,
-        orElse: () => null,
-      );
+      final currentStoreId = storeState.currentStore?['_id'] as String?;
       
       if (currentStoreId == null) {
         throw Exception('No hay tienda seleccionada');
