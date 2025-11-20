@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
@@ -7,35 +7,33 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/widgets/loading_indicator.dart';
-import '../../shared/controllers/category_controller.dart';
-import '../../shared/controllers/product_controller.dart';
+import '../../shared/providers/riverpod/category_notifier.dart';
+import '../../shared/providers/riverpod/product_notifier.dart';
 
-class CategoriesPage extends StatefulWidget {
+class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
 
   @override
-  State<CategoriesPage> createState() => _CategoriesPageState();
+  ConsumerState<CategoriesPage> createState() => _CategoriesPageState();
 }
 
-class _CategoriesPageState extends State<CategoriesPage> {
-  final CategoryController _categoryController = Get.find<CategoryController>();
-  final ProductController _productController = Get.find<ProductController>();
-  bool _hasInitialized = false;
-
+class _CategoriesPageState extends ConsumerState<CategoriesPage> {
   @override
   void initState() {
     super.initState();
     // Cargar categorías después de que el widget esté montado
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_hasInitialized && mounted) {
-        _hasInitialized = true;
-        _categoryController.loadCategories();
+      if (mounted) {
+        ref.read(categoryProvider.notifier).loadCategories();
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final categoryState = ref.watch(categoryProvider);
+    final productState = ref.watch(productProvider);
+
     return DashboardLayout(
       title: 'Categorías',
       currentRoute: '/categories',
@@ -54,7 +52,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 ),
               ),
               ElevatedButton.icon(
-                onPressed: () => _showCategoryDialog(),
+                onPressed: () => _showCategoryDialog(context, ref),
                 icon: const Icon(Icons.add),
                 label: const Text('Nueva Categoría'),
                 style: ElevatedButton.styleFrom(
@@ -74,14 +72,14 @@ class _CategoriesPageState extends State<CategoriesPage> {
             child: Card(
               child: Padding(
                 padding: const EdgeInsets.all(AppSizes.spacing16),
-                child: Obx(() {
-                  if (_categoryController.isLoading) {
+                child: (() {
+                  if (categoryState.isLoading) {
                     return LoadingIndicator(
                       message: 'Cargando categorías...',
                     );
                   }
 
-                  if (_categoryController.categories.isEmpty) {
+                  if (categoryState.categories.isEmpty) {
                     return const Center(
                       child: Text('No hay categorías registradas'),
                     );
@@ -109,14 +107,14 @@ class _CategoriesPageState extends State<CategoriesPage> {
                         size: ColumnSize.S,
                       ),
                     ],
-                    rows: _categoryController.categories.map((category) {
+                    rows: categoryState.categories.map((category) {
                       final categoryName = category['name'] ?? '';
                       final categoryDescription = category['description'] ?? '-';
                       // Backend devuelve 'foto', no 'image'
                       final categoryImage = category['foto'] ?? category['image'];
                       
                       return DataRow2(
-                        onTap: () => _showCategoryProducts(category),
+                        onTap: () => _showCategoryProducts(context, ref, category, productState.products),
                         cells: [
                           DataCell(
                             categoryImage != null && categoryImage.toString().isNotEmpty
@@ -167,13 +165,13 @@ class _CategoriesPageState extends State<CategoriesPage> {
                                 IconButton(
                                   icon: const Icon(Icons.edit_outlined, size: 18),
                                   color: AppColors.textPrimary,
-                                  onPressed: () => _showCategoryDialog(category: category),
+                                  onPressed: () => _showCategoryDialog(context, ref, category: category),
                                   tooltip: 'Editar',
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline, size: 18),
                                   color: AppColors.textPrimary,
-                                  onPressed: () => _confirmDelete(category),
+                                  onPressed: () => _confirmDelete(context, ref, category),
                                   tooltip: 'Eliminar',
                                 ),
                               ],
@@ -183,7 +181,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                       );
                     }).toList(),
                   );
-                }),
+                })(),
               ),
             ),
           ),
@@ -192,16 +190,16 @@ class _CategoriesPageState extends State<CategoriesPage> {
     );
   }
 
-  void _showCategoryDialog({Map<String, dynamic>? category}) {
+  void _showCategoryDialog(BuildContext context, WidgetRef ref, {Map<String, dynamic>? category}) {
     final nameController = TextEditingController(text: category?['name'] ?? '');
     final descriptionController = TextEditingController(text: category?['description'] ?? '');
     
-    final selectedImage = Rx<XFile?>(null);
-    final imageBytes = RxnString();
+    final selectedImage = ValueNotifier<XFile?>(null);
+    final imageBytes = ValueNotifier<String>('');
     // Backend devuelve 'foto', no 'image'
-    final imagePreview = RxString(category?['foto'] ?? category?['image'] ?? '');
+    final imagePreview = ValueNotifier<String>(category?['foto'] ?? category?['image'] ?? '');
     final ImagePicker picker = ImagePicker();
-    final isLoading = false.obs;
+    final isLoading = ValueNotifier<bool>(false);
     final isEditing = category != null;
 
     Future<void> pickImage() async {
@@ -217,12 +215,14 @@ class _CategoriesPageState extends State<CategoriesPage> {
           selectedImage.value = image;
           final bytes = await image.readAsBytes();
           imageBytes.value = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-          imagePreview.value = imageBytes.value!;
+          imagePreview.value = imageBytes.value;
           print('🔵 Image selected: ${image.name}');
         }
       } catch (e) {
         print('❌ Error picking image: $e');
-        Get.snackbar('Error', 'Error al seleccionar imagen');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al seleccionar imagen')),
+        );
       }
     }
 
@@ -237,50 +237,53 @@ class _CategoriesPageState extends State<CategoriesPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Vista previa de imagen / Selector
-                Obx(() => GestureDetector(
-                  onTap: pickImage,
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.primary.withOpacity(0.3),
-                        width: 2,
-                        style: BorderStyle.solid,
+                ValueListenableBuilder<String>(
+                  valueListenable: imagePreview,
+                  builder: (context, preview, _) => GestureDetector(
+                    onTap: pickImage,
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.3),
+                          width: 2,
+                          style: BorderStyle.solid,
+                        ),
                       ),
-                    ),
-                    child: imagePreview.value.isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.network(
-                              imagePreview.value,
-                              width: 120,
-                              height: 120,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
-                                    Icon(Icons.add_photo_alternate, size: 40, color: AppColors.primary),
-                                    SizedBox(height: 8),
-                                    Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
-                                  ],
-                                );
-                              },
+                      child: preview.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                preview,
+                                width: 120,
+                                height: 120,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(Icons.add_photo_alternate, size: 40, color: AppColors.primary),
+                                      SizedBox(height: 8),
+                                      Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
+                                    ],
+                                  );
+                                },
+                              ),
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Icon(Icons.add_photo_alternate, size: 40, color: AppColors.primary),
+                                SizedBox(height: 8),
+                                Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
+                              ],
                             ),
-                          )
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Icon(Icons.add_photo_alternate, size: 40, color: AppColors.primary),
-                              SizedBox(height: 8),
-                              Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
-                            ],
-                          ),
+                    ),
                   ),
-                )),
+                ),
                 const SizedBox(height: AppSizes.spacing24),
                 TextField(
                   controller: nameController,
@@ -317,82 +320,77 @@ class _CategoriesPageState extends State<CategoriesPage> {
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancelar'),
           ),
-          Obx(() => ElevatedButton(
-            onPressed: isLoading.value ? null : () async {
-              if (nameController.text.trim().isEmpty) {
-                Get.snackbar(
-                  'Error',
-                  'El nombre es requerido',
-                  snackPosition: SnackPosition.TOP,
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
-                );
-                return;
-              }
+          ValueListenableBuilder<bool>(
+            valueListenable: isLoading,
+            builder: (context, loading, _) => ElevatedButton(
+              onPressed: loading ? null : () async {
+                if (nameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('El nombre es requerido')),
+                  );
+                  return;
+                }
 
-              isLoading.value = true;
-              bool success;
-              if (isEditing) {
-                print('🔵 Updating category: ${nameController.text}');
-                success = await _categoryController.updateCategory(
-                  id: category['_id'],
-                  name: nameController.text.trim(),
-                  description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
-                  imageFile: selectedImage.value,
-                  imageBytes: imageBytes.value,
-                );
-              } else {
-                print('🔵 Creating category: ${nameController.text}');
-                success = await _categoryController.createCategory(
-                  name: nameController.text.trim(),
-                  description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
-                  imageFile: selectedImage.value,
-                  imageBytes: imageBytes.value,
-                );
-              }
+                isLoading.value = true;
+                bool success;
+                if (isEditing) {
+                  print('🔵 Updating category: ${nameController.text}');
+                  success = await ref.read(categoryProvider.notifier).updateCategory(
+                    id: category['_id'],
+                    name: nameController.text.trim(),
+                    description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
+                    imageFile: selectedImage.value,
+                    imageBytes: imageBytes.value,
+                  );
+                } else {
+                  print('🔵 Creating category: ${nameController.text}');
+                  success = await ref.read(categoryProvider.notifier).createCategory(
+                    name: nameController.text.trim(),
+                    description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
+                    imageFile: selectedImage.value,
+                    imageBytes: imageBytes.value,
+                  );
+                }
 
-              isLoading.value = false;
+                isLoading.value = false;
 
-              if (success) {
-                print('🔵 Closing modal with Navigator.pop...');
-                Navigator.of(context).pop();
-                print('🔵 Modal closed');
-              } else {
-                print('❌ Operation failed, modal stays open');
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+                if (success) {
+                  print('🔵 Closing modal with Navigator.pop...');
+                  Navigator.of(context).pop();
+                  print('🔵 Modal closed');
+                } else {
+                  print('❌ Operation failed, modal stays open');
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: loading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(isEditing ? 'Actualizar' : 'Crear'),
             ),
-            child: isLoading.value
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(isEditing ? 'Actualizar' : 'Crear'),
-          )),
+          ),
         ],
       ),
     );
   }
 
-  void _confirmDelete(Map<String, dynamic> category) {
+  void _confirmDelete(BuildContext context, WidgetRef ref, Map<String, dynamic> category) {
     final categoryName = category['name'] ?? 'esta categoría';
     final categoryId = category['_id'];
-    final isDeleting = false.obs;
+    final isDeleting = ValueNotifier<bool>(false);
     
     if (categoryId == null) {
-      Get.snackbar(
-        'Error',
-        'ID de categoría no válido',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ID de categoría no válido')),
       );
       return;
     }
@@ -407,42 +405,45 @@ class _CategoriesPageState extends State<CategoriesPage> {
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancelar'),
           ),
-          Obx(() => ElevatedButton(
-            onPressed: isDeleting.value ? null : () async {
-              isDeleting.value = true;
-              final success = await _categoryController.deleteCategory(categoryId);
-              isDeleting.value = false;
-              
-              if (success && context.mounted) {
-                Navigator.of(context).pop();
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
+          ValueListenableBuilder<bool>(
+            valueListenable: isDeleting,
+            builder: (context, deleting, _) => ElevatedButton(
+              onPressed: deleting ? null : () async {
+                isDeleting.value = true;
+                final success = await ref.read(categoryProvider.notifier).deleteCategory(categoryId);
+                isDeleting.value = false;
+                
+                if (success && context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+              ),
+              child: deleting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Eliminar'),
             ),
-            child: isDeleting.value
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Text('Eliminar'),
-          )),
+          ),
         ],
       ),
     );
   }
 
-  void _showCategoryProducts(Map<String, dynamic> category) {
+  void _showCategoryProducts(BuildContext context, WidgetRef ref, Map<String, dynamic> category, List<dynamic> products) {
     final categoryName = category['name'] ?? 'Categoría';
     final categoryId = category['_id'];
     
     // Filtrar productos por categoría
-    final categoryProducts = _productController.products.where((product) {
+    final categoryProducts = products.where((product) {
       final productCategoryId = product['categoryId'] is Map 
           ? product['categoryId']['_id'] 
           : product['categoryId'];
