@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
@@ -7,33 +7,28 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/widgets/loading_indicator.dart';
-import '../../shared/controllers/supplier_controller.dart';
-import '../../shared/controllers/product_controller.dart';
+import '../../shared/providers/riverpod/supplier_notifier.dart';
+import '../../shared/providers/riverpod/product_notifier.dart';
 
-class SuppliersPage extends StatefulWidget {
+class SuppliersPage extends ConsumerStatefulWidget {
   const SuppliersPage({super.key});
 
   @override
-  State<SuppliersPage> createState() => _SuppliersPageState();
+  ConsumerState<SuppliersPage> createState() => _SuppliersPageState();
 }
 
-class _SuppliersPageState extends State<SuppliersPage> {
+class _SuppliersPageState extends ConsumerState<SuppliersPage> {
   bool _hasInitialized = false;
 
   @override
   void initState() {
     super.initState();
     print('🔵 SuppliersPage: initState called');
-    // Cargar proveedores cuando se inicializa la página
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasInitialized && mounted) {
         _hasInitialized = true;
         print('🔵 SuppliersPage: PostFrameCallback - calling loadSuppliers');
-        final supplierController = Get.find<SupplierController>();
-        // Solo cargar si no hay datos
-        if (supplierController.suppliers.isEmpty) {
-          supplierController.loadSuppliers();
-        }
+        ref.read(supplierProvider.notifier).loadSuppliers();
       }
     });
   }
@@ -41,9 +36,12 @@ class _SuppliersPageState extends State<SuppliersPage> {
   @override
   Widget build(BuildContext context) {
     print('🔵 SuppliersPage: build called');
-    final supplierController = Get.find<SupplierController>();
 
-    return DashboardLayout(
+    return Consumer(
+      builder: (context, ref, _) {
+        final supplierState = ref.watch(supplierProvider);
+
+        return DashboardLayout(
       currentRoute: '/suppliers',
       title: 'Proveedores',
       child: Padding(
@@ -68,7 +66,7 @@ class _SuppliersPageState extends State<SuppliersPage> {
                     ),
                     const SizedBox(height: AppSizes.spacing8),
                     Obx(() => Text(
-                      '${supplierController.suppliers.length} proveedores registrados',
+                      '${supplierState.suppliers.length} proveedores registrados',
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,
@@ -77,7 +75,7 @@ class _SuppliersPageState extends State<SuppliersPage> {
                   ],
                 ),
                 ElevatedButton.icon(
-                  onPressed: () => _showSupplierDialog(context, supplierController),
+                  onPressed: () => _showSupplierDialog(context),
                   icon: const Icon(Icons.add, size: 20),
                   label: const Text('Nuevo Proveedor'),
                   style: ElevatedButton.styleFrom(
@@ -95,7 +93,7 @@ class _SuppliersPageState extends State<SuppliersPage> {
 
             // Data Table
             Obx(() {
-              if (supplierController.isLoading) {
+              if (supplierState.isLoading) {
                 return SizedBox(
                   height: 600,
                   child: Card(
@@ -109,7 +107,7 @@ class _SuppliersPageState extends State<SuppliersPage> {
               }
 
               // Mostrar mensaje de error si existe
-              if (supplierController.errorMessage.isNotEmpty) {
+              if (supplierState.errorMessage.isNotEmpty) {
                 return Center(
                   child: Padding(
                     padding: const EdgeInsets.all(AppSizes.spacing48),
@@ -118,7 +116,7 @@ class _SuppliersPageState extends State<SuppliersPage> {
                         const Icon(Icons.error_outline, size: 64, color: AppColors.error),
                         const SizedBox(height: AppSizes.spacing16),
                         Text(
-                          'Error: ${supplierController.errorMessage}',
+                          'Error: ${supplierState.errorMessage}',
                           style: const TextStyle(
                             fontSize: 16,
                             color: AppColors.error,
@@ -126,7 +124,7 @@ class _SuppliersPageState extends State<SuppliersPage> {
                         ),
                         const SizedBox(height: AppSizes.spacing16),
                         ElevatedButton(
-                          onPressed: () => supplierController.loadSuppliers(),
+                          onPressed: () => ref.read(supplierProvider.notifier).loadSuppliers(),
                           child: const Text('Reintentar'),
                         ),
                       ],
@@ -135,7 +133,7 @@ class _SuppliersPageState extends State<SuppliersPage> {
                 );
               }
 
-              if (supplierController.suppliers.isEmpty) {
+              if (supplierState.suppliers.isEmpty) {
                 return const Center(
                   child: Padding(
                     padding: EdgeInsets.all(AppSizes.spacing48),
@@ -190,7 +188,7 @@ class _SuppliersPageState extends State<SuppliersPage> {
                         size: ColumnSize.S,
                       ),
                     ],
-                    rows: supplierController.suppliers.map((supplier) {
+                    rows: supplierState.suppliers.map((supplier) {
                       return DataRow2(
                         onTap: () => _showSupplierProducts(context, supplier),
                         cells: [
@@ -302,7 +300,6 @@ class _SuppliersPageState extends State<SuppliersPage> {
                                   icon: const Icon(Icons.edit_outlined, size: 18),
                                   onPressed: () => _showSupplierDialog(
                                     context,
-                                    supplierController,
                                     supplier: supplier,
                                   ),
                                   tooltip: 'Editar',
@@ -312,7 +309,6 @@ class _SuppliersPageState extends State<SuppliersPage> {
                                   icon: const Icon(Icons.delete_outline, size: 18),
                                   onPressed: () => _showDeleteDialog(
                                     context,
-                                    supplierController,
                                     supplier['_id'] ?? supplier['id'] ?? '',
                                     supplier['name'] ?? 'Sin nombre',
                                   ),
@@ -332,12 +328,13 @@ class _SuppliersPageState extends State<SuppliersPage> {
           ],
         ),
       ),
+        );
+      },
     );
   }
 
   void _showSupplierDialog(
-    BuildContext context,
-    SupplierController supplierController, {
+    BuildContext context, {
     Map<String, dynamic>? supplier,
   }) {
     final nameController = TextEditingController(text: supplier?['name'] ?? '');
@@ -346,11 +343,11 @@ class _SuppliersPageState extends State<SuppliersPage> {
     final emailController = TextEditingController(text: supplier?['contactEmail'] ?? '');
     final addressController = TextEditingController(text: supplier?['address'] ?? '');
     
-    final selectedImage = Rx<XFile?>(null);
-    final imageBytes = RxnString();
-    final imagePreview = RxString(supplier?['foto'] ?? '');
+    final selectedImage = ValueNotifier<XFile?>(null);
+    final imageBytes = ValueNotifier<String>('');
+    final imagePreview = ValueNotifier<String>(supplier?['foto'] ?? '');
     final ImagePicker picker = ImagePicker();
-    final isLoading = false.obs; // Variable para controlar el loading
+    final isLoading = ValueNotifier<bool>(false);
 
     Future<void> pickImage() async {
       try {
@@ -366,12 +363,14 @@ class _SuppliersPageState extends State<SuppliersPage> {
           // Para web, convertir a base64
           final bytes = await image.readAsBytes();
           imageBytes.value = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-          imagePreview.value = imageBytes.value!;
+          imagePreview.value = imageBytes.value;
           print('🔵 Image selected: ${image.name}');
         }
       } catch (e) {
         print('❌ Error picking image: $e');
-        Get.snackbar('Error', 'Error al seleccionar imagen');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al seleccionar imagen')),
+        );
       }
     }
 
@@ -495,12 +494,17 @@ class _SuppliersPageState extends State<SuppliersPage> {
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancelar'),
           ),
-          Obx(() => ElevatedButton(
-            onPressed: isLoading.value ? null : () async {
+          ValueListenableBuilder<bool>(
+            valueListenable: isLoading,
+            builder: (context, loading, _) {
+              return ElevatedButton(
+                onPressed: loading ? null : () async {
               final name = nameController.text.trim();
 
               if (name.isEmpty) {
-                Get.snackbar('Error', 'El nombre es requerido');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('El nombre es requerido')),
+                );
                 return;
               }
 
@@ -556,7 +560,9 @@ class _SuppliersPageState extends State<SuppliersPage> {
                     ),
                   )
                 : Text(supplier == null ? 'Crear' : 'Actualizar'),
-          )),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -564,11 +570,10 @@ class _SuppliersPageState extends State<SuppliersPage> {
 
   void _showDeleteDialog(
     BuildContext context,
-    SupplierController supplierController,
     String supplierId,
     String supplierName,
   ) {
-    final isDeleting = false.obs; // Variable para controlar el loading
+    final isDeleting = ValueNotifier<bool>(false);
     
     showDialog(
       context: context,
@@ -580,11 +585,14 @@ class _SuppliersPageState extends State<SuppliersPage> {
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancelar'),
           ),
-          Obx(() => ElevatedButton(
-            onPressed: isDeleting.value ? null : () async {
-              isDeleting.value = true; // Activar loading
-              final success = await supplierController.deleteSupplier(supplierId);
-              isDeleting.value = false; // Desactivar loading
+          ValueListenableBuilder<bool>(
+            valueListenable: isDeleting,
+            builder: (context, deleting, _) {
+              return ElevatedButton(
+                onPressed: deleting ? null : () async {
+                  isDeleting.value = true;
+                  final success = await ref.read(supplierProvider.notifier).deleteSupplier(supplierId);
+                  isDeleting.value = false;
               
               if (success) {
                 Navigator.of(context).pop();
@@ -604,7 +612,9 @@ class _SuppliersPageState extends State<SuppliersPage> {
                     ),
                   )
                 : const Text('Eliminar'),
-          )),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -613,10 +623,10 @@ class _SuppliersPageState extends State<SuppliersPage> {
   void _showSupplierProducts(BuildContext context, Map<String, dynamic> supplier) {
     final supplierName = supplier['name'] ?? 'Proveedor';
     final supplierId = supplier['_id'];
-    final productController = Get.find<ProductController>();
+    final productState = ref.watch(productProvider);
     
     // Filtrar productos por proveedor
-    final supplierProducts = productController.products.where((product) {
+    final supplierProducts = productState.products.where((product) {
       final productSupplierId = product['supplierId'] is Map 
           ? product['supplierId']['_id'] 
           : product['supplierId'];
