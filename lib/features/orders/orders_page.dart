@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/widgets/loading_indicator.dart';
-import '../../shared/controllers/order_controller.dart';
+import '../../shared/providers/riverpod/order_notifier.dart';
 
-class OrdersPage extends StatefulWidget {
+class OrdersPage extends ConsumerStatefulWidget {
   const OrdersPage({super.key});
 
   @override
-  State<OrdersPage> createState() => _OrdersPageState();
+  ConsumerState<OrdersPage> createState() => _OrdersPageState();
 }
 
-class _OrdersPageState extends State<OrdersPage> {
-  late final OrderController _orderController;
+class _OrdersPageState extends ConsumerState<OrdersPage> {
   String _paymentFilter = 'Todos';
   late final ScrollController _scrollController;
   
@@ -27,7 +27,6 @@ class _OrdersPageState extends State<OrdersPage> {
   @override
   void initState() {
     super.initState();
-    _orderController = Get.find<OrderController>();
     _scrollController = ScrollController();
     
     // Cargar datos de forma no bloqueante
@@ -46,8 +45,9 @@ class _OrdersPageState extends State<OrdersPage> {
 
   Future<void> _loadOrdersOptimized() async {
     // Solo ejecutar la carga si no hay órdenes cargadas todavía
-    if (_orderController.orders.isEmpty && !_orderController.isLoading) {
-      await _orderController.loadOrdersForCurrentStore();
+    final orderState = ref.read(orderProvider);
+    if (orderState.orders.isEmpty && !orderState.isLoading) {
+      await ref.read(orderProvider.notifier).loadOrdersForCurrentStore();
     }
     // Marcar como inicializado solo después de que se complete la carga
     // o cuando ya hay órdenes disponibles
@@ -60,8 +60,9 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   void _updateFilteredOrders() {
+    final orderState = ref.read(orderProvider);
     // Calcular órdenes filtradas sin reconstruir todo
-    _filteredOrders = _orderController.orders
+    _filteredOrders = orderState.orders
         .where((o) => _paymentFilter == 'Todos' || o['paymentMethod'] == _paymentFilter)
         .toList();
     
@@ -72,6 +73,9 @@ class _OrdersPageState extends State<OrdersPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Observar estado de órdenes
+    final orderState = ref.watch(orderProvider);
+
     return DashboardLayout(
       title: 'Órdenes',
       currentRoute: '/orders',
@@ -108,65 +112,57 @@ class _OrdersPageState extends State<OrdersPage> {
           const SizedBox(height: AppSizes.spacing24),
           
           // Orders Table
-          Obx(() {
-            // Mostrar loading mientras se cargan datos O si no está inicializado aún
-            if (_orderController.isLoading || !_hasInitialized) {
-              return SizedBox(
-                height: 600,
-                child: Card(
-                  child: Center(
-                    child: LoadingIndicator(
-                      message: 'Cargando órdenes...',
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            if (_orderController.orders.isEmpty) {
-              return Card(
+          if (orderState.isLoading || !_hasInitialized)
+            SizedBox(
+              height: 600,
+              child: Card(
                 child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSizes.spacing24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.receipt_long_outlined, size: 64, color: AppColors.textSecondary),
-                        const SizedBox(height: AppSizes.spacing16),
-                        const Text(
-                          'No hay órdenes disponibles',
-                          style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
+                  child: LoadingIndicator(
+                    message: 'Cargando órdenes...',
                   ),
                 ),
-              );
-            }
-
-            // Si no hay órdenes filtradas pero sí hay órdenes totales
-            if (_filteredOrders.isEmpty) {
-              return Card(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSizes.spacing24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.filter_list_outlined, size: 64, color: AppColors.textSecondary),
-                        const SizedBox(height: AppSizes.spacing16),
-                        const Text(
-                          'No hay órdenes con este filtro',
-                          style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
+              ),
+            )
+          else if (orderState.orders.isEmpty)
+            Card(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.receipt_long_outlined, size: 64, color: AppColors.textSecondary),
+                      const SizedBox(height: AppSizes.spacing16),
+                      const Text(
+                        'No hay órdenes disponibles',
+                        style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            }
-
-            return Card(
+              ),
+            )
+          else if (_filteredOrders.isEmpty)
+            Card(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.filter_list_outlined, size: 64, color: AppColors.textSecondary),
+                      const SizedBox(height: AppSizes.spacing16),
+                      const Text(
+                        'No hay órdenes con este filtro',
+                        style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            Card(
               child: Padding(
                 padding: const EdgeInsets.all(AppSizes.spacing16),
                 child: SizedBox(
@@ -191,8 +187,7 @@ class _OrdersPageState extends State<OrdersPage> {
                   ),
                 ),
               ),
-            );
-          }),
+            ),
         ],
       ),
     );

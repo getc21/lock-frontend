@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
-import '../../shared/controllers/auth_controller.dart';
+import '../../shared/providers/riverpod/auth_notifier.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final AuthController _authController = Get.find<AuthController>();
   bool _obscurePassword = true;
 
   @override
@@ -27,12 +27,12 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      final success = await _authController.login(
+      final success = await ref.read(authProvider.notifier).login(
         _emailController.text.trim(),
         _passwordController.text,
       );
       
-      if (success) {
+      if (success && mounted) {
         Get.offAllNamed('/dashboard');
       }
     }
@@ -42,6 +42,9 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width >= AppSizes.tabletBreakpoint;
+    
+    // Observar estado de autenticación
+    final authState = ref.watch(authProvider);
 
     return Scaffold(
       body: Container(
@@ -156,12 +159,12 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: AppSizes.spacing32),
                         
                         // Login Button
-                        Obx(() => SizedBox(
+                        SizedBox(
                           width: double.infinity,
                           height: AppSizes.buttonLarge,
                           child: ElevatedButton(
-                            onPressed: _authController.isLoading ? null : _handleLogin,
-                            child: _authController.isLoading
+                            onPressed: authState.isLoading ? null : _handleLogin,
+                            child: authState.isLoading
                                 ? const SizedBox(
                                     width: 20,
                                     height: 20,
@@ -172,7 +175,7 @@ class _LoginPageState extends State<LoginPage> {
                                   )
                                 : const Text('Iniciar Sesión'),
                           ),
-                        )),
+                        ),
                         const SizedBox(height: AppSizes.spacing16),
                         
                         // Forgot Password

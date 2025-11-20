@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'core/theme/app_theme.dart';
 import 'shared/widgets/loading_indicator.dart';
@@ -47,7 +48,11 @@ void main() async {
   Get.put(UserController());
   Get.put(SupplierController());
   
-  runApp(BellezAppWeb(authController: authController));
+  runApp(
+    ProviderScope(
+      child: BellezAppWeb(authController: authController),
+    ),
+  );
 }
 
 class BellezAppWeb extends StatelessWidget {
