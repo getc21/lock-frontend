@@ -1,45 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
-import '../../shared/controllers/product_controller.dart';
-import '../../shared/controllers/customer_controller.dart';
-import '../../shared/controllers/order_controller.dart';
-import '../../shared/controllers/store_controller.dart';
+import '../../shared/providers/product_provider.dart';
+import '../../shared/providers/customer_provider.dart';
+import '../../shared/providers/order_provider.dart';
+import '../../shared/providers/store_provider.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 
-class CreateOrderPage extends StatefulWidget {
+class CreateOrderPage extends ConsumerStatefulWidget {
   const CreateOrderPage({super.key});
 
   @override
-  State<CreateOrderPage> createState() => _CreateOrderPageState();
+  ConsumerState<CreateOrderPage> createState() => _CreateOrderPageState();
 }
 
-class _CreateOrderPageState extends State<CreateOrderPage> {
-  final ProductController _productController = Get.find<ProductController>();
-  final CustomerController _customerController = Get.find<CustomerController>();
-  final OrderController _orderController = Get.find<OrderController>();
+class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
+  late ValueNotifier<List<Map<String, dynamic>>> _filteredProducts;
+  late ValueNotifier<List<Map<String, dynamic>>> _cartItems;
+  late ValueNotifier<Map<String, dynamic>?> _selectedCustomer;
+  late ValueNotifier<String> _paymentMethod;
+  late ValueNotifier<bool> _hasSearchText;
 
   final TextEditingController _searchController = TextEditingController();
-  final RxList<Map<String, dynamic>> _filteredProducts = <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, dynamic>> _cartItems = <Map<String, dynamic>>[].obs;
-  final Rx<Map<String, dynamic>?> _selectedCustomer = Rx<Map<String, dynamic>?>(null);
-  final RxString _paymentMethod = 'efectivo'.obs;
-  final RxBool _hasSearchText = false.obs;
 
   @override
   void initState() {
     super.initState();
     
-    // Cargar productos si no están cargados
-    if (_productController.products.isEmpty) {
-      _productController.loadProductsForCurrentStore();
-    }
+    // Initialize ValueNotifiers
+    _filteredProducts = ValueNotifier<List<Map<String, dynamic>>>([]);
+    _cartItems = ValueNotifier<List<Map<String, dynamic>>>([]);
+    _selectedCustomer = ValueNotifier<Map<String, dynamic>?>(null);
+    _paymentMethod = ValueNotifier<String>('efectivo');
+    _hasSearchText = ValueNotifier<bool>(false);
     
-    // Cargar clientes si no están cargados
-    if (_customerController.customers.isEmpty) {
-      _customerController.loadCustomers();
-    }
+    // Load initial data using Riverpod
+    Future.microtask(() {
+      final productNotifier = ref.read(productProvider.notifier);
+      final customerNotifier = ref.read(customerProvider.notifier);
+      
+      productNotifier.loadProductsForCurrentStore();
+      customerNotifier.loadCustomers();
+    });
   }
 
   @override
@@ -101,16 +104,19 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
               decoration: InputDecoration(
                 hintText: 'Buscar por nombre del producto...',
                 prefixIcon: const Icon(Icons.search),
-                suffixIcon: Obx(() => _hasSearchText.value
+                suffixIcon: ValueListenableBuilder<bool>(
+                  valueListenable: _hasSearchText,
+                  builder: (context, hasText, _) => hasText
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
-                          _filteredProducts.clear();
+                          _filteredProducts.value = [];
                           _hasSearchText.value = false;
                         },
                       )
-                    : const SizedBox.shrink()),
+                    : const SizedBox.shrink(),
+                ),
               ),
               onChanged: _searchProducts,
             ),
@@ -128,81 +134,84 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   }
 
   Widget _buildProductList() {
-    return Obx(() {
-      if (_filteredProducts.isEmpty) {
-        return const Center(
-          child: Text(
-            'Busca productos por nombre para agregarlos a la orden',
-            style: TextStyle(color: AppColors.textSecondary),
-            textAlign: TextAlign.center,
-          ),
-        );
-      }
-
-      return ListView.builder(
-        itemCount: _filteredProducts.length,
-        itemBuilder: (context, index) {
-          final product = _filteredProducts[index];
-          final stock = product['stock'] as int? ?? 0;
-          final isOutOfStock = stock <= 0;
-
-          return Card(
-            margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
-            child: ListTile(
-              leading: product['image'] != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        product['image'],
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.inventory_2_outlined, size: 50),
-                      ),
-                    )
-                  : const Icon(Icons.inventory_2_outlined, size: 50),
-              title: Text(
-                product['name'] as String,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: isOutOfStock ? AppColors.textSecondary : AppColors.textPrimary,
-                ),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (product['description'] != null)
-                    Text(
-                      product['description'] as String,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  Text(
-                    'Stock: $stock | Precio: \$${((product['salePrice'] ?? product['price'] ?? 0) as num).toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: isOutOfStock ? Colors.red : AppColors.textSecondary,
-                      fontWeight: isOutOfStock ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ],
-              ),
-              trailing: isOutOfStock
-                  ? const Chip(
-                      label: Text('Sin stock'),
-                      backgroundColor: Colors.red,
-                      labelStyle: TextStyle(color: Colors.white),
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.add_shopping_cart),
-                      color: AppColors.primary,
-                      onPressed: () => _addToCart(product),
-                    ),
+    return ValueListenableBuilder<List<Map<String, dynamic>>>(
+      valueListenable: _filteredProducts,
+      builder: (context, products, _) {
+        if (products.isEmpty) {
+          return const Center(
+            child: Text(
+              'Busca productos por nombre para agregarlos a la orden',
+              style: TextStyle(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
             ),
           );
-        },
-      );
-    });
+        }
+
+        return ListView.builder(
+          itemCount: products.length,
+          itemBuilder: (context, index) {
+            final product = products[index];
+            final stock = product['stock'] as int? ?? 0;
+            final isOutOfStock = stock <= 0;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
+              child: ListTile(
+                leading: product['image'] != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          product['image'],
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.inventory_2_outlined, size: 50),
+                        ),
+                      )
+                    : const Icon(Icons.inventory_2_outlined, size: 50),
+                title: Text(
+                  product['name'] as String,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: isOutOfStock ? AppColors.textSecondary : AppColors.textPrimary,
+                  ),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (product['description'] != null)
+                      Text(
+                        product['description'] as String,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    Text(
+                      'Stock: $stock | Precio: \$${((product['salePrice'] ?? product['price'] ?? 0) as num).toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: isOutOfStock ? Colors.red : AppColors.textSecondary,
+                        fontWeight: isOutOfStock ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+                trailing: isOutOfStock
+                    ? const Chip(
+                        label: Text('Sin stock'),
+                        backgroundColor: Colors.red,
+                        labelStyle: TextStyle(color: Colors.white),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.add_shopping_cart),
+                        color: AppColors.primary,
+                        onPressed: () => _addToCart(product),
+                      ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget _buildCartAndCheckout() {
@@ -253,68 +262,70 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
               ],
             ),
             const SizedBox(height: AppSizes.spacing8),
-            Obx(() {
-              final customer = _selectedCustomer.value;
-              if (customer == null) {
+            ValueListenableBuilder<Map<String, dynamic>?>(
+              valueListenable: _selectedCustomer,
+              builder: (context, customer, _) {
+                if (customer == null) {
+                  return Container(
+                    padding: const EdgeInsets.all(AppSizes.spacing12),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.person_outline, color: AppColors.textSecondary),
+                        SizedBox(width: AppSizes.spacing8),
+                        Text(
+                          'Cliente general',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
                 return Container(
                   padding: const EdgeInsets.all(AppSizes.spacing12),
                   decoration: BoxDecoration(
-                    color: AppColors.background,
+                    color: AppColors.primaryLight.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: AppColors.primary),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.person_outline, color: AppColors.textSecondary),
-                      SizedBox(width: AppSizes.spacing8),
-                      Text(
-                        'Cliente general',
-                        style: TextStyle(color: AppColors.textSecondary),
+                      const Icon(Icons.person, color: AppColors.primary),
+                      const SizedBox(width: AppSizes.spacing8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              customer['name'] as String,
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            if (customer['phone'] != null)
+                              Text(
+                                customer['phone'] as String,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        iconSize: 20,
+                        onPressed: () => _selectedCustomer.value = null,
                       ),
                     ],
                   ),
                 );
-              }
-
-              return Container(
-                padding: const EdgeInsets.all(AppSizes.spacing12),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                  border: Border.all(color: AppColors.primary),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.person, color: AppColors.primary),
-                    const SizedBox(width: AppSizes.spacing8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            customer['name'] as String,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          if (customer['phone'] != null)
-                            Text(
-                              customer['phone'] as String,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      iconSize: 20,
-                      onPressed: () => _selectedCustomer.value = null,
-                    ),
-                  ],
-                ),
-              );
-            }),
+              },
+            ),
           ],
         ),
       ),
@@ -338,107 +349,110 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             const Divider(),
             
             Expanded(
-              child: Obx(() {
-                if (_cartItems.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.shopping_cart_outlined,
-                          size: 64,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(height: AppSizes.spacing16),
-                        Text(
-                          'Carrito vacío',
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+              child: ValueListenableBuilder<List<Map<String, dynamic>>>(
+                valueListenable: _cartItems,
+                builder: (context, items, _) {
+                  if (items.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 64,
+                            color: AppColors.textSecondary,
+                          ),
+                          SizedBox(height: AppSizes.spacing16),
+                          Text(
+                            'Carrito vacío',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
-                return ListView.builder(
-                  itemCount: _cartItems.length,
-                  itemBuilder: (context, index) {
-                    final item = _cartItems[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSizes.spacing8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item['name'] as String,
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
-                                  ),
-                                  Text(
-                                    '\$${(item['price'] as num).toStringAsFixed(2)} c/u',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
+                  return ListView.builder(
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSizes.spacing8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item['name'] as String,
+                                      style: const TextStyle(fontWeight: FontWeight.w600),
                                     ),
+                                    Text(
+                                      '\$${(item['price'] as num).toStringAsFixed(2)} c/u',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.remove_circle_outline),
+                                    onPressed: () => _decreaseQuantity(index),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    child: Text(
+                                      '${item['quantity']}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.add_circle_outline),
+                                    onPressed: () => _increaseQuantity(index),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
                                   ),
                                 ],
                               ),
-                            ),
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle_outline),
-                                  onPressed: () => _decreaseQuantity(index),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text(
-                                    '${item['quantity']}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                              const SizedBox(width: AppSizes.spacing8),
+                              SizedBox(
+                                width: 80,
+                                child: Text(
+                                  '\$${((item['price'] as num) * (item['quantity'] as int)).toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
                                   ),
+                                  textAlign: TextAlign.right,
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.add_circle_outline),
-                                  onPressed: () => _increaseQuantity(index),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(width: AppSizes.spacing8),
-                            SizedBox(
-                              width: 80,
-                              child: Text(
-                                '\$${((item['price'] as num) * (item['quantity'] as int)).toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                ),
-                                textAlign: TextAlign.right,
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              color: Colors.red,
-                              onPressed: () => _removeFromCart(index),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                          ],
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                color: Colors.red,
+                                onPressed: () => _removeFromCart(index),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              }),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -460,59 +474,65 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                 ),
                 const SizedBox(width: AppSizes.spacing8),
                 Expanded(
-                  child: Obx(() => DropdownButton<String>(
-                    value: _paymentMethod.value,
-                    isExpanded: true,
-                    items: const [
-                      DropdownMenuItem(value: 'efectivo', child: Text('Efectivo')),
-                      DropdownMenuItem(value: 'tarjeta', child: Text('Tarjeta')),
-                      DropdownMenuItem(value: 'transferencia', child: Text('Transferencia')),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) _paymentMethod.value = value;
-                    },
-                  )),
+                  child: ValueListenableBuilder<String>(
+                    valueListenable: _paymentMethod,
+                    builder: (context, paymentMethod, _) => DropdownButton<String>(
+                      value: paymentMethod,
+                      isExpanded: true,
+                      items: const [
+                        DropdownMenuItem(value: 'efectivo', child: Text('Efectivo')),
+                        DropdownMenuItem(value: 'tarjeta', child: Text('Tarjeta')),
+                        DropdownMenuItem(value: 'transferencia', child: Text('Transferencia')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) _paymentMethod.value = value;
+                      },
+                    ),
+                  ),
                 ),
               ],
             ),
             const Divider(),
-            Obx(() {
-              final subtotal = _calculateSubtotal();
-              final total = subtotal;
+            ValueListenableBuilder<List<Map<String, dynamic>>>(
+              valueListenable: _cartItems,
+              builder: (context, items, _) {
+                final subtotal = _calculateSubtotal();
+                final total = subtotal;
 
-              return Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Subtotal:'),
-                      Text('\$${subtotal.toStringAsFixed(2)}'),
-                    ],
-                  ),
-                  const SizedBox(height: AppSizes.spacing8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Total:',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                return Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Subtotal:'),
+                        Text('\$${subtotal.toStringAsFixed(2)}'),
+                      ],
+                    ),
+                    const SizedBox(height: AppSizes.spacing8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Total:',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '\$${total.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                        Text(
+                          '\$${total.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            }),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
             const SizedBox(height: AppSizes.spacing16),
             Row(
               children: [
@@ -524,10 +544,13 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                 ),
                 const SizedBox(width: AppSizes.spacing8),
                 Expanded(
-                  child: Obx(() => ElevatedButton(
-                    onPressed: _cartItems.isEmpty ? null : _createOrder,
-                    child: const Text('Crear Orden'),
-                  )),
+                  child: ValueListenableBuilder<List<Map<String, dynamic>>>(
+                    valueListenable: _cartItems,
+                    builder: (context, items, _) => ElevatedButton(
+                      onPressed: items.isEmpty ? null : _createOrder,
+                      child: const Text('Crear Orden'),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -541,12 +564,18 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     _hasSearchText.value = query.trim().isNotEmpty;
     
     if (query.trim().isEmpty) {
-      _filteredProducts.clear();
+      _filteredProducts.value = [];
       return;
     }
 
     final lowerQuery = query.toLowerCase();
-    _filteredProducts.value = _productController.products
+    final productState = ref.read(productProvider);
+    final products = productState.maybeWhen(
+      data: (products) => products,
+      orElse: () => [],
+    );
+    
+    _filteredProducts.value = products
         .where((product) {
           final name = (product['name'] as String).toLowerCase();
           final description = (product['description'] as String? ?? '').toLowerCase();
@@ -557,7 +586,8 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
 
   void _addToCart(Map<String, dynamic> product) {
     // Verificar si el producto ya está en el carrito
-    final existingIndex = _cartItems.indexWhere(
+    final currentItems = _cartItems.value;
+    final existingIndex = currentItems.indexWhere(
       (item) => item['_id'] == product['_id'],
     );
 
@@ -569,82 +599,96 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       final price = (product['salePrice'] ?? product['price'] ?? 0) as num;
       final stock = (product['stock'] ?? 0) as int;
       
-      _cartItems.add({
+      final newItems = [...currentItems];
+      newItems.add({
         '_id': product['_id'],
         'name': product['name'],
         'price': price.toDouble(),
         'quantity': 1,
         'stock': stock,
       });
+      _cartItems.value = newItems;
 
-      Get.snackbar(
-        'Producto agregado',
-        '${product['name']} añadido al carrito',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 1),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${product['name']} añadido al carrito'),
+          duration: const Duration(seconds: 1),
+        ),
       );
     }
   }
 
   void _increaseQuantity(int index) {
-    final item = _cartItems[index];
+    final items = _cartItems.value;
+    final item = items[index];
     final currentQuantity = item['quantity'] as int;
     final stock = item['stock'] as int;
 
     if (currentQuantity < stock) {
-      _cartItems[index]['quantity'] = currentQuantity + 1;
-      _cartItems.refresh();
+      final newItems = [...items];
+      newItems[index] = {...item, 'quantity': currentQuantity + 1};
+      _cartItems.value = newItems;
     } else {
-      Get.snackbar(
-        'Stock insuficiente',
-        'No hay más unidades disponibles de ${item['name']}',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No hay más unidades disponibles de ${item['name']}'),
+          backgroundColor: Colors.orange,
+        ),
       );
     }
   }
 
   void _decreaseQuantity(int index) {
-    final item = _cartItems[index];
+    final items = _cartItems.value;
+    final item = items[index];
     final currentQuantity = item['quantity'] as int;
 
     if (currentQuantity > 1) {
-      _cartItems[index]['quantity'] = currentQuantity - 1;
-      _cartItems.refresh();
+      final newItems = [...items];
+      newItems[index] = {...item, 'quantity': currentQuantity - 1};
+      _cartItems.value = newItems;
     } else {
       _removeFromCart(index);
     }
   }
 
   void _removeFromCart(int index) {
-    _cartItems.removeAt(index);
+    final items = _cartItems.value;
+    final newItems = [...items];
+    newItems.removeAt(index);
+    _cartItems.value = newItems;
   }
 
   void _clearCart() {
-    _cartItems.clear();
+    _cartItems.value = [];
     _selectedCustomer.value = null;
     _paymentMethod.value = 'efectivo';
   }
 
   double _calculateSubtotal() {
-    return _cartItems.fold(0.0, (sum, item) {
+    return _cartItems.value.fold(0.0, (sum, item) {
       return sum + ((item['price'] as num) * (item['quantity'] as int));
     });
   }
 
   void _showCustomerSearch() {
     final customerSearchController = TextEditingController();
-    final filteredCustomers = <Map<String, dynamic>>[].obs;
+    final filteredCustomers = ValueNotifier<List<Map<String, dynamic>>>([]);
 
     void searchCustomers(String query) {
       if (query.trim().isEmpty) {
-        filteredCustomers.clear();
+        filteredCustomers.value = [];
         return;
       }
 
       final lowerQuery = query.toLowerCase();
-      filteredCustomers.value = _customerController.customers
+      final customerState = ref.read(customerProvider);
+      final customers = customerState.maybeWhen(
+        data: (customers) => customers,
+        orElse: () => [],
+      );
+      
+      filteredCustomers.value = customers
           .where((customer) {
             final name = (customer['name'] as String).toLowerCase();
             final phone = (customer['phone'] as String? ?? '').toLowerCase();
@@ -656,8 +700,9 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           .toList();
     }
 
-    Get.dialog(
-      Dialog(
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
         child: Container(
           width: 500,
           padding: const EdgeInsets.all(AppSizes.spacing24),
@@ -677,7 +722,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => Get.back(),
+                    onPressed: () => Navigator.of(dialogContext).pop(),
                   ),
                 ],
               ),
@@ -694,36 +739,39 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
               const SizedBox(height: AppSizes.spacing16),
               SizedBox(
                 height: 300,
-                child: Obx(() {
-                  if (filteredCustomers.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'Busca clientes por nombre, teléfono o email',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    itemCount: filteredCustomers.length,
-                    itemBuilder: (context, index) {
-                      final customer = filteredCustomers[index];
-                      return ListTile(
-                        leading: const CircleAvatar(
-                          child: Icon(Icons.person),
+                child: ValueListenableBuilder<List<Map<String, dynamic>>>(
+                  valueListenable: filteredCustomers,
+                  builder: (context, customers, _) {
+                    if (customers.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'Busca clientes por nombre, teléfono o email',
+                          style: TextStyle(color: AppColors.textSecondary),
                         ),
-                        title: Text(customer['name'] as String),
-                        subtitle: Text(
-                          customer['phone'] as String? ?? 'Sin teléfono',
-                        ),
-                        onTap: () {
-                          _selectedCustomer.value = customer;
-                          Get.back();
-                        },
                       );
-                    },
-                  );
-                }),
+                    }
+
+                    return ListView.builder(
+                      itemCount: customers.length,
+                      itemBuilder: (context, index) {
+                        final customer = customers[index];
+                        return ListTile(
+                          leading: const CircleAvatar(
+                            child: Icon(Icons.person),
+                          ),
+                          title: Text(customer['name'] as String),
+                          subtitle: Text(
+                            customer['phone'] as String? ?? 'Sin teléfono',
+                          ),
+                          onTap: () {
+                            _selectedCustomer.value = customer;
+                            Navigator.of(dialogContext).pop();
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -733,20 +781,19 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   }
 
   Future<void> _createOrder() async {
-    if (_cartItems.isEmpty) {
-      Get.snackbar(
-        'Carrito vacío',
-        'Agrega productos antes de crear la orden',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
+    if (_cartItems.value.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Agrega productos antes de crear la orden'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
     try {
       // Preparar los items de la orden
-      final items = _cartItems.map((item) {
+      final items = _cartItems.value.map((item) {
         return {
           'productId': item['_id'],
           'quantity': item['quantity'],
@@ -755,15 +802,19 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       }).toList();
 
       // Obtener el ID de la tienda actual
-      final storeController = Get.find<StoreController>();
-      final currentStoreId = storeController.currentStore?['_id'] as String?;
+      final storeState = ref.read(storeProvider);
+      final currentStoreId = storeState.maybeWhen(
+        data: (store) => store?['_id'] as String?,
+        orElse: () => null,
+      );
       
       if (currentStoreId == null) {
         throw Exception('No hay tienda seleccionada');
       }
 
       // Crear la orden
-      final success = await _orderController.createOrder(
+      final orderNotifier = ref.read(orderProvider.notifier);
+      final success = await orderNotifier.createOrder(
         storeId: currentStoreId,
         items: items,
         paymentMethod: _paymentMethod.value,
@@ -775,39 +826,37 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
 
       if (success) {
         // Mostrar mensaje de éxito
-        Get.snackbar(
-          '¡Orden creada exitosamente!',
-          'Puedes crear otra orden inmediatamente',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppColors.success,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 2),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Orden creada exitosamente! Puedes crear otra orden inmediatamente'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
         );
 
         // Limpiar el carrito para crear una nueva orden
         _clearCart();
         
         // Recargar productos para actualizar el stock
-        await _productController.loadProductsForCurrentStore();
+        final productNotifier = ref.read(productProvider.notifier);
+        await productNotifier.loadProductsForCurrentStore();
       } else {
-        Get.snackbar(
-          'Error',
-          'No se pudo crear la orden',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo crear la orden'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
       // Verificar que el widget todavía está montado antes de mostrar error
       if (!mounted) return;
       
-      Get.snackbar(
-        'Error',
-        'No se pudo crear la orden: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo crear la orden: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
