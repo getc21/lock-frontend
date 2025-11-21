@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../shared/providers/riverpod/reports_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart';
+import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/services/pdf_service.dart';
 
@@ -170,6 +171,7 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
           },
         );
     final reportsState = ref.watch(reportsProvider);
+    ref.watch(currencyProvider); // Permite reconstruir cuando cambia la moneda
     
     return DashboardLayout(
       title: 'Reportes Avanzados',
@@ -501,6 +503,11 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
     );
   }
 
+  String _formatCurrency(num value) {
+    final currencyNotifier = ref.read(currencyProvider.notifier);
+    return '${currencyNotifier.symbol}${(value as double).toStringAsFixed(2)}';
+  }
+
   void _showSnackBar(String message, {bool isError = false}) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -724,7 +731,7 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
             Expanded(
               child: _buildMetricCard(
                 'Ventas Totales',
-                '\$${(summary['totalRevenue'] ?? 0).toStringAsFixed(2)}',
+                _formatCurrency((summary['totalRevenue'] ?? 0) as num),
                 Icons.attach_money,
                 Colors.green,
               ),
@@ -733,7 +740,7 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
             Expanded(
               child: _buildMetricCard(
                 'Ganancia',
-                '\$${(summary['totalProfit'] ?? 0).toStringAsFixed(2)}',
+                _formatCurrency((summary['totalProfit'] ?? 0) as num),
                 Icons.trending_up,
                 Colors.blue,
               ),
@@ -809,9 +816,9 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
                       DataCell(Text(category)),
                       DataCell(Text('${product['totalQuantity'] ?? 0}')),
                       DataCell(Text('${product['orderCount'] ?? 0}')),
-                      DataCell(Text('\$${(product['totalRevenue'] ?? 0).toStringAsFixed(2)}')),
-                      DataCell(Text('\$${(product['totalCost'] ?? 0).toStringAsFixed(2)}')),
-                      DataCell(Text('\$${(product['totalProfit'] ?? 0).toStringAsFixed(2)}')),
+                      DataCell(Text(_formatCurrency((product['totalRevenue'] ?? 0) as num))),
+                      DataCell(Text(_formatCurrency((product['totalCost'] ?? 0) as num))),
+                      DataCell(Text(_formatCurrency((product['totalProfit'] ?? 0) as num))),
                       DataCell(
                         Text(
                           '${margin.toStringAsFixed(1)}%',
@@ -853,7 +860,7 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
             Expanded(
               child: _buildMetricCard(
                 'Ventas Totales',
-                '\$${(summary['totalRevenue'] ?? 0).toStringAsFixed(2)}',
+                _formatCurrency((summary['totalRevenue'] ?? 0) as num),
                 Icons.attach_money,
                 Colors.green,
               ),
@@ -871,7 +878,7 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
             Expanded(
               child: _buildMetricCard(
                 'Promedio Diario',
-                '\$${(summary['averageDaily'] ?? 0).toStringAsFixed(2)}',
+                _formatCurrency((summary['averageDaily'] ?? 0) as num),
                 Icons.analytics,
                 Colors.purple,
               ),
@@ -880,7 +887,7 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
             Expanded(
               child: _buildMetricCard(
                 'Valor Promedio',
-                '\$${(summary['averageOrderValue'] ?? 0).toStringAsFixed(2)}',
+                _formatCurrency((summary['averageOrderValue'] ?? 0) as num),
                 Icons.receipt,
                 Colors.orange,
               ),
@@ -1027,9 +1034,9 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
                     return DataRow(cells: [
                       DataCell(Text(formattedPeriod)),
                       DataCell(Text('${trend['orderCount'] ?? 0}')),
-                      DataCell(Text('\$${(trend['totalRevenue'] ?? 0).toStringAsFixed(2)}')),
+                      DataCell(Text(_formatCurrency((trend['totalRevenue'] ?? 0) as num))),
                       DataCell(Text('${trend['totalItems'] ?? 0}')),
-                      DataCell(Text('\$${(trend['averageOrderValue'] ?? 0).toStringAsFixed(2)}')),
+                      DataCell(Text(_formatCurrency((trend['averageOrderValue'] ?? 0) as num))),
                     ]);
                   }).toList(),
                 ),
@@ -1136,9 +1143,9 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
                             ),
                           ),
                         ),
-                        DataCell(Text('\$${(product['currentSales'] ?? 0).toStringAsFixed(2)}')),
+                        DataCell(Text(_formatCurrency((product['currentSales'] ?? 0) as num))),
                         DataCell(Text('${product['currentQuantity'] ?? 0}')),
-                        DataCell(Text('\$${(product['previousSales'] ?? 0).toStringAsFixed(2)}')),
+                        DataCell(Text(_formatCurrency((product['previousSales'] ?? 0) as num))),
                         DataCell(Text('${product['previousQuantity'] ?? 0}')),
                         DataCell(
                           Row(
@@ -1224,7 +1231,7 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
     String formatValue(dynamic value) {
       if (value is num) {
         if (isCurrency) {
-          return '\$${value.toStringAsFixed(2)}';
+          return _formatCurrency(value);
         } else {
           return value.toStringAsFixed(value is double && value % 1 != 0 ? 2 : 0);
         }
