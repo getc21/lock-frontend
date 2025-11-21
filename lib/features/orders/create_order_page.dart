@@ -697,10 +697,6 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
     formNotifier.removeFromCart(item['_id'] as String);
   }
 
-  void _clearCart() {
-    ref.read(orderFormProvider.notifier).clearCart();
-  }
-
   double _calculateSubtotal() {
     final formState = ref.read(orderFormProvider);
     return formState.cartItems.fold(0.0, (sum, item) {
@@ -865,18 +861,23 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
         // Mostrar mensaje de éxito
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('¡Orden creada exitosamente! Puedes crear otra orden inmediatamente'),
+            content: Text('¡Orden creada exitosamente!'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
         );
 
-        // Limpiar el carrito para crear una nueva orden
-        _clearCart();
-        
         // Recargar productos para actualizar el stock
         final productNotifier = ref.read(productProvider.notifier);
         await productNotifier.loadProductsForCurrentStore();
+
+        // Recargar las órdenes con forzar actualización para mostrar la nueva orden
+        await ref.read(orderProvider.notifier).loadOrdersForCurrentStore(forceRefresh: true);
+
+        // Redirigir a la página de órdenes
+        if (mounted) {
+          context.go('/orders');
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

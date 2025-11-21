@@ -40,6 +40,13 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recargar órdenes cuando volvemos a esta página desde otra ruta
+    _loadOrdersOptimized();
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
