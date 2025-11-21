@@ -39,28 +39,39 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_hasInitialized) {
         _hasInitialized = true;
-        print(' ProductsPage: Loading data in PostFrameCallback');
+        print(' ProductsPage: Loading data in optimized sequence');
         final productState = ref.read(productProvider);
         final supplierState = ref.read(supplierProvider);
         final categoryState = ref.read(categoryProvider);
         final locationState = ref.read(locationProvider);
         
-        print('   - products before load: ${productState.products.length}');
-        final futures = <Future>[];
-        if (productState.products.isEmpty) {
-          futures.add(ref.read(productProvider.notifier).loadProductsForCurrentStore());
+        // CRITICAL: Load categories and suppliers (needed for dropdowns)
+        final criticalFutures = <Future>[];
+        if (categoryState.categories.isEmpty) {
+          criticalFutures.add(ref.read(categoryProvider.notifier).loadCategories());
         }
         if (supplierState.suppliers.isEmpty) {
-          futures.add(ref.read(supplierProvider.notifier).loadSuppliers());
+          criticalFutures.add(ref.read(supplierProvider.notifier).loadSuppliers());
         }
-        if (categoryState.categories.isEmpty) {
-          futures.add(ref.read(categoryProvider.notifier).loadCategories());
+        
+        // PARALLEL: Load products and locations
+        final parallelFutures = <Future>[];
+        if (productState.products.isEmpty) {
+          parallelFutures.add(ref.read(productProvider.notifier).loadProductsForCurrentStore());
         }
         if (locationState.locations.isEmpty) {
-          futures.add(ref.read(locationProvider.notifier).loadLocations());
+          parallelFutures.add(ref.read(locationProvider.notifier).loadLocations());
         }
-        if (futures.isNotEmpty) {
-          Future.wait(futures);
+        
+        // Execute critical first, then parallel
+        if (criticalFutures.isNotEmpty) {
+          Future.wait(criticalFutures).then((_) {
+            if (mounted && parallelFutures.isNotEmpty) {
+              Future.wait(parallelFutures);
+            }
+          });
+        } else if (parallelFutures.isNotEmpty) {
+          Future.wait(parallelFutures);
         }
       }
     });
@@ -203,59 +214,70 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       return DataRow2(
         cells: [
           DataCell(
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.gray100,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                  ),
-                  child: product['foto'] != null 
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                        child: Image.network(
-                          product['foto'],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => 
-                            const Icon(Icons.inventory_2_outlined, size: 20),
-                        ),
-                      )
-                    : const Icon(Icons.inventory_2_outlined, size: 20),
-                ),
-                const SizedBox(width: AppSizes.spacing12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        product['name'] as String,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (product['description'] != null)
-                        Text(
-                          product['description'] as String,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+            GestureDetector(
+              onTap: () => _showProductPreview(product),
+              child: Row(
+                children: [
+                  // Lazy-load image: only cache the thumbnail path, don't load full image yet
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.gray100,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                    ),
+                    child: product['foto'] != null 
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                          child: Image.network(
+                            product['foto'],
+                            fit: BoxFit.cover,
+                            cacheHeight: 40,
+                            cacheWidth: 40,
+                            errorBuilder: (context, error, stackTrace) => 
+                              const Icon(Icons.inventory_2_outlined, size: 20),
                           ),
+                        )
+                      : const Icon(Icons.inventory_2_outlined, size: 20),
+                  ),
+                  const SizedBox(width: AppSizes.spacing12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          product['name'] as String,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                    ],
+                        // Only show description if exists - no extra API calls
+                        if (product['description'] != null && (product['description'] as String).isNotEmpty)
+                          Text(
+                            product['description'] as String,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          DataCell(Text(
-            product['categoryId']?['name'] ?? 'Sin categoría',
-          )),
+          DataCell(
+            Text(
+              _getCategoryName(product['categoryId']),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           DataCell(
             Container(
               padding: const EdgeInsets.symmetric(
@@ -326,6 +348,75 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         ],
       );
     }).toList();
+  }
+
+  /// Helper: Get category name from populated categoryId or fallback
+  String _getCategoryName(dynamic categoryId) {
+    if (categoryId == null) return 'Sin categoría';
+    if (categoryId is Map) return categoryId['name']?.toString() ?? 'Sin categoría';
+    return 'Sin categoría';
+  }
+
+  /// Show product preview with full details (lazy-loaded)
+  void _showProductPreview(Map<String, dynamic> product) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(product['name'] ?? 'Producto'),
+        content: SizedBox(
+          width: 400,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (product['foto'] != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      product['foto'],
+                      height: 200,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => 
+                        Container(
+                          height: 200,
+                          color: AppColors.gray100,
+                          child: const Icon(Icons.inventory_2_outlined, size: 64),
+                        ),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                Text(
+                  'Stock: ${product['stock']}',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text('Precio Compra: \$${(product['purchasePrice'] as num).toStringAsFixed(2)}'),
+                Text('Precio Venta: \$${(product['salePrice'] as num).toStringAsFixed(2)}'),
+                if (product['description'] != null && (product['description'] as String).isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Descripción:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(product['description'] as String),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
   }
 
   Color _getExpirationColor(String? expirationDate) {
