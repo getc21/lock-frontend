@@ -94,6 +94,12 @@ class CurrencyNotifier extends StateNotifier<CurrencyState> {
       symbol: '\$',
       code: 'CLP',
     ),
+    CurrencyModel(
+      id: 'bob',
+      name: 'Boliviano',
+      symbol: 'Bs.',
+      code: 'BOB',
+    ),
   ];
 
   List<CurrencyModel> get availableCurrencies => _availableCurrencies;
