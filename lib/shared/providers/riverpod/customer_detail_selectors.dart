@@ -128,14 +128,17 @@ final customerSummarySelector = Provider.family<({
   double? totalSpent,
 }), String>((ref, customerId) {
   final customer = ref.watch(customerSelector(customerId));
+  final totalSpentValue = customer?['totalSpent'];
+  final totalSpent = totalSpentValue is double
+      ? totalSpentValue
+      : (totalSpentValue is int ? (totalSpentValue).toDouble() : null);
+  
   return (
     name: customer?['name'] as String?,
     email: customer?['email'] as String?,
     phone: customer?['phone'] as String?,
     orderCount: (customer?['orders'] as List?)?.length ?? 0,
-    totalSpent: customer?['totalSpent'] is double
-        ? customer?['totalSpent'] as double
-        : (customer?['totalSpent'] is int ? (customer?['totalSpent'] as int).toDouble() : null),
+    totalSpent: totalSpent,
   );
 });
 

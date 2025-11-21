@@ -106,14 +106,20 @@ final orderSummarySelector = Provider.family<({
   DateTime? date,
 }), String>((ref, orderId) {
   final order = ref.watch(orderSelector(orderId));
+  final totalValue = order?['total'];
+  final total = totalValue is double
+      ? totalValue
+      : (totalValue is int ? (totalValue).toDouble() : null);
+  
+  final dateStr = order?['createdAt'];
+  final date = dateStr is String ? DateTime.tryParse(dateStr) : null;
+  
   return (
     orderNumber: order?['orderNumber'] as String?,
     status: order?['status'] as String?,
-    total: order?['total'] is double
-        ? order?['total'] as double
-        : (order?['total'] is int ? (order?['total'] as int).toDouble() : null),
+    total: total,
     itemCount: (order?['items'] as List?)?.length ?? 0,
-    date: order?['createdAt'] is String ? DateTime.tryParse(order?['createdAt']) : null,
+    date: date,
   );
 });
 
