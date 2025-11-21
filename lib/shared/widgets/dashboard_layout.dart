@@ -33,9 +33,9 @@ class DashboardLayout extends ConsumerWidget {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(dialogContext).pop();
-              ref.read(authProvider.notifier).logout();
+              await ref.read(authProvider.notifier).logout();
               if (context.mounted) {
                 context.go('/login');
               }

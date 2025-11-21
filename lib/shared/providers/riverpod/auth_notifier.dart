@@ -219,20 +219,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     try {
       await _authProvider.logout();
-      await _clearUserData();
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('selected_store_id');
-
-      state = AuthState();
     } catch (e) {
       if (kDebugMode) {
         print('Error al logout: $e');
       }
-      state = AuthState();
-    } finally {
-      state = state.copyWith(isLoading: false);
     }
+
+    try {
+      await _clearUserData();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error limpiando datos: $e');
+      }
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('selected_store_id');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error removiendo store_id: $e');
+      }
+    }
+
+    // Establecer estado limpio
+    state = AuthState();
   }
 
   // Registrar nuevo usuario
