@@ -9,6 +9,7 @@ import '../../shared/providers/riverpod/product_notifier.dart';
 import '../../shared/providers/riverpod/order_notifier.dart';
 import '../../shared/providers/riverpod/customer_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart' show storeProvider;
+import '../../shared/providers/riverpod/currency_notifier.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -57,11 +58,17 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     });
   }
 
+  String _formatCurrency(num value) {
+    final currencyNotifier = ref.read(currencyProvider.notifier);
+    return '${currencyNotifier.symbol}${(value as double).toStringAsFixed(2)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final productState = ref.watch(productProvider);
     final orderState = ref.watch(orderProvider);
     final customerState = ref.watch(customerProvider);
+    ref.watch(currencyProvider);
     
     // Recargar datos cuando cambia la tienda actual
     ref.listen(
@@ -150,7 +157,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     );
     return _buildKPICard(
       title: 'Ventas Totales',
-      value: '\$${totalSales.toStringAsFixed(2)}',
+      value: _formatCurrency(totalSales),
       change: '',
       isPositive: true,
       icon: Icons.attach_money,
@@ -376,9 +383,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               showTitles: true,
               reservedSize: 50,
               getTitlesWidget: (value, meta) {
+                final currencyNotifier = ref.read(currencyProvider.notifier);
                 if (value >= 1000) {
                   return Text(
-                    '\$${(value / 1000).toStringAsFixed(0)}k',
+                    '${currencyNotifier.symbol}${(value / 1000).toStringAsFixed(0)}k',
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -386,7 +394,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   );
                 }
                 return Text(
-                  '\$${value.toStringAsFixed(0)}',
+                  '${currencyNotifier.symbol}${value.toStringAsFixed(0)}',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -542,7 +550,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     ),
                   ),
                   Text(
-                    '\$${(product['revenue'] as double).toStringAsFixed(2)}',
+                    _formatCurrency(product['revenue'] as double),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -694,7 +702,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       DataCell(Text('$itemsCount items')),
                       DataCell(
                         Text(
-                          '\$${total.toStringAsFixed(2)}',
+                          _formatCurrency(total),
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                           ),
