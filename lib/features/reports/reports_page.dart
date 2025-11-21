@@ -430,7 +430,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       colorIndex++;
       
       return _buildLegend(
-        '${entry.key} (\$${entry.value.toStringAsFixed(2)})',
+        '${entry.key} (${_formatCurrency(entry.value)})',
         color,
       );
     }).toList();
@@ -651,7 +651,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                               try {
                                 return touchedSpots.map((spot) {
                                   return LineTooltipItem(
-                                    '\$${spot.y.toStringAsFixed(2)}',
+                                    _formatCurrency(spot.y),
                                     const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -689,8 +689,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                               reservedSize: 50,
                               getTitlesWidget: (value, meta) {
                                 if (value == 0) return const Text('');
+                                final currencyNotifier = ref.read(currencyProvider.notifier);
+                                final abbreviatedValue = (value / 1000).toStringAsFixed(0);
+                                final formattedText = '${currencyNotifier.symbol}${abbreviatedValue}k';
                                 return Text(
-                                  '\$${(value / 1000).toStringAsFixed(0)}k',
+                                  formattedText,
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: AppColors.textSecondary,
