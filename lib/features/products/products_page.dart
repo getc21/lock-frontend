@@ -4,7 +4,6 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:barcode_widget/barcode_widget.dart';
 import 'dart:convert';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
@@ -176,7 +175,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                       horizontalMargin: 12,
                       minWidth: 1100,
                       columns: const [
-                        DataColumn2(label: Text('QR'), size: ColumnSize.S),
                         DataColumn2(label: Text('Producto'), size: ColumnSize.L),
                         DataColumn2(label: Text('Categoría'), size: ColumnSize.M),
                         DataColumn2(label: Text('Stock'), size: ColumnSize.S),
@@ -216,26 +214,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
       return DataRow2(
         cells: [
-          // QR Code
-          DataCell(
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                ),
-                child: BarcodeWidget(
-                  backgroundColor: Colors.transparent,
-                  barcode: Barcode.qrCode(),
-                  data: product['_id']?.toString() ?? product['name'],
-                  width: 40,
-                  height: 40,
-                ),
-              ),
-            ),
-          ),
           DataCell(
             GestureDetector(
               onTap: () => _showProductPreview(product),
