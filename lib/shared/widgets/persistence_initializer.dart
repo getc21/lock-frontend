@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/persistence_service.dart';
 import '../providers/riverpod/auth_notifier.dart';
+import '../providers/riverpod/theme_notifier.dart';
+import '../providers/riverpod/currency_notifier.dart';
 
 /// Widget que se muestra mientras se inicializa la persistencia
 class PersistenceInitializer extends ConsumerStatefulWidget {
@@ -29,8 +30,21 @@ class _PersistenceInitializerState
 
   Future<void> _initializePersistence() async {
     try {
-      // Inicializar toda la persistencia
-      await PersistenceService.initialize(ref);
+      // Esperar a que los providers se inicialicen con la persistencia
+      // Los providers cargan automáticamente en su constructor
+      await Future.wait([
+        Future.delayed(const Duration(milliseconds: 500)), // Dar tiempo para cargar
+      ]);
+
+      // Verificar que todo esté cargado
+      final authState = ref.read(authProvider);
+      final themeState = ref.read(themeProvider);
+      final currencyState = ref.read(currencyProvider);
+
+      debugPrint('✅ Persistencia inicializada:');
+      debugPrint('   - Sesión: ${authState.isLoggedIn ? 'Cargada' : 'No cargada'}');
+      debugPrint('   - Tema: ${themeState.isInitialized ? 'Cargado' : 'No cargado'}');
+      debugPrint('   - Moneda: ${currencyState.isInitialized ? 'Cargada' : 'No cargada'}');
 
       if (mounted) {
         setState(() {
@@ -38,7 +52,7 @@ class _PersistenceInitializerState
         });
       }
     } catch (e) {
-      debugPrint('Error en PersistenceInitializer: $e');
+      debugPrint('❌ Error en PersistenceInitializer: $e');
       if (mounted) {
         setState(() {
           _isInitialized = true;
@@ -49,11 +63,9 @@ class _PersistenceInitializerState
 
   @override
   Widget build(BuildContext context) {
-    // Observar el estado de autenticación para detectar cambios
-    ref.watch(authProvider);
-
     if (!_isInitialized) {
       return MaterialApp(
+        debugShowCheckedModeBanner: false,
         home: Scaffold(
           body: Container(
             decoration: BoxDecoration(
@@ -61,8 +73,8 @@ class _PersistenceInitializerState
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Theme.of(context).primaryColor.withOpacity(0.1),
-                  Theme.of(context).primaryColor.withOpacity(0.05),
+                  Colors.pink.withOpacity(0.1),
+                  Colors.purple.withOpacity(0.05),
                 ],
               ),
             ),
@@ -76,8 +88,8 @@ class _PersistenceInitializerState
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          Theme.of(context).primaryColor,
-                          Theme.of(context).primaryColor.withOpacity(0.7),
+                          Colors.pink.shade400,
+                          Colors.pink.shade300,
                         ],
                       ),
                       shape: BoxShape.circle,
@@ -89,23 +101,32 @@ class _PersistenceInitializerState
                     ),
                   ),
                   const SizedBox(height: 32),
-                  Text(
+                  const Text(
                     'BellezApp',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Inicializando...',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                    'Restaurando tu sesión...',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 32),
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Theme.of(context).primaryColor,
+                  const SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFFEC407A),
+                      ),
+                      strokeWidth: 2,
                     ),
                   ),
                 ],

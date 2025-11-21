@@ -9,7 +9,7 @@ import 'shared/widgets/persistence_initializer.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    const ProviderScope(
+    ProviderScope(
       child: PersistenceInitializer(
         child: BellezAppWeb(),
       ),
