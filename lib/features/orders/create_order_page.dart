@@ -8,6 +8,7 @@ import '../../shared/providers/riverpod/customer_notifier.dart';
 import '../../shared/providers/riverpod/order_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
+import '../../shared/providers/riverpod/order_form_notifier.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 
 class CreateOrderPage extends ConsumerStatefulWidget {
@@ -18,26 +19,11 @@ class CreateOrderPage extends ConsumerStatefulWidget {
 }
 
 class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
-  late ValueNotifier<List<Map<String, dynamic>>> _filteredProducts;
-  late ValueNotifier<List<Map<String, dynamic>>> _cartItems;
-  late ValueNotifier<Map<String, dynamic>?> _selectedCustomer;
-  late ValueNotifier<String> _paymentMethod;
-  late ValueNotifier<bool> _hasSearchText;
-  late ValueNotifier<bool> _isCreatingOrder;
-
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    
-    // Initialize ValueNotifiers
-    _filteredProducts = ValueNotifier<List<Map<String, dynamic>>>([]);
-    _cartItems = ValueNotifier<List<Map<String, dynamic>>>([]);
-    _selectedCustomer = ValueNotifier<Map<String, dynamic>?>(null);
-    _paymentMethod = ValueNotifier<String>('efectivo');
-    _hasSearchText = ValueNotifier<bool>(false);
-    _isCreatingOrder = ValueNotifier<bool>(false);
     
     // Load initial data using Riverpod
     Future.microtask(() {
@@ -105,26 +91,28 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
             const SizedBox(height: AppSizes.spacing16),
             
             // Buscador de productos
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Buscar por nombre del producto...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: ValueListenableBuilder<bool>(
-                  valueListenable: _hasSearchText,
-                  builder: (context, hasText, _) => hasText
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _filteredProducts.value = [];
-                          _hasSearchText.value = false;
-                        },
-                      )
-                    : const SizedBox.shrink(),
-                ),
-              ),
-              onChanged: _searchProducts,
+            Consumer(
+              builder: (context, consumerRef, _) {
+                final formState = consumerRef.watch(orderFormProvider);
+                return TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar por nombre del producto...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: formState.hasSearchText
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            consumerRef.read(orderFormProvider.notifier).setFilteredProducts([]);
+                            consumerRef.read(orderFormProvider.notifier).setSearchQuery('');
+                          },
+                        )
+                      : const SizedBox.shrink(),
+                  ),
+                  onChanged: _searchProducts,
+                );
+              },
             ),
             const SizedBox(height: AppSizes.spacing16),
             
@@ -140,9 +128,11 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
   }
 
   Widget _buildProductList() {
-    return ValueListenableBuilder<List<Map<String, dynamic>>>(
-      valueListenable: _filteredProducts,
-      builder: (context, products, _) {
+    return Consumer(
+      builder: (context, consumerRef, _) {
+        final formState = consumerRef.watch(orderFormProvider);
+        final products = formState.filteredProducts;
+
         if (products.isEmpty) {
           return const Center(
             child: Text(
@@ -268,9 +258,11 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
               ],
             ),
             const SizedBox(height: AppSizes.spacing8),
-            ValueListenableBuilder<Map<String, dynamic>?>(
-              valueListenable: _selectedCustomer,
-              builder: (context, customer, _) {
+            Consumer(
+              builder: (context, consumerRef, _) {
+                final formState = consumerRef.watch(orderFormProvider);
+                final customer = formState.selectedCustomer;
+
                 if (customer == null) {
                   return Container(
                     padding: const EdgeInsets.all(AppSizes.spacing12),
@@ -325,7 +317,9 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                       IconButton(
                         icon: const Icon(Icons.close),
                         iconSize: 20,
-                        onPressed: () => _selectedCustomer.value = null,
+                        onPressed: () {
+                          consumerRef.read(orderFormProvider.notifier).setSelectedCustomer(null);
+                        },
                       ),
                     ],
                   ),
@@ -355,9 +349,11 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
             const Divider(),
             
             Expanded(
-              child: ValueListenableBuilder<List<Map<String, dynamic>>>(
-                valueListenable: _cartItems,
-                builder: (context, items, _) {
+              child: Consumer(
+                builder: (context, consumerRef, _) {
+                  final formState = consumerRef.watch(orderFormProvider);
+                  final items = formState.cartItems;
+
                   if (items.isEmpty) {
                     return const Center(
                       child: Column(
@@ -472,36 +468,43 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
         padding: const EdgeInsets.all(AppSizes.spacing16),
         child: Column(
           children: [
-            Row(
-              children: [
-                const Text(
-                  'Método de pago:',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(width: AppSizes.spacing8),
-                Expanded(
-                  child: ValueListenableBuilder<String>(
-                    valueListenable: _paymentMethod,
-                    builder: (context, paymentMethod, _) => DropdownButton<String>(
-                      value: paymentMethod,
-                      isExpanded: true,
-                      items: const [
-                        DropdownMenuItem(value: 'efectivo', child: Text('Efectivo')),
-                        DropdownMenuItem(value: 'tarjeta', child: Text('Tarjeta')),
-                        DropdownMenuItem(value: 'transferencia', child: Text('Transferencia')),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) _paymentMethod.value = value;
-                      },
+            Consumer(
+              builder: (context, consumerRef, _) {
+                final formState = consumerRef.watch(orderFormProvider);
+                final paymentMethod = formState.paymentMethod;
+
+                return Row(
+                  children: [
+                    const Text(
+                      'Método de pago:',
+                      style: TextStyle(fontWeight: FontWeight.w500),
                     ),
-                  ),
-                ),
-              ],
+                    const SizedBox(width: AppSizes.spacing8),
+                    Expanded(
+                      child: DropdownButton<String>(
+                        value: paymentMethod,
+                        isExpanded: true,
+                        items: const [
+                          DropdownMenuItem(value: 'efectivo', child: Text('Efectivo')),
+                          DropdownMenuItem(value: 'tarjeta', child: Text('Tarjeta')),
+                          DropdownMenuItem(value: 'transferencia', child: Text('Transferencia')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            consumerRef.read(orderFormProvider.notifier).setPaymentMethod(value);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
             const Divider(),
-            ValueListenableBuilder<List<Map<String, dynamic>>>(
-              valueListenable: _cartItems,
-              builder: (context, items, _) {
+            Consumer(
+              builder: (context, consumerRef, _) {
+                final formState = consumerRef.watch(orderFormProvider);
+                final items = formState.cartItems;
                 final subtotal = _calculateSubtotal();
                 final total = subtotal;
 
@@ -540,44 +543,42 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
               },
             ),
             const SizedBox(height: AppSizes.spacing16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => context.go('/orders'),
-                    child: const Text('Cancelar'),
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spacing8),
-                Expanded(
-                  child: ValueListenableBuilder<List<Map<String, dynamic>>>(
-                    valueListenable: _cartItems,
-                    builder: (context, items, _) {
-                      return ValueListenableBuilder<bool>(
-                        valueListenable: _isCreatingOrder,
-                        builder: (context, isCreating, _) {
-                          return ElevatedButton(
-                            onPressed: (items.isEmpty || isCreating) ? null : _createOrder,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).primaryColor,
-                            ),
-                            child: isCreating
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
-                                : const Text('Crear Orden'),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
+            Consumer(
+              builder: (context, consumerRef, _) {
+                final formState = consumerRef.watch(orderFormProvider);
+                final items = formState.cartItems;
+                final isCreating = formState.isCreatingOrder;
+
+                return Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => context.go('/orders'),
+                        child: const Text('Cancelar'),
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.spacing8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: (items.isEmpty || isCreating) ? null : _createOrder,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                        ),
+                        child: isCreating
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text('Crear Orden'),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -586,10 +587,11 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
   }
 
   void _searchProducts(String query) {
-    _hasSearchText.value = query.trim().isNotEmpty;
+    final formNotifier = ref.read(orderFormProvider.notifier);
+    formNotifier.setSearchQuery(query);
     
     if (query.trim().isEmpty) {
-      _filteredProducts.value = [];
+      formNotifier.setFilteredProducts([]);
       return;
     }
 
@@ -597,13 +599,15 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
     final productState = ref.read(productProvider);
     final products = productState.products;
     
-    _filteredProducts.value = products
+    final filtered = products
         .where((product) {
           final name = (product['name'] as String).toLowerCase();
           final description = (product['description'] as String? ?? '').toLowerCase();
           return name.contains(lowerQuery) || description.contains(lowerQuery);
         })
         .toList();
+    
+    formNotifier.setFilteredProducts(filtered);
   }
 
   String _formatCurrency(num value) {
@@ -612,10 +616,14 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
   }
 
   void _addToCart(Map<String, dynamic> product) {
+    final formNotifier = ref.read(orderFormProvider.notifier);
+    final formState = ref.read(orderFormProvider);
+    final currentItems = formState.cartItems;
+    
     // Verificar si el producto ya está en el carrito
-    final currentItems = _cartItems.value;
+    final productId = product['_id'] ?? product['id'];
     final existingIndex = currentItems.indexWhere(
-      (item) => item['_id'] == product['_id'],
+      (item) => (item['_id'] ?? item['id']) == productId,
     );
 
     if (existingIndex >= 0) {
@@ -626,15 +634,16 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
       final price = (product['salePrice'] ?? product['price'] ?? 0) as num;
       final stock = (product['stock'] ?? 0) as int;
       
-      final newItems = [...currentItems];
-      newItems.add({
+      // Crear item para el carrito con ambas claves para compatibilidad
+      final cartItem = {
         '_id': product['_id'],
+        'id': product['_id'],
         'name': product['name'],
         'price': price.toDouble(),
-        'quantity': 1,
         'stock': stock,
-      });
-      _cartItems.value = newItems;
+      };
+      
+      formNotifier.addToCart(cartItem);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -646,15 +655,15 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
   }
 
   void _increaseQuantity(int index) {
-    final items = _cartItems.value;
+    final formState = ref.read(orderFormProvider);
+    final items = formState.cartItems;
     final item = items[index];
     final currentQuantity = item['quantity'] as int;
     final stock = item['stock'] as int;
 
     if (currentQuantity < stock) {
-      final newItems = [...items];
-      newItems[index] = {...item, 'quantity': currentQuantity + 1};
-      _cartItems.value = newItems;
+      final formNotifier = ref.read(orderFormProvider.notifier);
+      formNotifier.updateQuantity(item['_id'] as String, currentQuantity + 1);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -666,34 +675,35 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
   }
 
   void _decreaseQuantity(int index) {
-    final items = _cartItems.value;
+    final formState = ref.read(orderFormProvider);
+    final items = formState.cartItems;
     final item = items[index];
     final currentQuantity = item['quantity'] as int;
 
     if (currentQuantity > 1) {
-      final newItems = [...items];
-      newItems[index] = {...item, 'quantity': currentQuantity - 1};
-      _cartItems.value = newItems;
+      final formNotifier = ref.read(orderFormProvider.notifier);
+      formNotifier.updateQuantity(item['_id'] as String, currentQuantity - 1);
     } else {
       _removeFromCart(index);
     }
   }
 
   void _removeFromCart(int index) {
-    final items = _cartItems.value;
-    final newItems = [...items];
-    newItems.removeAt(index);
-    _cartItems.value = newItems;
+    final formState = ref.read(orderFormProvider);
+    final items = formState.cartItems;
+    final item = items[index];
+    
+    final formNotifier = ref.read(orderFormProvider.notifier);
+    formNotifier.removeFromCart(item['_id'] as String);
   }
 
   void _clearCart() {
-    _cartItems.value = [];
-    _selectedCustomer.value = null;
-    _paymentMethod.value = 'efectivo';
+    ref.read(orderFormProvider.notifier).clearCart();
   }
 
   double _calculateSubtotal() {
-    return _cartItems.value.fold(0.0, (sum, item) {
+    final formState = ref.read(orderFormProvider);
+    return formState.cartItems.fold(0.0, (sum, item) {
       return sum + ((item['price'] as num) * (item['quantity'] as int));
     });
   }
@@ -788,7 +798,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                             customer['phone'] as String? ?? 'Sin teléfono',
                           ),
                           onTap: () {
-                            _selectedCustomer.value = customer;
+                            ref.read(orderFormProvider.notifier).setSelectedCustomer(customer);
                             Navigator.of(dialogContext).pop();
                           },
                         );
@@ -805,7 +815,10 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
   }
 
   Future<void> _createOrder() async {
-    if (_cartItems.value.isEmpty) {
+    final formState = ref.read(orderFormProvider);
+    final cartItems = formState.cartItems;
+    
+    if (cartItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Agrega productos antes de crear la orden'),
@@ -815,11 +828,12 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
       return;
     }
 
-    _isCreatingOrder.value = true;
+    final formNotifier = ref.read(orderFormProvider.notifier);
+    formNotifier.setIsCreatingOrder(true);
 
     try {
       // Preparar los items de la orden
-      final items = _cartItems.value.map((item) {
+      final items = cartItems.map((item) {
         return {
           'productId': item['_id'],
           'quantity': item['quantity'],
@@ -840,8 +854,8 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
       final success = await orderNotifier.createOrder(
         storeId: currentStoreId,
         items: items,
-        paymentMethod: _paymentMethod.value,
-        customerId: _selectedCustomer.value?['_id'] as String?,
+        paymentMethod: formState.paymentMethod,
+        customerId: formState.selectedCustomer?['_id'] as String?,
       );
 
       // Verificar que el widget todavía está montado antes de actualizar UI
@@ -882,7 +896,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
         ),
       );
     } finally {
-      _isCreatingOrder.value = false;
+      formNotifier.setIsCreatingOrder(false);
     }
   }
 }

@@ -72,8 +72,9 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
 
   /// Agregar producto al carrito
   void addToCart(Map<String, dynamic> product) {
+    final productId = product['id'] ?? product['_id'] ?? '';
     final existingIndex = state.cartItems.indexWhere(
-      (item) => item['id'] == product['id'],
+      (item) => (item['id'] ?? item['_id']) == productId,
     );
 
     List<Map<String, dynamic>> updatedCart = [...state.cartItems];
@@ -95,7 +96,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   void removeFromCart(String productId) {
     state = state.copyWith(
       cartItems: state.cartItems
-          .where((item) => item['id'] != productId)
+          .where((item) => (item['id'] ?? item['_id']) != productId)
           .toList(),
     );
   }
@@ -109,7 +110,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
 
     state = state.copyWith(
       cartItems: state.cartItems.map((item) {
-        if (item['id'] == productId) {
+        if ((item['id'] ?? item['_id']) == productId) {
           return {...item, 'quantity': quantity};
         }
         return item;
