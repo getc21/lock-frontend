@@ -27,12 +27,25 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasInitialized && mounted) {
         _hasInitialized = true;
+        
+        // PARALLEL LOADING: Load customers and orders simultaneously
+        // Both are needed for displaying customer stats and order history
+        final futures = <Future>[];
+        
         final customerState = ref.read(customerProvider);
         if (customerState.customers.isEmpty) {
-          ref.read(customerProvider.notifier).loadCustomersForCurrentStore();
+          futures.add(ref.read(customerProvider.notifier).loadCustomersForCurrentStore());
         }
-        // Cargar órdenes para poder calcular estadísticas del cliente
-        ref.read(orderProvider.notifier).loadOrdersForCurrentStore();
+        
+        final orderState = ref.read(orderProvider);
+        if (orderState.orders.isEmpty) {
+          futures.add(ref.read(orderProvider.notifier).loadOrdersForCurrentStore());
+        }
+        
+        // Execute both in parallel
+        if (futures.isNotEmpty) {
+          Future.wait(futures);
+        }
       }
     });
   }
