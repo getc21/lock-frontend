@@ -379,7 +379,9 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                         return;
                       }
 
-                      isLoading.value = true;
+                      if (dialogContext.mounted) {
+                        isLoading.value = true;
+                      }
 
                       try {
                         bool success;
@@ -436,7 +438,9 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                           }
                         }
                       } finally {
-                        isLoading.value = false;
+                        if (dialogContext.mounted) {
+                          isLoading.value = false;
+                        }
                       }
                     },
               style: ElevatedButton.styleFrom(
@@ -802,28 +806,32 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
               onPressed: loading
                   ? null
                   : () async {
-                      isLoading.value = true;
+                if (dialogContext.mounted) {
+                  isLoading.value = true;
+                }
 
-                      try {
-                        final success = await ref
-                            .read(customerProvider.notifier)
-                            .deleteCustomer(customer['_id']);
+                try {
+                  final success = await ref
+                      .read(customerProvider.notifier)
+                      .deleteCustomer(customer['_id']);
 
-                        if (success && dialogContext.mounted) {
-                          Navigator.of(dialogContext).pop();
-                          
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('$customerName eliminado correctamente'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        }
-                      } finally {
-                        isLoading.value = false;
-                      }
+                  if (success && dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                    
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('$customerName eliminado correctamente'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  }
+                } finally {
+                  if (dialogContext.mounted) {
+                    isLoading.value = false;
+                  }
+                }
                     },
               child: loading
                   ? const SizedBox(

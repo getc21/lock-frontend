@@ -388,7 +388,9 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                           return;
                         }
 
-                        isLoading.value = true;
+                        if (context.mounted) {
+                          isLoading.value = true;
+                        }
 
                         try {
                           bool success;
@@ -417,7 +419,9 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                             Navigator.of(context).pop();
                           }
                         } finally {
-                          isLoading.value = false;
+                          if (context.mounted) {
+                            isLoading.value = false;
+                          }
                         }
                       },
                 style: ElevatedButton.styleFrom(
@@ -465,18 +469,22 @@ class _UsersPageState extends ConsumerState<UsersPage> {
               onPressed: loading
                   ? null
                   : () async {
-                      isLoading.value = true;
+                if (context.mounted) {
+                  isLoading.value = true;
+                }
 
-                      try {
-                        final success = await ref.read(userProvider.notifier).deleteUser(userId);
+                try {
+                  final success = await ref.read(userProvider.notifier).deleteUser(userId);
 
-                        if (success && context.mounted) {
-                          Navigator.of(context).pop();
-                        }
-                      } finally {
-                        isLoading.value = false;
-                      }
-                    },
+                  if (success && context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                } finally {
+                  if (context.mounted) {
+                    isLoading.value = false;
+                  }
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
                 foregroundColor: Colors.white,
@@ -564,7 +572,9 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                           return;
                         }
 
-                        isLoading.value = true;
+                        if (context.mounted) {
+                          isLoading.value = true;
+                        }
 
                         try {
                           final success = await ref.read(userProvider.notifier).assignStoreToUser(
@@ -576,7 +586,9 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                             Navigator.of(context).pop();
                           }
                         } finally {
-                          isLoading.value = false;
+                          if (context.mounted) {
+                            isLoading.value = false;
+                          }
                         }
                       },
                 style: ElevatedButton.styleFrom(

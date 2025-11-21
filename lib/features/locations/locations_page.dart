@@ -215,7 +215,9 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
                   return;
                 }
 
-                isLoading.value = true;
+                if (context.mounted) {
+                  isLoading.value = true;
+                }
                 try {
                   bool success;
                   if (isEditing) {
@@ -235,7 +237,9 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
                     Navigator.pop(context);
                   }
                 } finally {
-                  isLoading.value = false;
+                  if (context.mounted) {
+                    isLoading.value = false;
+                  }
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -278,14 +282,18 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
             valueListenable: isDeleting,
             builder: (context, deleting, _) => ElevatedButton(
               onPressed: deleting ? null : () async {
-                isDeleting.value = true;
+                if (context.mounted) {
+                  isDeleting.value = true;
+                }
                 try {
                   final success = await ref.read(locationProvider.notifier).deleteLocation(locationId);
                   if (success && context.mounted) {
                     Navigator.pop(context);
                   }
                 } finally {
-                  isDeleting.value = false;
+                  if (context.mounted) {
+                    isDeleting.value = false;
+                  }
                 }
               },
               style: ElevatedButton.styleFrom(
