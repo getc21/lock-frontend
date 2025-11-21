@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../location_provider.dart' as location_api;
 import 'auth_notifier.dart';
 import 'store_notifier.dart';
+import '../../services/cache_service.dart';
 
 class LocationState {
   final List<Map<String, dynamic>> locations;
@@ -29,22 +30,36 @@ class LocationState {
 
 class LocationNotifier extends StateNotifier<LocationState> {
   final Ref ref;
+  final CacheService _cache = CacheService();
 
   LocationNotifier(this.ref) : super(LocationState());
 
   late location_api.LocationProvider _locationProvider;
+
+  String _getCacheKey(String storeId) => 'locations:$storeId';
 
   void _initLocationProvider() {
     final authState = ref.read(authProvider);
     _locationProvider = location_api.LocationProvider(authState.token);
   }
 
-  Future<void> loadLocations({String? storeId}) async {
+  Future<void> loadLocations({String? storeId, bool forceRefresh = false}) async {
     _initLocationProvider();
     state = state.copyWith(isLoading: true, errorMessage: '');
 
     try {
       final effectiveStoreId = storeId ?? ref.read(storeProvider).currentStore?['_id'];
+
+      final cacheKey = _getCacheKey(effectiveStoreId ?? '');
+
+      // Intentar obtener del caché si no es forzado
+      if (!forceRefresh && effectiveStoreId != null) {
+        final cachedLocations = _cache.get<List<Map<String, dynamic>>>(cacheKey);
+        if (cachedLocations != null) {
+          state = state.copyWith(locations: cachedLocations, isLoading: false);
+          return;
+        }
+      }
 
       final result = await _locationProvider.getLocations(
         storeId: effectiveStoreId,
@@ -52,6 +67,13 @@ class LocationNotifier extends StateNotifier<LocationState> {
 
       if (result['success']) {
         final locations = List<Map<String, dynamic>>.from(result['data'] ?? []);
+        if (effectiveStoreId != null) {
+          _cache.set(
+            cacheKey,
+            locations,
+            ttl: const Duration(minutes: 10),
+          );
+        }
         state = state.copyWith(locations: locations);
       } else {
         state = state.copyWith(
@@ -67,12 +89,12 @@ class LocationNotifier extends StateNotifier<LocationState> {
     state = state.copyWith(isLoading: false);
   }
 
-  Future<void> loadLocationsForCurrentStore() async {
+  Future<void> loadLocationsForCurrentStore({bool forceRefresh = false}) async {
     _initLocationProvider();
     final storeState = ref.read(storeProvider);
 
     if (storeState.currentStore != null) {
-      await loadLocations(storeId: storeState.currentStore!['_id']);
+      await loadLocations(storeId: storeState.currentStore!['_id'], forceRefresh: forceRefresh);
     } else {
       state = state.copyWith(locations: []);
     }
@@ -124,7 +146,8 @@ class LocationNotifier extends StateNotifier<LocationState> {
       );
 
       if (result['success']) {
-        await loadLocationsForCurrentStore();
+        _cache.invalidatePattern('locations:');
+        await loadLocationsForCurrentStore(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
@@ -159,7 +182,8 @@ class LocationNotifier extends StateNotifier<LocationState> {
       );
 
       if (result['success']) {
-        await loadLocationsForCurrentStore();
+        _cache.invalidatePattern('locations:');
+        await loadLocationsForCurrentStore(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
@@ -186,10 +210,9 @@ class LocationNotifier extends StateNotifier<LocationState> {
       final result = await _locationProvider.deleteLocation(id);
 
       if (result['success']) {
-        state = state.copyWith(
-          locations: state.locations.where((l) => l['_id'] != id).toList(),
-          isLoading: false,
-        );
+        _cache.invalidatePattern('locations:');
+        await loadLocationsForCurrentStore(forceRefresh: true);
+        state = state.copyWith(isLoading: false);
         return true;
       } else {
         state = state.copyWith(

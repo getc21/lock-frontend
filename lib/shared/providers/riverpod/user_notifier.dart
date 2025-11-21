@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../user_provider.dart' as user_api;
+import '../../services/cache_service.dart';
 
 class UserState {
   final List<Map<String, dynamic>> users;
@@ -27,24 +28,43 @@ class UserState {
 
 class UserNotifier extends StateNotifier<UserState> {
   final Ref ref;
+  final CacheService _cache = CacheService();
 
   UserNotifier(this.ref) : super(UserState());
 
   late user_api.UserProvider _userProvider;
 
+  String _getCacheKey() => 'users:all';
+
   void _initUserProvider() {
     _userProvider = user_api.UserProvider();
   }
 
-  Future<void> loadUsers() async {
+  Future<void> loadUsers({bool forceRefresh = false}) async {
     _initUserProvider();
     state = state.copyWith(isLoading: true, errorMessage: '');
 
     try {
+      final cacheKey = _getCacheKey();
+
+      // Intentar obtener del caché si no es forzado
+      if (!forceRefresh) {
+        final cachedUsers = _cache.get<List<Map<String, dynamic>>>(cacheKey);
+        if (cachedUsers != null) {
+          state = state.copyWith(users: cachedUsers, isLoading: false);
+          return;
+        }
+      }
+
       final result = await _userProvider.getUsers();
 
       if (result['success']) {
         final users = List<Map<String, dynamic>>.from(result['data'] ?? []);
+        _cache.set(
+          cacheKey,
+          users,
+          ttl: const Duration(minutes: 5),
+        );
         state = state.copyWith(users: users);
       } else {
         state = state.copyWith(
@@ -104,7 +124,8 @@ class UserNotifier extends StateNotifier<UserState> {
       );
 
       if (result['success']) {
-        await loadUsers();
+        _cache.invalidatePattern('users:');
+        await loadUsers(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
@@ -147,7 +168,8 @@ class UserNotifier extends StateNotifier<UserState> {
       );
 
       if (result['success']) {
-        await loadUsers();
+        _cache.invalidatePattern('users:');
+        await loadUsers(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
@@ -174,10 +196,9 @@ class UserNotifier extends StateNotifier<UserState> {
       final result = await _userProvider.deleteUser(id);
 
       if (result['success']) {
-        state = state.copyWith(
-          users: state.users.where((u) => u['_id'] != id).toList(),
-          isLoading: false,
-        );
+        _cache.invalidatePattern('users:');
+        await loadUsers(forceRefresh: true);
+        state = state.copyWith(isLoading: false);
         return true;
       } else {
         state = state.copyWith(
@@ -203,7 +224,8 @@ class UserNotifier extends StateNotifier<UserState> {
       final result = await _userProvider.assignStoreToUser(userId, storeId);
 
       if (result['success']) {
-        await loadUsers();
+        _cache.invalidatePattern('users:');
+        await loadUsers(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {

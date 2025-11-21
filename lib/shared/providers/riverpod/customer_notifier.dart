@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../customer_provider.dart' as customer_api;
 import 'auth_notifier.dart';
 import 'store_notifier.dart';
+import '../../services/cache_service.dart';
 
 class CustomerState {
   final List<Map<String, dynamic>> customers;
@@ -29,17 +30,20 @@ class CustomerState {
 
 class CustomerNotifier extends StateNotifier<CustomerState> {
   final Ref ref;
+  final CacheService _cache = CacheService();
 
   CustomerNotifier(this.ref) : super(CustomerState());
 
   late customer_api.CustomerProvider _customerProvider;
+
+  String _getCacheKey(String storeId) => 'customers:$storeId';
 
   void _initCustomerProvider() {
     final authState = ref.read(authProvider);
     _customerProvider = customer_api.CustomerProvider(authState.token);
   }
 
-  Future<void> loadCustomers({String? storeId}) async {
+  Future<void> loadCustomers({String? storeId, bool forceRefresh = false}) async {
     _initCustomerProvider();
     state = state.copyWith(isLoading: true, errorMessage: '');
 
@@ -51,12 +55,28 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
         return;
       }
 
+      final cacheKey = _getCacheKey(effectiveStoreId);
+
+      // Intentar obtener del caché si no es forzado
+      if (!forceRefresh) {
+        final cachedCustomers = _cache.get<List<Map<String, dynamic>>>(cacheKey);
+        if (cachedCustomers != null) {
+          state = state.copyWith(customers: cachedCustomers, isLoading: false);
+          return;
+        }
+      }
+
       final result = await _customerProvider.getCustomers(
         storeId: effectiveStoreId,
       );
 
       if (result['success']) {
         final customers = List<Map<String, dynamic>>.from(result['data'] ?? []);
+        _cache.set(
+          cacheKey,
+          customers,
+          ttl: const Duration(minutes: 10),
+        );
         state = state.copyWith(customers: customers);
       } else {
         state = state.copyWith(
@@ -72,12 +92,12 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
     state = state.copyWith(isLoading: false);
   }
 
-  Future<void> loadCustomersForCurrentStore() async {
+  Future<void> loadCustomersForCurrentStore({bool forceRefresh = false}) async {
     _initCustomerProvider();
     final storeState = ref.read(storeProvider);
 
     if (storeState.currentStore != null) {
-      await loadCustomers(storeId: storeState.currentStore!['_id']);
+      await loadCustomers(storeId: storeState.currentStore!['_id'], forceRefresh: forceRefresh);
     } else {
       state = state.copyWith(customers: []);
     }
@@ -113,7 +133,8 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       );
 
       if (result['success']) {
-        await loadCustomersForCurrentStore();
+        _cache.invalidatePattern('customers:');
+        await loadCustomersForCurrentStore(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
@@ -154,7 +175,8 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       );
 
       if (result['success']) {
-        await loadCustomersForCurrentStore();
+        _cache.invalidatePattern('customers:');
+        await loadCustomersForCurrentStore(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
@@ -181,10 +203,9 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       final result = await _customerProvider.deleteCustomer(id);
 
       if (result['success']) {
-        state = state.copyWith(
-          customers: state.customers.where((c) => c['_id'] != id).toList(),
-          isLoading: false,
-        );
+        _cache.invalidatePattern('customers:');
+        await loadCustomersForCurrentStore(forceRefresh: true);
+        state = state.copyWith(isLoading: false);
         return true;
       } else {
         state = state.copyWith(

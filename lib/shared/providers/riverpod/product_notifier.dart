@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../product_provider.dart' as product_api;
 import 'auth_notifier.dart';
 import 'store_notifier.dart';
+import '../../services/cache_service.dart';
 
 // Estado de productos
 class ProductState {
@@ -32,6 +33,7 @@ class ProductState {
 // Notifier para productos
 class ProductNotifier extends StateNotifier<ProductState> {
   final Ref ref;
+  final CacheService _cache = CacheService();
 
   ProductNotifier(this.ref) : super(ProductState());
 
@@ -42,17 +44,20 @@ class ProductNotifier extends StateNotifier<ProductState> {
     _productProvider = product_api.ProductProvider(authState.token);
   }
 
-  // Cargar productos
+  String _getCacheKey(String storeId, {String? categoryId, String? supplierId, String? locationId, bool? lowStock}) {
+    return 'products:$storeId:$categoryId:$supplierId:$locationId:$lowStock';
+  }
+
+  // Cargar productos con caché
   Future<void> loadProducts({
     String? storeId,
     String? categoryId,
     String? supplierId,
     String? locationId,
     bool? lowStock,
+    bool forceRefresh = false,
   }) async {
     _initProductProvider();
-
-    state = state.copyWith(isLoading: true, errorMessage: '');
 
     try {
       final effectiveStoreId = storeId ?? ref.read(storeProvider).currentStore?['_id'];
@@ -67,6 +72,27 @@ class ProductNotifier extends StateNotifier<ProductState> {
         print('effectiveStoreId: $effectiveStoreId');
       }
 
+      final cacheKey = _getCacheKey(
+        effectiveStoreId,
+        categoryId: categoryId,
+        supplierId: supplierId,
+        locationId: locationId,
+        lowStock: lowStock,
+      );
+
+      // Intentar caché primero
+      if (!forceRefresh) {
+        final cached = _cache.get<List<Map<String, dynamic>>>(cacheKey);
+        if (cached != null) {
+          state = state.copyWith(products: cached, isLoading: false);
+          return;
+        }
+      }
+
+      if (!state.isLoading) {
+        state = state.copyWith(isLoading: true, errorMessage: '');
+      }
+
       final result = await _productProvider.getProducts(
         storeId: effectiveStoreId,
         categoryId: categoryId,
@@ -77,28 +103,29 @@ class ProductNotifier extends StateNotifier<ProductState> {
 
       if (result['success']) {
         final products = List<Map<String, dynamic>>.from(result['data']);
-        state = state.copyWith(products: products);
+        _cache.set(cacheKey, products, ttl: const Duration(minutes: 10));
+        state = state.copyWith(products: products, isLoading: false);
       } else {
         state = state.copyWith(
           errorMessage: result['message'] ?? 'Error cargando productos',
+          isLoading: false,
         );
       }
     } catch (e) {
       state = state.copyWith(
         errorMessage: 'Error de conexión: $e',
+        isLoading: false,
       );
     }
-    
-    state = state.copyWith(isLoading: false);
   }
 
   // Cargar productos de la tienda actual
-  Future<void> loadProductsForCurrentStore() async {
+  Future<void> loadProductsForCurrentStore({bool forceRefresh = false}) async {
     _initProductProvider();
     final storeState = ref.read(storeProvider);
 
     if (storeState.currentStore != null) {
-      await loadProducts(storeId: storeState.currentStore!['_id']);
+      await loadProducts(storeId: storeState.currentStore!['_id'], forceRefresh: forceRefresh);
     } else {
       state = state.copyWith(products: []);
     }
@@ -141,7 +168,8 @@ class ProductNotifier extends StateNotifier<ProductState> {
       );
 
       if (result['success']) {
-        await loadProducts(storeId: storeId);
+        _cache.invalidatePattern('products:$storeId');
+        await loadProducts(storeId: storeId, forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
@@ -195,7 +223,8 @@ class ProductNotifier extends StateNotifier<ProductState> {
       );
 
       if (result['success']) {
-        await loadProductsForCurrentStore();
+        _cache.invalidatePattern('products:');
+        await loadProductsForCurrentStore(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
@@ -223,10 +252,9 @@ class ProductNotifier extends StateNotifier<ProductState> {
       final result = await _productProvider.deleteProduct(id);
 
       if (result['success']) {
-        state = state.copyWith(
-          products: state.products.where((p) => p['_id'] != id).toList(),
-          isLoading: false,
-        );
+        _cache.invalidatePattern('products:');
+        await loadProductsForCurrentStore(forceRefresh: true);
+        state = state.copyWith(isLoading: false);
         return true;
       } else {
         state = state.copyWith(
@@ -259,13 +287,14 @@ class ProductNotifier extends StateNotifier<ProductState> {
       );
 
       if (result['success']) {
-        await loadProductsForCurrentStore();
+        _cache.invalidatePattern('products:');
+        await loadProductsForCurrentStore(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: result['message'] ?? 'Error ajustando stock',
+          errorMessage: result['message'] ?? 'Error eliminando producto',
         );
         return false;
       }

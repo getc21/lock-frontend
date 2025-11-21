@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../discount_provider.dart' as discount_api;
 import 'auth_notifier.dart';
 import 'store_notifier.dart';
+import '../../services/cache_service.dart';
 
 class DiscountState {
   final List<Map<String, dynamic>> discounts;
@@ -29,22 +30,36 @@ class DiscountState {
 
 class DiscountNotifier extends StateNotifier<DiscountState> {
   final Ref ref;
+  final CacheService _cache = CacheService();
 
   DiscountNotifier(this.ref) : super(DiscountState());
 
   late discount_api.DiscountProvider _discountProvider;
+
+  String _getCacheKey(String storeId) => 'discounts:$storeId';
 
   void _initDiscountProvider() {
     final authState = ref.read(authProvider);
     _discountProvider = discount_api.DiscountProvider(authState.token);
   }
 
-  Future<void> loadDiscounts({String? storeId}) async {
+  Future<void> loadDiscounts({String? storeId, bool forceRefresh = false}) async {
     _initDiscountProvider();
     state = state.copyWith(isLoading: true, errorMessage: '');
 
     try {
       final effectiveStoreId = storeId ?? ref.read(storeProvider).currentStore?['_id'];
+
+      final cacheKey = _getCacheKey(effectiveStoreId ?? '');
+
+      // Intentar obtener del caché si no es forzado
+      if (!forceRefresh && effectiveStoreId != null) {
+        final cachedDiscounts = _cache.get<List<Map<String, dynamic>>>(cacheKey);
+        if (cachedDiscounts != null) {
+          state = state.copyWith(discounts: cachedDiscounts, isLoading: false);
+          return;
+        }
+      }
 
       final result = await _discountProvider.getDiscounts(
         storeId: effectiveStoreId,
@@ -52,6 +67,13 @@ class DiscountNotifier extends StateNotifier<DiscountState> {
 
       if (result['success']) {
         final discounts = List<Map<String, dynamic>>.from(result['data'] ?? []);
+        if (effectiveStoreId != null) {
+          _cache.set(
+            cacheKey,
+            discounts,
+            ttl: const Duration(minutes: 10),
+          );
+        }
         state = state.copyWith(discounts: discounts);
       } else {
         state = state.copyWith(
@@ -67,12 +89,12 @@ class DiscountNotifier extends StateNotifier<DiscountState> {
     state = state.copyWith(isLoading: false);
   }
 
-  Future<void> loadDiscountsForCurrentStore() async {
+  Future<void> loadDiscountsForCurrentStore({bool forceRefresh = false}) async {
     _initDiscountProvider();
     final storeState = ref.read(storeProvider);
 
     if (storeState.currentStore != null) {
-      await loadDiscounts(storeId: storeState.currentStore!['_id']);
+      await loadDiscounts(storeId: storeState.currentStore!['_id'], forceRefresh: forceRefresh);
     } else {
       state = state.copyWith(discounts: []);
     }
@@ -138,7 +160,8 @@ class DiscountNotifier extends StateNotifier<DiscountState> {
       );
 
       if (result['success']) {
-        await loadDiscountsForCurrentStore();
+        _cache.invalidatePattern('discounts:');
+        await loadDiscountsForCurrentStore(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
@@ -187,7 +210,8 @@ class DiscountNotifier extends StateNotifier<DiscountState> {
       );
 
       if (result['success']) {
-        await loadDiscountsForCurrentStore();
+        _cache.invalidatePattern('discounts:');
+        await loadDiscountsForCurrentStore(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
@@ -214,10 +238,9 @@ class DiscountNotifier extends StateNotifier<DiscountState> {
       final result = await _discountProvider.deleteDiscount(id);
 
       if (result['success']) {
-        state = state.copyWith(
-          discounts: state.discounts.where((d) => d['_id'] != id).toList(),
-          isLoading: false,
-        );
+        _cache.invalidatePattern('discounts:');
+        await loadDiscountsForCurrentStore(forceRefresh: true);
+        state = state.copyWith(isLoading: false);
         return true;
       } else {
         state = state.copyWith(

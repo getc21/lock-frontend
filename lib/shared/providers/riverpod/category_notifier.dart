@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../category_provider.dart' as category_api;
 import 'auth_notifier.dart';
+import '../../services/cache_service.dart';
 
 class CategoryState {
   final List<Map<String, dynamic>> categories;
@@ -28,25 +29,44 @@ class CategoryState {
 
 class CategoryNotifier extends StateNotifier<CategoryState> {
   final Ref ref;
+  final CacheService _cache = CacheService();
 
   CategoryNotifier(this.ref) : super(CategoryState());
 
   late category_api.CategoryProvider _categoryProvider;
+
+  String _getCacheKey() => 'categories:all';
 
   void _initCategoryProvider() {
     final authState = ref.read(authProvider);
     _categoryProvider = category_api.CategoryProvider(authState.token);
   }
 
-  Future<void> loadCategories() async {
+  Future<void> loadCategories({bool forceRefresh = false}) async {
     _initCategoryProvider();
     state = state.copyWith(isLoading: true, errorMessage: '');
 
     try {
+      final cacheKey = _getCacheKey();
+
+      // Intentar obtener del caché si no es forzado
+      if (!forceRefresh) {
+        final cachedCategories = _cache.get<List<Map<String, dynamic>>>(cacheKey);
+        if (cachedCategories != null) {
+          state = state.copyWith(categories: cachedCategories, isLoading: false);
+          return;
+        }
+      }
+
       final result = await _categoryProvider.getCategories();
 
       if (result['success']) {
         final categories = List<Map<String, dynamic>>.from(result['data'] ?? []);
+        _cache.set(
+          cacheKey,
+          categories,
+          ttl: const Duration(minutes: 15),
+        );
         state = state.copyWith(categories: categories);
       } else {
         state = state.copyWith(
@@ -102,7 +122,8 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
       );
 
       if (result['success']) {
-        await loadCategories();
+        _cache.invalidatePattern('categories:');
+        await loadCategories(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
@@ -141,7 +162,8 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
       );
 
       if (result['success']) {
-        await loadCategories();
+        _cache.invalidatePattern('categories:');
+        await loadCategories(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
       } else {
@@ -168,10 +190,9 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
       final result = await _categoryProvider.deleteCategory(id);
 
       if (result['success']) {
-        state = state.copyWith(
-          categories: state.categories.where((c) => c['_id'] != id).toList(),
-          isLoading: false,
-        );
+        _cache.invalidatePattern('categories:');
+        await loadCategories(forceRefresh: true);
+        state = state.copyWith(isLoading: false);
         return true;
       } else {
         state = state.copyWith(
