@@ -5,13 +5,16 @@ import '../../features/auth/login_page.dart';
 import '../../features/dashboard/dashboard_page.dart';
 import '../../features/orders/orders_page.dart';
 import '../../features/orders/create_order_page.dart';
+import '../../features/orders/order_detail_page.dart';
 import '../../features/products/products_page.dart';
+import '../../features/products/product_detail_page.dart';
 import '../../features/reports/reports_page.dart';
 import '../../features/categories/categories_page.dart';
 import '../../features/locations/locations_page.dart';
 import '../../features/users/users_page.dart';
 import '../../features/suppliers/suppliers_page.dart';
 import '../../features/customers/customers_page.dart';
+import '../../features/customers/customer_detail_page.dart';
 import '../../features/stores/stores_page.dart';
 import '../../features/settings/theme_settings_page.dart';
 import '../../shared/providers/riverpod/auth_notifier.dart';
@@ -101,6 +104,17 @@ class AppRouter {
               transitionType: RouteTransitionType.fade,
             ),
           ),
+          GoRoute(
+            path: ':orderId',
+            name: 'orderDetail',
+            pageBuilder: (context, state) => _buildPage(
+              child: OrderDetailPage(
+                orderId: state.pathParameters['orderId'] ?? '',
+              ),
+              state: state,
+              transitionType: RouteTransitionType.fade,
+            ),
+          ),
         ],
       ),
 
@@ -113,6 +127,19 @@ class AppRouter {
           state: state,
           transitionType: RouteTransitionType.fade,
         ),
+        routes: [
+          GoRoute(
+            path: ':productId',
+            name: 'productDetail',
+            pageBuilder: (context, state) => _buildPage(
+              child: ProductDetailPage(
+                productId: state.pathParameters['productId'] ?? '',
+              ),
+              state: state,
+              transitionType: RouteTransitionType.fade,
+            ),
+          ),
+        ],
       ),
 
       // Ruta de clientes
@@ -124,6 +151,19 @@ class AppRouter {
           state: state,
           transitionType: RouteTransitionType.fade,
         ),
+        routes: [
+          GoRoute(
+            path: ':customerId',
+            name: 'customerDetail',
+            pageBuilder: (context, state) => _buildPage(
+              child: CustomerDetailPage(
+                customerId: state.pathParameters['customerId'] ?? '',
+              ),
+              state: state,
+              transitionType: RouteTransitionType.fade,
+            ),
+          ),
+        ],
       ),
 
       // Ruta de reportes

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:data_table_2/data_table_2.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
@@ -168,6 +169,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       final isVIP = points >= 100;
       final fullName = customer['name']?.toString() ?? 'Sin nombre';
       return DataRow2(
+        onTap: () => context.go('/customers/${customer['_id']}'),
         cells: [
           DataCell(
             Row(

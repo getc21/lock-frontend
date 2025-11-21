@@ -203,6 +203,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
       final paymentMethod = order['paymentMethod']?.toString() ?? 'efectivo';
 
       return DataRow2(
+        onTap: () => context.go('/orders/${order['_id']}'),
         cells: [
           DataCell(Text(
             '#$shortId',
