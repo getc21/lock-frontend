@@ -78,7 +78,7 @@ class AppRouter {
         pageBuilder: (context, state) => _buildPage(
           child: const DashboardPage(),
           state: state,
-          transitionType: RouteTransitionType.slideLeft,
+          transitionType: RouteTransitionType.fade,
         ),
       ),
 
@@ -89,7 +89,7 @@ class AppRouter {
         pageBuilder: (context, state) => _buildPage(
           child: const OrdersPage(),
           state: state,
-          transitionType: RouteTransitionType.slideLeft,
+          transitionType: RouteTransitionType.fade,
         ),
         routes: [
           GoRoute(
@@ -98,7 +98,7 @@ class AppRouter {
             pageBuilder: (context, state) => _buildPage(
               child: const CreateOrderPage(),
               state: state,
-              transitionType: RouteTransitionType.slideUp,
+              transitionType: RouteTransitionType.fade,
             ),
           ),
         ],
@@ -111,7 +111,7 @@ class AppRouter {
         pageBuilder: (context, state) => _buildPage(
           child: const ProductsPage(),
           state: state,
-          transitionType: RouteTransitionType.slideLeft,
+          transitionType: RouteTransitionType.fade,
         ),
       ),
 
@@ -122,7 +122,7 @@ class AppRouter {
         pageBuilder: (context, state) => _buildPage(
           child: const CustomersPage(),
           state: state,
-          transitionType: RouteTransitionType.slideLeft,
+          transitionType: RouteTransitionType.fade,
         ),
       ),
 
@@ -133,7 +133,7 @@ class AppRouter {
         pageBuilder: (context, state) => _buildPage(
           child: const ReportsPage(),
           state: state,
-          transitionType: RouteTransitionType.slideLeft,
+          transitionType: RouteTransitionType.fade,
         ),
       ),
 
@@ -144,7 +144,7 @@ class AppRouter {
         pageBuilder: (context, state) => _buildPage(
           child: const CategoriesPage(),
           state: state,
-          transitionType: RouteTransitionType.slideLeft,
+          transitionType: RouteTransitionType.fade,
         ),
       ),
 
@@ -155,7 +155,7 @@ class AppRouter {
         pageBuilder: (context, state) => _buildPage(
           child: const LocationsPage(),
           state: state,
-          transitionType: RouteTransitionType.slideLeft,
+          transitionType: RouteTransitionType.fade,
         ),
       ),
 
@@ -166,7 +166,7 @@ class AppRouter {
         pageBuilder: (context, state) => _buildPage(
           child: const SuppliersPage(),
           state: state,
-          transitionType: RouteTransitionType.slideLeft,
+          transitionType: RouteTransitionType.fade,
         ),
       ),
 
@@ -177,7 +177,7 @@ class AppRouter {
         pageBuilder: (context, state) => _buildPage(
           child: const UsersPage(),
           state: state,
-          transitionType: RouteTransitionType.slideLeft,
+          transitionType: RouteTransitionType.fade,
         ),
       ),
 
@@ -188,7 +188,7 @@ class AppRouter {
         pageBuilder: (context, state) => _buildPage(
           child: const StoresPage(),
           state: state,
-          transitionType: RouteTransitionType.slideLeft,
+          transitionType: RouteTransitionType.fade,
         ),
       ),
 
@@ -199,7 +199,7 @@ class AppRouter {
         pageBuilder: (context, state) => _buildPage(
           child: const ThemeSettingsPage(),
           state: state,
-          transitionType: RouteTransitionType.slideUp,
+          transitionType: RouteTransitionType.fade,
         ),
       ),
 
