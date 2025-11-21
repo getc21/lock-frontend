@@ -5,7 +5,6 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../providers/riverpod/auth_notifier.dart';
 import '../providers/riverpod/store_notifier.dart';
-import '../providers/riverpod/theme_notifier.dart';
 
 // Provider para el estado de colapso del sidebar
 final dashboardCollapseProvider = StateProvider<bool>((ref) => false);
