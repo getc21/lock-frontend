@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/providers/riverpod/order_notifier.dart';
+import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/services/pdf_export_service.dart';
 import 'advanced_reports_page.dart';
 
@@ -35,6 +36,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         ref.read(orderProvider.notifier).loadOrders();
       }
     });
+  }
+
+  String _formatCurrency(num value) {
+    final currencyNotifier = ref.read(currencyProvider.notifier);
+    return '${currencyNotifier.symbol}${(value as double).toStringAsFixed(2)}';
   }
 
   void _setDateRangeFromPeriod() {
@@ -592,9 +598,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       mainAxisSpacing: AppSizes.spacing16,
       childAspectRatio: 1.5,
       children: [
-        _buildMetricCard('Ventas Totales', '\$${totalSales.toStringAsFixed(2)}', '', Icons.trending_up, Theme.of(context).primaryColor),
+        _buildMetricCard('Ventas Totales', _formatCurrency(totalSales), '', Icons.trending_up, Theme.of(context).primaryColor),
         _buildMetricCard('Total Órdenes', '$totalOrders', '', Icons.receipt_long, AppColors.info),
-        _buildMetricCard('Ticket Promedio', '\$${avgTicket.toStringAsFixed(2)}', '', Icons.attach_money, AppColors.success),
+        _buildMetricCard('Ticket Promedio', _formatCurrency(avgTicket), '', Icons.attach_money, AppColors.success),
         _buildMetricCard('Pagos en Efectivo', '$cashOrders', '', Icons.money, AppColors.warning),
         _buildMetricCard('Pagos por Transferencia', '$transferOrders', '', Icons.account_balance, AppColors.error),
       ],
@@ -859,7 +865,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                   final product = entry.value.value;
                   return _buildProductRow(
                     product['name'],
-                    '\$${product['totalSales'].toStringAsFixed(2)}',
+                    _formatCurrency(product['totalSales']),
                     index + 1,
                   );
                 }).toList(),

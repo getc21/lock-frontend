@@ -14,6 +14,7 @@ import '../../shared/providers/riverpod/category_notifier.dart';
 import '../../shared/providers/riverpod/location_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/providers/riverpod/supplier_notifier.dart';
+import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/services/pdf_service.dart';
 
 class ProductsPage extends ConsumerStatefulWidget {
@@ -195,6 +196,11 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     );
   }
 
+  String _formatCurrency(num value) {
+    final currencyNotifier = ref.read(currencyProvider.notifier);
+    return '${currencyNotifier.symbol}${(value as double).toStringAsFixed(2)}';
+  }
+
   List<DataRow2> _buildProductRows(List<dynamic> products) {
     print(' ProductsPage: _buildProductRows called');
     print('   - Total products: ${products.length}');
@@ -303,11 +309,11 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             ),
           ),
           DataCell(Text(
-            '\$${(product['purchasePrice'] as num).toStringAsFixed(2)}',
+            _formatCurrency((product['purchasePrice'] as num)),
             style: const TextStyle(fontWeight: FontWeight.w600),
           )),
           DataCell(Text(
-            '\$${(product['salePrice'] as num).toStringAsFixed(2)}',
+            _formatCurrency((product['salePrice'] as num)),
             style: TextStyle(fontWeight: FontWeight.w600, color: Theme.of(context).primaryColor),
           )),
           DataCell(
@@ -329,7 +335,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   icon: const Icon(Icons.qr_code_2, size: 18),
                   onPressed: () => _generateQrLabels(product),
                   tooltip: 'Descargar QR (10 etiquetas)',
-                  color: Theme.of(context).primaryColor,
+                  color: AppColors.textPrimary,
                 ),
                 IconButton(
                   icon: const Icon(Icons.add_shopping_cart, size: 18),
@@ -399,8 +405,8 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                Text('Precio Compra: \$${(product['purchasePrice'] as num).toStringAsFixed(2)}'),
-                Text('Precio Venta: \$${(product['salePrice'] as num).toStringAsFixed(2)}'),
+                Text('Precio Compra: ${_formatCurrency((product['purchasePrice'] as num))}'),
+                Text('Precio Venta: ${_formatCurrency((product['salePrice'] as num))}'),
                 if (product['description'] != null && (product['description'] as String).isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 16),

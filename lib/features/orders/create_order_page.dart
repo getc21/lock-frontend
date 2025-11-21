@@ -7,6 +7,7 @@ import '../../shared/providers/riverpod/product_notifier.dart';
 import '../../shared/providers/riverpod/customer_notifier.dart';
 import '../../shared/providers/riverpod/order_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart';
+import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 
 class CreateOrderPage extends ConsumerStatefulWidget {
@@ -190,7 +191,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     Text(
-                      'Stock: $stock | Precio: \$${((product['salePrice'] ?? product['price'] ?? 0) as num).toStringAsFixed(2)}',
+                      'Stock: $stock | Precio: ${_formatCurrency((product['salePrice'] ?? product['price'] ?? 0) as num)}',
                       style: TextStyle(
                         color: isOutOfStock ? Colors.red : AppColors.textSecondary,
                         fontWeight: isOutOfStock ? FontWeight.bold : FontWeight.normal,
@@ -394,7 +395,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                                       style: const TextStyle(fontWeight: FontWeight.w600),
                                     ),
                                     Text(
-                                      '\$${(item['price'] as num).toStringAsFixed(2)} c/u',
+                                      '${_formatCurrency((item['price'] as num))} c/u',
                                       style: const TextStyle(
                                         fontSize: 12,
                                         color: AppColors.textSecondary,
@@ -433,7 +434,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                               SizedBox(
                                 width: 80,
                                 child: Text(
-                                  '\$${((item['price'] as num) * (item['quantity'] as int)).toStringAsFixed(2)}',
+                                  _formatCurrency(((item['price'] as num) * (item['quantity'] as int))),
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(context).primaryColor,
@@ -508,7 +509,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Subtotal:'),
-                        Text('\$${subtotal.toStringAsFixed(2)}'),
+                        Text(_formatCurrency(subtotal)),
                       ],
                     ),
                     const SizedBox(height: AppSizes.spacing8),
@@ -523,7 +524,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                           ),
                         ),
                         Text(
-                          '\$${total.toStringAsFixed(2)}',
+                          _formatCurrency(total),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -601,6 +602,11 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
           return name.contains(lowerQuery) || description.contains(lowerQuery);
         })
         .toList();
+  }
+
+  String _formatCurrency(num value) {
+    final currencyNotifier = ref.read(currencyProvider.notifier);
+    return '${currencyNotifier.symbol}${(value as double).toStringAsFixed(2)}';
   }
 
   void _addToCart(Map<String, dynamic> product) {

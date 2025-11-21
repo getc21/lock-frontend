@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/providers/riverpod/theme_notifier.dart';
+import '../../shared/providers/riverpod/currency_notifier.dart';
 
 class ThemeSettingsPage extends ConsumerWidget {
   const ThemeSettingsPage({super.key});
@@ -12,6 +13,8 @@ class ThemeSettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeState = ref.watch(themeProvider);
     final themeNotifier = ref.read(themeProvider.notifier);
+    final currencyState = ref.watch(currencyProvider);
+    final currencyNotifier = ref.read(currencyProvider.notifier);
 
     if (!themeState.isInitialized) {
       return const DashboardLayout(
@@ -128,7 +131,90 @@ class ThemeSettingsPage extends ConsumerWidget {
             ),
             const SizedBox(height: AppSizes.spacing32),
 
-            // Botón de reset
+            // Selector de Moneda
+            const Text(
+              'Configuración de Moneda',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSizes.spacing16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Selecciona la moneda para mostrar valores monetarios',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spacing16),
+                    DropdownButton<String>(
+                      value: currencyState.currentCurrencyId,
+                      isExpanded: true,
+                      items: currencyNotifier.availableCurrencies.map((currency) {
+                        return DropdownMenuItem(
+                          value: currency.id,
+                          child: Row(
+                            children: [
+                              Text(
+                                currency.symbol,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      currency.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      currency.code,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (currencyId) {
+                        if (currencyId != null) {
+                          currencyNotifier.changeCurrency(currencyId);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Moneda cambiada a ${currencyNotifier.currentCurrency.name}',
+                              ),
+                              backgroundColor: Colors.green,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSizes.spacing32),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(

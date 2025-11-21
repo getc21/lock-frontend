@@ -8,6 +8,7 @@ import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/order_notifier.dart';
+import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/services/pdf_service.dart';
 
 class OrdersPage extends ConsumerStatefulWidget {
@@ -236,7 +237,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
           ),
           DataCell(Text('${items.length} items')),
           DataCell(Text(
-            '\$${(order['totalOrden'] as num? ?? 0).toStringAsFixed(2)}',
+            _formatCurrency((order['totalOrden'] as num? ?? 0).toDouble(), ref),
             style: const TextStyle(fontWeight: FontWeight.bold),
           )),
           DataCell(_buildPaymentChip(paymentMethod)),
@@ -403,7 +404,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                               icon: Icons.attach_money,
                               title: 'Total',
                               child: Text(
-                                '\$${totalOrden.toStringAsFixed(2)}',
+                                _formatCurrency(totalOrden, ref),
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -493,7 +494,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                                               ),
                                               const SizedBox(height: 4),
                                               Text(
-                                                '\$${price.toStringAsFixed(2)} × $quantity',
+                                                '${_formatCurrency(price, ref)} × $quantity',
                                                 style: const TextStyle(
                                                   fontSize: 12,
                                                   color: AppColors.textSecondary,
@@ -504,7 +505,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                                         ),
                                         // Subtotal
                                         Text(
-                                          '\$${subtotal.toStringAsFixed(2)}',
+                                          _formatCurrency(subtotal, ref),
                                           style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
@@ -634,6 +635,11 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
         );
       }
     }
+  }
+
+  String _formatCurrency(num value, WidgetRef ref) {
+    final currencyNotifier = ref.read(currencyProvider.notifier);
+    return '${currencyNotifier.symbol}${(value as double).toStringAsFixed(2)}';
   }
 
   Widget _buildPaymentChip(String paymentMethod) {

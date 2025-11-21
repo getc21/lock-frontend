@@ -9,6 +9,7 @@ import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/supplier_notifier.dart';
 import '../../shared/providers/riverpod/product_notifier.dart';
+import '../../shared/providers/riverpod/currency_notifier.dart';
 
 class SuppliersPage extends ConsumerStatefulWidget {
   const SuppliersPage({super.key});
@@ -322,6 +323,11 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
       );
     },
   );
+  }
+
+  String _formatCurrency(num value) {
+    final currencyNotifier = ref.read(currencyProvider.notifier);
+    return '${currencyNotifier.symbol}${(value as double).toStringAsFixed(2)}';
   }
 
   void _showSupplierDialog(
@@ -785,7 +791,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                                       ),
                                       const SizedBox(width: 16),
                                       Text(
-                                        'Precio: \$${(product['salePrice'] as num).toStringAsFixed(2)}',
+                                        'Precio: ${_formatCurrency((product['salePrice'] as num))}',
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
