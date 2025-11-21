@@ -3,6 +3,11 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:open_filex/open_filex.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
@@ -535,7 +540,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () {},
+                          onPressed: () => _generateAndPrintPDF(order),
                           icon: const Icon(Icons.print_outlined),
                           label: const Text('Imprimir'),
                         ),
@@ -587,6 +592,296 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
         child,
       ],
     );
+  }
+
+  Future<void> _generateAndPrintPDF(Map<String, dynamic> order) async {
+    try {
+      final pdf = pw.Document();
+      
+      // Datos de la orden
+      final orderId = order['_id']?.toString() ?? 'N/A';
+      final shortId = orderId.length > 8 ? orderId.substring(orderId.length - 8) : orderId;
+      final customerData = order['customerId'];
+      final customerName = customerData is Map ? (customerData['name'] ?? 'Sin nombre') : 'Sin cliente';
+      final customerPhone = customerData is Map ? (customerData['phone'] ?? '') : '';
+      final paymentMethod = order['paymentMethod'] as String? ?? 'efectivo';
+      final totalOrden = (order['totalOrden'] as num? ?? 0).toDouble();
+      final items = order['items'] as List? ?? [];
+      final orderDate = _formatDate(order['orderDate'] ?? order['createdAt']);
+
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40),
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Encabezado
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'BELLEZAPP',
+                          style: pw.TextStyle(
+                            fontSize: 24,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.Text(
+                          'Sistema de Gestión de Belleza',
+                          style: const pw.TextStyle(fontSize: 10),
+                        ),
+                      ],
+                    ),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.Text(
+                          'ORDEN #$shortId',
+                          style: pw.TextStyle(
+                            fontSize: 18,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.Text(
+                          'Fecha: $orderDate',
+                          style: const pw.TextStyle(fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 30),
+
+                // Línea divisoria
+                pw.Divider(),
+                pw.SizedBox(height: 20),
+
+                // Información del Cliente
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'INFORMACIÓN DEL CLIENTE',
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.SizedBox(height: 10),
+                    pw.Text('Nombre: $customerName'),
+                    if (customerPhone.isNotEmpty)
+                      pw.Text('Teléfono: $customerPhone'),
+                  ],
+                ),
+                pw.SizedBox(height: 20),
+
+                // Línea divisoria
+                pw.Divider(),
+                pw.SizedBox(height: 20),
+
+                // Tabla de productos
+                pw.Text(
+                  'DETALLE DE PRODUCTOS',
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: 10),
+
+                if (items.isEmpty)
+                  pw.Text('Sin productos en esta orden')
+                else
+                  pw.Table(
+                    border: pw.TableBorder.all(),
+                    columnWidths: {
+                      0: const pw.FlexColumnWidth(3),
+                      1: const pw.FlexColumnWidth(1),
+                      2: const pw.FlexColumnWidth(1),
+                      3: const pw.FlexColumnWidth(1),
+                    },
+                    children: [
+                      // Encabezado de tabla
+                      pw.TableRow(
+                        decoration: const pw.BoxDecoration(
+                          color: PdfColors.grey300,
+                        ),
+                        children: [
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.all(8),
+                            child: pw.Text(
+                              'Producto',
+                              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                            ),
+                          ),
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.all(8),
+                            child: pw.Text(
+                              'Precio',
+                              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                              textAlign: pw.TextAlign.center,
+                            ),
+                          ),
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.all(8),
+                            child: pw.Text(
+                              'Cantidad',
+                              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                              textAlign: pw.TextAlign.center,
+                            ),
+                          ),
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.all(8),
+                            child: pw.Text(
+                              'Subtotal',
+                              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                              textAlign: pw.TextAlign.right,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Filas de productos
+                      ...items.map((item) {
+                        final product = item['productId'];
+                        final productName = product is Map
+                            ? (product['name'] ?? 'Producto')
+                            : 'Producto';
+                        final price = (item['price'] as num? ?? 0).toDouble();
+                        final quantity = (item['quantity'] as num? ?? 0).toInt();
+                        final subtotal = price * quantity;
+
+                        return pw.TableRow(
+                          children: [
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text(productName),
+                            ),
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text(
+                                '\$${price.toStringAsFixed(2)}',
+                                textAlign: pw.TextAlign.center,
+                              ),
+                            ),
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text(
+                                quantity.toString(),
+                                textAlign: pw.TextAlign.center,
+                              ),
+                            ),
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text(
+                                '\$${subtotal.toStringAsFixed(2)}',
+                                textAlign: pw.TextAlign.right,
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ],
+                  ),
+
+                pw.SizedBox(height: 20),
+
+                // Resumen financiero
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.end,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.Text(
+                          'Método de pago: ${_getPaymentMethodText(paymentMethod)}',
+                          style: const pw.TextStyle(fontSize: 10),
+                        ),
+                        pw.SizedBox(height: 10),
+                        pw.Row(
+                          children: [
+                            pw.Text(
+                              'TOTAL: ',
+                              style: pw.TextStyle(
+                                fontSize: 14,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
+                            pw.Text(
+                              '\$${totalOrden.toStringAsFixed(2)}',
+                              style: pw.TextStyle(
+                                fontSize: 14,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                pw.Spacer(),
+
+                // Pie de página
+                pw.Divider(),
+                pw.Text(
+                  'Gracias por tu compra en BellezApp',
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                  ),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ],
+            );
+          },
+        ),
+      );
+
+      // Guardar y abrir PDF
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName = 'Orden_$shortId.pdf';
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsBytes(await pdf.save());
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('PDF generado: $fileName'),
+            backgroundColor: Theme.of(context).primaryColor,
+          ),
+        );
+      }
+
+      // Abrir el PDF
+      await OpenFilex.open(file.path);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al generar PDF: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  String _getPaymentMethodText(String method) {
+    switch (method.toLowerCase()) {
+      case 'efectivo':
+        return 'Efectivo';
+      case 'tarjeta':
+        return 'Tarjeta';
+      case 'transferencia':
+        return 'Transferencia';
+      default:
+        return method;
+    }
   }
   Widget _buildPaymentChip(String paymentMethod) {
     Color color;
