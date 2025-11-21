@@ -103,7 +103,7 @@ class CategoryFormNotifier extends StateNotifier<CategoryFormState> {
   /// Limpiar imagen seleccionada
   void clearImage() {
     // Si hay imagen local, eliminar el archivo temporal
-    state.selectedImage?.delete().catchError((_) {});
+    state.selectedImage?.delete().ignore();
 
     state = state.copyWith(
       selectedImage: null,
@@ -135,7 +135,7 @@ class CategoryFormNotifier extends StateNotifier<CategoryFormState> {
   /// Resetear el formulario
   void reset() {
     // Limpiar imagen
-    state.selectedImage?.delete().catchError((_) {});
+    state.selectedImage?.delete().ignore();
 
     state = CategoryFormState();
   }
@@ -144,7 +144,7 @@ class CategoryFormNotifier extends StateNotifier<CategoryFormState> {
   @override
   void dispose() {
     // Eliminar archivo temporal si existe
-    state.selectedImage?.delete().catchError((_) {});
+    state.selectedImage?.delete().ignore();
     super.dispose();
   }
 }
