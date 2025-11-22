@@ -32,11 +32,11 @@ class _PersistenceInitializerState
 
   Future<void> _initializePersistence() async {
     try {
-      // Los providers cargan automáticamente en sus constructores desde SharedPreferences
-      // Simplemente esperar a que se inicialicen correctamente
-      // No usar delay arbitrario - esperar a que los providers estén listos
-      
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Esperar a que se inicialicen todos los notifiers desde SharedPreferences
+      await Future.wait([
+        ref.read(themeProvider.notifier).initializeTheme(),
+        ref.read(currencyProvider.notifier).initializeCurrency(),
+      ]);
       
       // Verificar que todo esté cargado
       final authState = ref.read(authProvider);
@@ -46,8 +46,8 @@ class _PersistenceInitializerState
       if (kDebugMode) {
         debugPrint('✅ Persistencia inicializada:');
         debugPrint('   - Sesión: ${authState.isLoggedIn ? 'Cargada' : 'No cargada'}');
-        debugPrint('   - Tema: ${themeState.isInitialized ? 'Cargado' : 'No cargado'}');
-        debugPrint('   - Moneda: ${currencyState.isInitialized ? 'Cargada' : 'No cargada'}');
+        debugPrint('   - Tema: ${themeState.isInitialized ? 'Cargado' : 'No cargado'} (${themeState.currentThemeId})');
+        debugPrint('   - Moneda: ${currencyState.isInitialized ? 'Cargada' : 'No cargada'} (${currencyState.currentCurrencyId})');
       }
 
       if (mounted) {

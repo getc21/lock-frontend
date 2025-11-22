@@ -43,14 +43,6 @@ class ThemeState {
 }
 
 class ThemeNotifier extends StateNotifier<ThemeState> {
-  ThemeNotifier() : super(ThemeState(
-    currentThemeId: 'beauty',
-    themeMode: ThemeMode.system,
-    isInitialized: false,
-  )) {
-    _initializeTheme();
-  }
-
   // Temas disponibles
   static final List<ThemeModel> _availableThemes = [
     ThemeModel(
@@ -83,6 +75,12 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     ),
   ];
 
+  ThemeNotifier() : super(ThemeState(
+    currentThemeId: 'beauty',
+    themeMode: ThemeMode.system,
+    isInitialized: false,
+  ));
+
   List<ThemeModel> get availableThemes => _availableThemes;
 
   // Tema actual
@@ -94,7 +92,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   }
 
   // Inicializar tema desde preferencias
-  Future<void> _initializeTheme() async {
+  Future<void> initializeTheme() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedThemeId = prefs.getString('theme_id') ?? 'beauty';
@@ -106,6 +104,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
         isInitialized: true,
       );
     } catch (e) {
+      debugPrint('Error initializing theme: $e');
       state = state.copyWith(isInitialized: true);
     }
   }

@@ -37,13 +37,6 @@ class CurrencyState {
 }
 
 class CurrencyNotifier extends StateNotifier<CurrencyState> {
-  CurrencyNotifier() : super(CurrencyState(
-    currentCurrencyId: 'usd',
-    isInitialized: false,
-  )) {
-    _initializeCurrency();
-  }
-
   // Monedas disponibles
   static final List<CurrencyModel> _availableCurrencies = [
     CurrencyModel(
@@ -102,6 +95,11 @@ class CurrencyNotifier extends StateNotifier<CurrencyState> {
     ),
   ];
 
+  CurrencyNotifier() : super(CurrencyState(
+    currentCurrencyId: 'usd',
+    isInitialized: false,
+  ));
+
   List<CurrencyModel> get availableCurrencies => _availableCurrencies;
 
   // Moneda actual
@@ -113,7 +111,7 @@ class CurrencyNotifier extends StateNotifier<CurrencyState> {
   }
 
   // Inicializar moneda desde preferencias
-  Future<void> _initializeCurrency() async {
+  Future<void> initializeCurrency() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedCurrencyId = prefs.getString('currency_id') ?? 'usd';
@@ -123,6 +121,7 @@ class CurrencyNotifier extends StateNotifier<CurrencyState> {
         isInitialized: true,
       );
     } catch (e) {
+      debugPrint('Error initializing currency: $e');
       state = state.copyWith(isInitialized: true);
     }
   }
