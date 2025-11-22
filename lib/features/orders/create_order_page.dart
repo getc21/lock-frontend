@@ -705,18 +705,21 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
   void _showCustomerSearch() {
     final customerSearchController = TextEditingController();
     final filteredCustomers = ValueNotifier<List<Map<String, dynamic>>>([]);
+    
+    // Cargar todos los clientes al abrir el modal
+    final customerState = ref.read(customerProvider);
+    final allCustomers = customerState.customers;
+    filteredCustomers.value = allCustomers;
 
     void searchCustomers(String query) {
       if (query.trim().isEmpty) {
-        filteredCustomers.value = [];
+        filteredCustomers.value = allCustomers;
         return;
       }
 
       final lowerQuery = query.toLowerCase();
-      final customerState = ref.read(customerProvider);
-      final customers = customerState.customers;
       
-      filteredCustomers.value = customers
+      filteredCustomers.value = allCustomers
           .where((customer) {
             final name = (customer['name'] as String).toLowerCase();
             final phone = (customer['phone'] as String? ?? '').toLowerCase();
@@ -773,7 +776,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                     if (customers.isEmpty) {
                       return const Center(
                         child: Text(
-                          'Busca clientes por nombre, teléfono o email',
+                          'No hay clientes disponibles',
                           style: TextStyle(color: AppColors.textSecondary),
                         ),
                       );
