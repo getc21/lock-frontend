@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
@@ -222,7 +221,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       final isOutOfStock = stock == 0;
 
       return DataRow2(
-        onTap: () => context.go('/products/${product['_id']}'),
         cells: [
           DataCell(
             GestureDetector(
