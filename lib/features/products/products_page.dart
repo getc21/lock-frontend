@@ -172,31 +172,34 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               }
 
               return Card(
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSizes.spacing16),
-                        child: DataTable2(
-                          columnSpacing: 12,
-                          horizontalMargin: 12,
-                          minWidth: 1100,
-                          columns: const [
-                            DataColumn2(label: Text('Producto'), size: ColumnSize.L),
-                            DataColumn2(label: Text('Categoría'), size: ColumnSize.M),
-                            DataColumn2(label: Text('Stock'), size: ColumnSize.S),
-                            DataColumn2(label: Text('Precio Compra'), size: ColumnSize.S),
-                            DataColumn2(label: Text('Precio Venta'), size: ColumnSize.S),
-                            DataColumn2(label: Text('F. Caducidad'), size: ColumnSize.M),
-                            DataColumn2(label: Text('Acciones'), size: ColumnSize.M),
-                          ],
-                          rows: _buildProductRows(productState.products),
+                child: SizedBox(
+                  height: 600,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSizes.spacing16),
+                          child: DataTable2(
+                            columnSpacing: 12,
+                            horizontalMargin: 12,
+                            minWidth: 1100,
+                            columns: const [
+                              DataColumn2(label: Text('Producto'), size: ColumnSize.L),
+                              DataColumn2(label: Text('Categoría'), size: ColumnSize.M),
+                              DataColumn2(label: Text('Stock'), size: ColumnSize.S),
+                              DataColumn2(label: Text('Precio Compra'), size: ColumnSize.S),
+                              DataColumn2(label: Text('Precio Venta'), size: ColumnSize.S),
+                              DataColumn2(label: Text('F. Caducidad'), size: ColumnSize.M),
+                              DataColumn2(label: Text('Acciones'), size: ColumnSize.M),
+                            ],
+                            rows: _buildProductRows(productState.products),
+                          ),
                         ),
                       ),
-                    ),
-                    // Pagination Controls
-                    _buildProductPagination(productState.products),
-                  ],
+                      // Pagination Controls
+                      _buildProductPagination(productState.products),
+                    ],
+                  ),
                 ),
               );
             },

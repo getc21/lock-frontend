@@ -159,12 +159,13 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
             )
           else
             Card(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSizes.spacing16),
-                      child: SizedBox(
+              child: SizedBox(
+                height: 600,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.spacing16),
                         child: DataTable2(
                           columnSpacing: 12,
                           horizontalMargin: 12,
@@ -185,44 +186,44 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                         ),
                       ),
                     ),
-                  ),
-                  // Pagination Controls
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.spacing16,
-                      vertical: AppSizes.spacing12,
+                    // Pagination Controls
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.spacing16,
+                        vertical: AppSizes.spacing12,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Total: ${filteredOrders.length} órdenes',
+                            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.chevron_left),
+                                onPressed: _currentPage > 0
+                                    ? () => setState(() => _currentPage--)
+                                    : null,
+                              ),
+                              Text(
+                                'Página ${_currentPage + 1} de $totalPages',
+                                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.chevron_right),
+                                onPressed: _currentPage < totalPages - 1
+                                    ? () => setState(() => _currentPage++)
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Total: ${filteredOrders.length} órdenes',
-                          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.chevron_left),
-                              onPressed: _currentPage > 0
-                                  ? () => setState(() => _currentPage--)
-                                  : null,
-                            ),
-                            Text(
-                              'Página ${_currentPage + 1} de $totalPages',
-                              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.chevron_right),
-                              onPressed: _currentPage < totalPages - 1
-                                  ? () => setState(() => _currentPage++)
-                                  : null,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
         ],
