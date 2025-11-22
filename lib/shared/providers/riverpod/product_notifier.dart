@@ -89,8 +89,7 @@ class ProductNotifier extends StateNotifier<ProductState> {
         if (!forceRefresh) {
           return;
         }
-        // Si es forzado, MOSTRAR loading skeleton mientras actualiza en background
-        state = state.copyWith(isLoading: true);
+        // Si es forzado, continuar cargando en background pero sin mostrar loading
       } else if (!state.isLoading && cached == null) {
         // Solo mostrar loading si no hay caché
         state = state.copyWith(isLoading: true, errorMessage: '');

@@ -21,6 +21,8 @@ class OrdersPage extends ConsumerStatefulWidget {
 class _OrdersPageState extends ConsumerState<OrdersPage> {
   String _paymentFilter = 'Todos';
   late final ScrollController _scrollController;
+  int _currentPage = 0;
+  static const int _itemsPerPage = 25;
 
   @override
   void initState() {
@@ -60,6 +62,14 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     final filteredOrders = orderState.orders
         .where((o) => _paymentFilter == 'Todos' || o['paymentMethod'] == _paymentFilter)
         .toList();
+    
+    // Paginación
+    final totalPages = (filteredOrders.length / _itemsPerPage).ceil().clamp(1, double.infinity).toInt();
+    final startIndex = _currentPage * _itemsPerPage;
+    final endIndex = (startIndex + _itemsPerPage).clamp(0, filteredOrders.length);
+    final paginatedOrders = startIndex < filteredOrders.length 
+        ? filteredOrders.sublist(startIndex, endIndex)
+        : [];
 
     return DashboardLayout(
       title: 'Órdenes',
@@ -82,6 +92,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                 onChanged: (value) {
                   setState(() {
                     _paymentFilter = value!;
+                    _currentPage = 0; // Reset to first page
                   });
                 },
               ),
@@ -148,29 +159,70 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
             )
           else
             Card(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.spacing16),
-                child: SizedBox(
-                  height: 600,
-                  child: DataTable2(
-                    columnSpacing: 12,
-                    horizontalMargin: 12,
-                    minWidth: 1000,
-                    scrollController: _scrollController,
-                    isHorizontalScrollBarVisible: true,
-                    isVerticalScrollBarVisible: true,
-                    columns: const [
-                      DataColumn2(label: Text('ID'), size: ColumnSize.S),
-                      DataColumn2(label: Text('Cliente'), size: ColumnSize.L),
-                      DataColumn2(label: Text('Items'), size: ColumnSize.S),
-                      DataColumn2(label: Text('Total'), size: ColumnSize.S),
-                      DataColumn2(label: Text('Pago'), size: ColumnSize.M),
-                      DataColumn2(label: Text('Fecha'), size: ColumnSize.M),
-                      DataColumn2(label: Text('Acciones'), size: ColumnSize.M),
-                    ],
-                    rows: _buildOrderRows(),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSizes.spacing16),
+                      child: SizedBox(
+                        child: DataTable2(
+                          columnSpacing: 12,
+                          horizontalMargin: 12,
+                          minWidth: 1000,
+                          scrollController: _scrollController,
+                          isHorizontalScrollBarVisible: true,
+                          isVerticalScrollBarVisible: true,
+                          columns: const [
+                            DataColumn2(label: Text('ID'), size: ColumnSize.S),
+                            DataColumn2(label: Text('Cliente'), size: ColumnSize.L),
+                            DataColumn2(label: Text('Items'), size: ColumnSize.S),
+                            DataColumn2(label: Text('Total'), size: ColumnSize.S),
+                            DataColumn2(label: Text('Pago'), size: ColumnSize.M),
+                            DataColumn2(label: Text('Fecha'), size: ColumnSize.M),
+                            DataColumn2(label: Text('Acciones'), size: ColumnSize.M),
+                          ],
+                          rows: _buildOrderRows(paginatedOrders),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  // Pagination Controls
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacing16,
+                      vertical: AppSizes.spacing12,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total: ${filteredOrders.length} órdenes',
+                          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                        ),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.chevron_left),
+                              onPressed: _currentPage > 0
+                                  ? () => setState(() => _currentPage--)
+                                  : null,
+                            ),
+                            Text(
+                              'Página ${_currentPage + 1} de $totalPages',
+                              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.chevron_right),
+                              onPressed: _currentPage < totalPages - 1
+                                  ? () => setState(() => _currentPage++)
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -178,17 +230,9 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     );
   }
 
-  List<DataRow2> _buildOrderRows() {
-    // Obtener estado de órdenes
-    final orderState = ref.watch(orderProvider);
-    
-    // Filtrar órdenes según el filtro de pago
-    final filteredOrders = orderState.orders
-        .where((o) => _paymentFilter == 'Todos' || o['paymentMethod'] == _paymentFilter)
-        .toList();
-    
-    // Usar órdenes ya filtradas en lugar de recalcular
-    return filteredOrders.map((order) {
+  List<DataRow2> _buildOrderRows(List<dynamic> paginatedOrders) {
+    // Convertir órdenes paginadas a DataRow2
+    return paginatedOrders.cast<Map<String, dynamic>>().map((order) {
       final items = order['items'] as List? ?? [];
       final customerData = order['customerId'];
       
