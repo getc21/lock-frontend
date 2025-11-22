@@ -46,7 +46,7 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () {
-                          ref.refresh(reportDetailProvider(widget.reportId));
+                          ref.read(reportDetailProvider(widget.reportId).notifier).loadItem();
                         },
                         child: const Text('Reintentar'),
                       ),

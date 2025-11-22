@@ -57,7 +57,7 @@ class _CategoryDetailPageState extends ConsumerState<CategoryDetailPage> {
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () {
-                          ref.refresh(categoryDetailProvider(widget.categoryId));
+                          ref.read(categoryDetailProvider(widget.categoryId).notifier).loadItem();
                         },
                         child: const Text('Reintentar'),
                       ),

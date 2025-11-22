@@ -46,7 +46,7 @@ class _LocationDetailPageState extends ConsumerState<LocationDetailPage> {
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () {
-                          ref.refresh(locationDetailProvider(widget.locationId));
+                          ref.read(locationDetailProvider(widget.locationId).notifier).loadItem();
                         },
                         child: const Text('Reintentar'),
                       ),

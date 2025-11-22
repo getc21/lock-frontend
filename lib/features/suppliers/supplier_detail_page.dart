@@ -62,7 +62,7 @@ class _SupplierDetailPageState extends ConsumerState<SupplierDetailPage> {
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () {
-                          ref.refresh(supplierDetailProvider(widget.supplierId));
+                          ref.read(supplierDetailProvider(widget.supplierId).notifier).loadItem();
                         },
                         child: const Text('Reintentar'),
                       ),

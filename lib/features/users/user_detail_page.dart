@@ -46,7 +46,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () {
-                          ref.refresh(userDetailProvider(widget.userId));
+                          ref.read(userDetailProvider(widget.userId).notifier).loadItem();
                         },
                         child: const Text('Reintentar'),
                       ),
