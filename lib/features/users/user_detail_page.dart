@@ -95,7 +95,6 @@ class _UserDetailContentState extends ConsumerState<_UserDetailContent> {
   Widget build(BuildContext context) {
     final name = ref.watch(userNameSelector(widget.userId));
     final email = ref.watch(userEmailSelector(widget.userId));
-    final phone = ref.watch(userPhoneSelector(widget.userId));
     final role = ref.watch(userRoleSelector(widget.userId));
     final isActive = ref.watch(userIsActiveSelector(widget.userId));
 
