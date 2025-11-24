@@ -584,6 +584,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   ),
                 ),
                 TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).primaryColor,
+                  ),
                   onPressed: () =>
                       context.go('/orders'),
                   child: const Text('Ver todas'),

@@ -515,6 +515,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
               const SizedBox(width: AppSizes.spacing16),
               // Fecha Inicio
               OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).primaryColor,
+                ),
                 onPressed: () => _selectDate(true),
                 icon: const Icon(Icons.calendar_today, size: 16),
                 label: Text(
@@ -529,6 +532,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
               const SizedBox(width: AppSizes.spacing8),
               // Fecha Fin
               OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).primaryColor,
+                ),
                 onPressed: () => _selectDate(false),
                 icon: const Icon(Icons.calendar_today, size: 16),
                 label: Text(
@@ -540,6 +546,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
               ),
               const Spacer(),
               OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).primaryColor,
+                ),
                 onPressed: () => _exportToPdf(),
                 icon: const Icon(Icons.file_download),
                 label: const Text('Exportar PDF'),
