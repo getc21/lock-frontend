@@ -49,9 +49,6 @@ class AuthProvider {
   // Login
   Future<Map<String, dynamic>> login(String username, String password) async {
     try {
-      print('🔵 Intentando login en: $baseUrl/auth/login');
-      print('🔵 Username: $username');
-      
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
@@ -60,9 +57,6 @@ class AuthProvider {
           'password': password,
         }),
       );
-
-      print('🔵 Status Code: ${response.statusCode}');
-      print('🔵 Response Body: ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -81,7 +75,6 @@ class AuthProvider {
         };
       }
     } catch (e) {
-      print('🔴 Error de login: $e');
       return {'success': false, 'message': 'Error de conexión: $e'};
     }
   }

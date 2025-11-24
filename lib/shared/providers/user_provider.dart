@@ -26,16 +26,16 @@ class UserProvider {
       );
 
       if (kDebugMode) {
-        print('🔵 UserProvider: Response status code - ${response.statusCode}');
-        print('🔵 UserProvider: Response body - ${response.body}');
+
+
       }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         
         if (kDebugMode) {
-          print('🔵 UserProvider: Decoded data type - ${data.runtimeType}');
-          print('🔵 UserProvider: Data structure - $data');
+
+
         }
         
         // Flexible parsing - handle different response structures
@@ -43,41 +43,37 @@ class UserProvider {
           if (data['data'] != null) {
             if (data['data'] is List) {
               if (kDebugMode) {
-                print('✅ UserProvider: Found users in data (List) - ${(data['data'] as List).length} users');
               }
               return {'success': true, 'data': data['data']};
             } else if (data['data']['users'] is List) {
               if (kDebugMode) {
-                print('✅ UserProvider: Found users in data.users - ${(data['data']['users'] as List).length} users');
               }
               return {'success': true, 'data': data['data']['users']};
             } else if (data['data']['data'] is List) {
               if (kDebugMode) {
-                print('✅ UserProvider: Found users in data.data - ${(data['data']['data'] as List).length} users');
               }
               return {'success': true, 'data': data['data']['data']};
             }
           } else if (data['users'] is List) {
             if (kDebugMode) {
-              print('✅ UserProvider: Found users directly - ${(data['users'] as List).length} users');
             }
             return {'success': true, 'data': data['users']};
           }
         }
         
         if (kDebugMode) {
-          print('❌ UserProvider: Invalid response format');
+
         }
         return {'success': false, 'message': 'Invalid response format'};
       } else {
         if (kDebugMode) {
-          print('❌ UserProvider: Bad status code - ${response.statusCode}');
+
         }
         return {'success': false, 'message': 'Error al cargar usuarios'};
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ UserProvider: Exception - $e');
+
       }
       return {'success': false, 'message': 'Error de conexión: $e'};
     }
@@ -122,14 +118,14 @@ class UserProvider {
       // NO enviar stores - los usuarios no se asocian a tiendas en la creación
 
       if (kDebugMode) {
-        print('🔵 UserProvider.createUser: URL - ${ApiConfig.baseUrl}/users');
-        print('🔵 UserProvider.createUser: Sending body - $body');
+
+
       }
 
       final headers = await _getHeaders();
       
       if (kDebugMode) {
-        print('🔵 UserProvider.createUser: Has token - ${headers["Authorization"]?.isNotEmpty ?? false}');
+
       }
 
       final response = await http.post(
@@ -139,8 +135,8 @@ class UserProvider {
       );
 
       if (kDebugMode) {
-        print('🔵 UserProvider.createUser: Status ${response.statusCode}');
-        print('🔵 UserProvider.createUser: Response ${response.body}');
+
+
       }
 
       if (response.statusCode == 201 || response.statusCode == 200) {
@@ -151,18 +147,18 @@ class UserProvider {
           final data = json.decode(response.body);
           errorMessage = data['message'] ?? data['error'] ?? errorMessage;
           if (kDebugMode) {
-            print('❌ UserProvider.createUser: Error response - $data');
+
           }
         } catch (e) {
           if (kDebugMode) {
-            print('❌ UserProvider.createUser: Could not parse error response');
+
           }
         }
         return {'success': false, 'message': errorMessage};
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ UserProvider.createUser: Exception - $e');
+
       }
       return {'success': false, 'message': 'Error de conexión: $e'};
     }
@@ -193,7 +189,7 @@ class UserProvider {
       }
 
       if (kDebugMode) {
-        print('🔵 UserProvider.updateUser: Sending body - $body');
+
       }
 
       final response = await http.patch(
@@ -203,8 +199,8 @@ class UserProvider {
       );
 
       if (kDebugMode) {
-        print('🔵 UserProvider.updateUser: Status ${response.statusCode}');
-        print('🔵 UserProvider.updateUser: Response ${response.body}');
+
+
       }
 
       if (response.statusCode == 200) {
@@ -215,7 +211,7 @@ class UserProvider {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ UserProvider.updateUser: Exception - $e');
+
       }
       return {'success': false, 'message': 'Error de conexión: $e'};
     }
@@ -246,8 +242,8 @@ class UserProvider {
       };
 
       if (kDebugMode) {
-        print('🔵 UserProvider.assignStoreToUser: URL - ${ApiConfig.baseUrl}/users/assign-store');
-        print('🔵 UserProvider.assignStoreToUser: Sending body - $body');
+
+
       }
 
       final response = await http.post(
@@ -257,8 +253,8 @@ class UserProvider {
       );
 
       if (kDebugMode) {
-        print('🔵 UserProvider.assignStoreToUser: Status ${response.statusCode}');
-        print('🔵 UserProvider.assignStoreToUser: Response ${response.body}');
+
+
       }
 
       if (response.statusCode == 200) {
@@ -275,7 +271,7 @@ class UserProvider {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ UserProvider.assignStoreToUser: Exception - $e');
+
       }
       return {'success': false, 'message': 'Error de conexión: $e'};
     }

@@ -104,7 +104,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
         isInitialized: true,
       );
     } catch (e) {
-      debugPrint('Error initializing theme: $e');
+
       state = state.copyWith(isInitialized: true);
     }
   }
@@ -119,7 +119,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
 
       state = state.copyWith(currentThemeId: themeId);
     } catch (e) {
-      debugPrint('Error changing theme: $e');
+
     }
   }
 
@@ -133,7 +133,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
 
       state = state.copyWith(themeMode: mode);
     } catch (e) {
-      debugPrint('Error changing theme mode: $e');
+
     }
   }
 
@@ -149,7 +149,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
         themeMode: ThemeMode.system,
       );
     } catch (e) {
-      debugPrint('Error resetting theme: $e');
+
     }
   }
 

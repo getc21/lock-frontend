@@ -39,11 +39,11 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   }
 
   void _loadData() {
-      if (kDebugMode) debugPrint(' ProductsPage: _loadData called');
+      if (kDebugMode)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_hasInitialized) {
         _hasInitialized = true;
-      if (kDebugMode) debugPrint(' ProductsPage: Loading data in optimized sequence');
+      if (kDebugMode)
         final productState = ref.read(productProvider);
         final supplierState = ref.read(supplierProvider);
         final categoryState = ref.read(categoryProvider);
@@ -126,9 +126,9 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             builder: (context, ref, child) {
               final productState = ref.watch(productProvider);
               
-      if (kDebugMode) debugPrint(' ProductsPage: Consumer rebuilding...');
-      if (kDebugMode) debugPrint('   - isLoading: ${productState.isLoading}');
-      if (kDebugMode) debugPrint('   - products length: ${productState.products.length}');
+      if (kDebugMode)
+      if (kDebugMode)
+      if (kDebugMode)
               
               if (productState.isLoading) {
                 return Card(
@@ -263,16 +263,16 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   }
 
   List<DataRow2> _buildProductRows(List<dynamic> products) {
-      if (kDebugMode) debugPrint(' ProductsPage: _buildProductRows called');
-      if (kDebugMode) debugPrint('   - Total products: ${products.length}');
-      if (kDebugMode) debugPrint('   - Search query: "$_searchQuery"');
+      if (kDebugMode)
+      if (kDebugMode)
+      if (kDebugMode)
     
     final filteredProducts = products
         .where((p) => _searchQuery.isEmpty || 
                      (p['name'] as String).toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
 
-      if (kDebugMode) debugPrint('   - Filtered products: ${filteredProducts.length}');
+      if (kDebugMode)
     
     // Paginación
     final startIndex = _currentPage * _itemsPerPage;
@@ -609,10 +609,10 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           final bytes = await image.readAsBytes();
           imageBytes = 'data:image/jpeg;base64,${base64Encode(bytes)}';
           imagePreview = imageBytes;
-      if (kDebugMode) debugPrint(' Image selected: ${image.name}');
+      if (kDebugMode)
         }
       } catch (e) {
-      if (kDebugMode) debugPrint(' Error picking image: $e');
+      if (kDebugMode)
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Error al seleccionar imagen')),
@@ -1012,7 +1012,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
                 setState(() => isLoading = false);
                 if (success) {
-      if (kDebugMode) debugPrint(' ProductsPage: Product ${isEditing ? "updated" : "created"} successfully');
+      if (kDebugMode)
                   if (context.mounted) {
                     Navigator.of(context).pop();
                   }

@@ -121,7 +121,7 @@ class CurrencyNotifier extends StateNotifier<CurrencyState> {
         isInitialized: true,
       );
     } catch (e) {
-      debugPrint('Error initializing currency: $e');
+
       state = state.copyWith(isInitialized: true);
     }
   }
@@ -136,7 +136,7 @@ class CurrencyNotifier extends StateNotifier<CurrencyState> {
 
       state = state.copyWith(currentCurrencyId: currencyId);
     } catch (e) {
-      debugPrint('Error changing currency: $e');
+
     }
   }
 

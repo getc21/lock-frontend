@@ -74,7 +74,6 @@ abstract class EntityDetailNotifier<T> extends StateNotifier<GenericDetailState<
       final cached = _cache.get<T>(cacheKey);
       if (cached != null) {
         if (kDebugMode) {
-          print('✅ Item obtenido del caché ($cacheKey)');
         }
         state = state.copyWith(
           item: cached,
@@ -100,7 +99,6 @@ abstract class EntityDetailNotifier<T> extends StateNotifier<GenericDetailState<
       );
 
       if (kDebugMode) {
-        print('✅ Item cargado y cacheado ($cacheKey) - TTL: 15min');
       }
 
       state = state.copyWith(
@@ -115,7 +113,6 @@ abstract class EntityDetailNotifier<T> extends StateNotifier<GenericDetailState<
         isLoading: false,
       );
       if (kDebugMode) {
-        print('❌ Error cargando item ($cacheKey): $e');
       }
     }
   }
@@ -124,7 +121,6 @@ abstract class EntityDetailNotifier<T> extends StateNotifier<GenericDetailState<
   void invalidateCache() {
     _cache.invalidate(cacheKey);
     if (kDebugMode) {
-      print('🗑️ Cache invalidado ($cacheKey)');
     }
   }
 
@@ -132,7 +128,6 @@ abstract class EntityDetailNotifier<T> extends StateNotifier<GenericDetailState<
   void invalidatePattern(String pattern) {
     _cache.invalidatePattern(pattern);
     if (kDebugMode) {
-      print('🗑️ Cachés invalidados por patrón ($pattern)');
     }
   }
 
@@ -140,7 +135,7 @@ abstract class EntityDetailNotifier<T> extends StateNotifier<GenericDetailState<
   void clearCache() {
     _cache.clear();
     if (kDebugMode) {
-      print('🧹 Caché completamente limpiado');
+
     }
   }
 

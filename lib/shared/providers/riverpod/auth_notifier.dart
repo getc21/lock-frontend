@@ -104,9 +104,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
             _verifyTokenInBackground();
             return;
           } catch (e) {
-            if (kDebugMode) {
-              if (kDebugMode) debugPrint('Error decodificando userData: $e');
-            }
           }
         }
 
@@ -114,9 +111,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await _loadUserFromAPI();
       }
     } catch (e) {
-      if (kDebugMode) {
-        if (kDebugMode) debugPrint('Error cargando sesión guardada: $e');
-      }
       await logout();
     } finally {
       state = state.copyWith(isLoading: false);
@@ -135,9 +129,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await logout();
       }
     } catch (e) {
-      if (kDebugMode) {
-        if (kDebugMode) debugPrint('Error cargando usuario desde API: $e');
-      }
       await logout();
     }
   }
@@ -160,9 +151,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_data', jsonEncode(userData));
     } catch (e) {
-      if (kDebugMode) {
-        if (kDebugMode) debugPrint('Error guardando datos de usuario: $e');
-      }
     }
   }
 
@@ -172,9 +160,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('user_data');
     } catch (e) {
-      if (kDebugMode) {
-        if (kDebugMode) debugPrint('Error limpiando datos de usuario: $e');
-      }
     }
   }
 
@@ -220,26 +205,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _authProvider.logout();
     } catch (e) {
-      if (kDebugMode) {
-        if (kDebugMode) debugPrint('Error al logout: $e');
-      }
     }
 
     try {
       await _clearUserData();
     } catch (e) {
-      if (kDebugMode) {
-        if (kDebugMode) debugPrint('Error limpiando datos: $e');
-      }
     }
 
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('selected_store_id');
     } catch (e) {
-      if (kDebugMode) {
-        if (kDebugMode) debugPrint('Error removiendo store_id: $e');
-      }
     }
 
     // Establecer estado limpio
@@ -361,9 +337,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
         return [];
       }
     } catch (e) {
-      if (kDebugMode) {
-        if (kDebugMode) debugPrint('Error obteniendo usuarios: $e');
-      }
       return [];
     }
   }

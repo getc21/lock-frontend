@@ -70,16 +70,16 @@ class OrderProvider {
       final Uri uri = Uri.parse('$baseUrl/orders').replace(queryParameters: queryParams);
       
       if (kDebugMode) {
-        print('=== OrderProvider.getOrders ===');
-        print('URL: $uri');
-        print('Headers: $_headers');
+
+
+
       }
       
       final http.Response response = await http.get(uri, headers: _headers);
       
       if (kDebugMode) {
-        print('Status Code: ${response.statusCode}');
-        print('Response body: ${response.body}');
+
+
       }
       
       final data = jsonDecode(response.body);
@@ -87,7 +87,7 @@ class OrderProvider {
       if (response.statusCode == 200) {
         final orders = data['data']['orders'];
         if (kDebugMode) {
-          print('Orders recibidas: ${orders is List ? orders.length : 0}');
+
         }
         if (orders is List) {
           return <String, dynamic>{'success': true, 'data': orders};

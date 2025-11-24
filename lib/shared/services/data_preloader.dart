@@ -49,7 +49,6 @@ class DataPreloader {
     final batch = batchName ?? 'batch_${DateTime.now().millisecondsSinceEpoch}';
 
     if (config.verbose) {
-      print('📦 Preload START: $batch (${loaders.length} items, parallel=${config.parallel})');
     }
 
     try {
@@ -70,11 +69,10 @@ class DataPreloader {
 
       final duration = DateTime.now().difference(startTime);
       if (config.verbose) {
-        print('✅ Preload COMPLETE: $batch (${duration.inMilliseconds}ms)');
       }
     } catch (e) {
       if (config.verbose) {
-        print('❌ Preload ERROR: $batch - $e');
+
       }
       rethrow;
     }
@@ -90,7 +88,6 @@ class DataPreloader {
   }) async {
     if (_loadedKeys.contains(key) && !force) {
       if (config.verbose) {
-        print('⏭️  Preload SKIPPED: $key (already loaded)');
       }
       return;
     }
@@ -103,7 +100,7 @@ class DataPreloader {
     final startTime = DateTime.now();
 
     if (config.verbose) {
-      print('📦 Preload START: $key');
+
     }
 
     try {
@@ -115,11 +112,10 @@ class DataPreloader {
 
       final duration = DateTime.now().difference(startTime);
       if (config.verbose) {
-        print('✅ Preload COMPLETE: $key (${duration.inMilliseconds}ms)');
       }
     } catch (e) {
       if (config.verbose) {
-        print('❌ Preload ERROR: $key - $e');
+
       }
       rethrow;
     } finally {
@@ -154,7 +150,7 @@ class DataPreloader {
   void reset() {
     _loadedKeys.clear();
     if (config.verbose) {
-      print('🧹 Preload RESET: all preload history cleared');
+
     }
   }
 

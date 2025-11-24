@@ -16,7 +16,6 @@ class CategoryProvider {
     if (token == null || token.isEmpty) {
       token = prefs.getString('token');
     }
-    print('🔵 CategoryProvider: Token retrieved: ${token != null && token.isNotEmpty ? "✅ Found (${token.length} chars)" : "❌ Not found"}');
     return token ?? '';
   }
 
@@ -124,19 +123,12 @@ class CategoryProvider {
             filename: 'category_image.jpg',
           ),
         );
-
-        print('🔵 CategoryProvider: Creating category with image (using "foto" field)');
-        print('🔵 CategoryProvider: Request URL: ${ApiConfig.baseUrl}/categories');
-        print('🔵 CategoryProvider: Request fields: ${request.fields}');
-        print('🔵 CategoryProvider: Request files count: ${request.files.length}');
-        print('🔵 CategoryProvider: File field name: foto');
-        print('🔵 CategoryProvider: Token first 20 chars: ${token.substring(0, 20)}...');
         
         final streamedResponse = await request.send();
         final response = await http.Response.fromStream(streamedResponse);
 
-        print('🔵 CategoryProvider: Create response status: ${response.statusCode}');
-        print('🔵 CategoryProvider: Create response body: ${response.body}');
+
+
 
         if (response.statusCode == 201 || response.statusCode == 200) {
           return {'success': true, 'message': 'Categoría creada exitosamente'};
@@ -145,13 +137,13 @@ class CategoryProvider {
             final data = json.decode(response.body);
             return {'success': false, 'message': data['message'] ?? 'Error al crear categoría'};
           } catch (e) {
-            print('❌ Error parsing response: $e');
+
             return {'success': false, 'message': 'Error del servidor (${response.statusCode}): ${response.body}'};
           }
         }
       } else {
         // Sin imagen, enviar JSON normal
-        print('🔵 CategoryProvider: Creating category without image');
+
         
         final headers = {
           'Content-Type': 'application/json',
@@ -167,7 +159,7 @@ class CategoryProvider {
           }),
         );
 
-        print('🔵 CategoryProvider: Create response status: ${response.statusCode}');
+
 
         if (response.statusCode == 201 || response.statusCode == 200) {
           return {'success': true, 'message': 'Categoría creada exitosamente'};
@@ -181,7 +173,7 @@ class CategoryProvider {
         }
       }
     } catch (e) {
-      print('❌ CategoryProvider: Create exception - $e');
+
       return {'success': false, 'message': 'Error de conexión: $e'};
     }
   }
@@ -220,15 +212,13 @@ class CategoryProvider {
           ),
         );
 
-        print('🔵 CategoryProvider: Updating category $id with image (PATCH, using "foto" field)');
-        print('🔵 CategoryProvider: Request fields: ${request.fields}');
-        print('🔵 CategoryProvider: Request files count: ${request.files.length}');
+
         
         final streamedResponse = await request.send();
         final response = await http.Response.fromStream(streamedResponse);
 
-        print('🔵 CategoryProvider: Update response status: ${response.statusCode}');
-        print('🔵 CategoryProvider: Update response body: ${response.body}');
+
+
 
         if (response.statusCode == 200) {
           return {'success': true, 'message': 'Categoría actualizada exitosamente'};
@@ -237,13 +227,12 @@ class CategoryProvider {
             final data = json.decode(response.body);
             return {'success': false, 'message': data['message'] ?? 'Error al actualizar categoría'};
           } catch (e) {
-            print('❌ Error parsing response: $e');
+
             return {'success': false, 'message': 'Error del servidor (${response.statusCode}): ${response.body}'};
           }
         }
       } else {
         // Sin imagen, enviar JSON normal con PATCH
-        print('🔵 CategoryProvider: Updating category $id without image (PATCH)');
         final body = <String, dynamic>{};
         if (name != null && name.isNotEmpty) body['name'] = name;
         if (description != null && description.isNotEmpty) body['description'] = description;
@@ -259,7 +248,7 @@ class CategoryProvider {
           body: json.encode(body),
         );
 
-        print('🔵 CategoryProvider: Update response status: ${response.statusCode}');
+
 
         if (response.statusCode == 200) {
           return {'success': true, 'message': 'Categoría actualizada exitosamente'};
@@ -273,7 +262,7 @@ class CategoryProvider {
         }
       }
     } catch (e) {
-      print('❌ CategoryProvider: Update exception - $e');
+
       return {'success': false, 'message': 'Error de conexión: $e'};
     }
   }

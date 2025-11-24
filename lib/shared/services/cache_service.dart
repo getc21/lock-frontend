@@ -68,7 +68,6 @@ class CacheService {
       ttl: ttl,
     );
     if (kDebugMode) {
-      print('Cache SET: $key (TTL: ${ttl?.inSeconds}s)');
     }
   }
 
@@ -84,7 +83,7 @@ class CacheService {
     final cached = get<T>(key);
     if (cached != null) {
       if (kDebugMode) {
-        print('Cache HIT: $key');
+
       }
       return cached;
     }
@@ -92,14 +91,12 @@ class CacheService {
     // Evitar requests duplicadas si ya está en progreso
     if (_pendingRequests.containsKey(key)) {
       if (kDebugMode) {
-        print('Cache PENDING: $key (waiting for request)');
       }
       return await _pendingRequests[key]!;
     }
 
     // Ejecutar fetcher y almacenar resultado en caché
     if (kDebugMode) {
-      print('Cache MISS: $key (fetching...)');
     }
 
     try {
@@ -118,7 +115,7 @@ class CacheService {
   void invalidate(String key) {
     _cache.remove(key);
     if (kDebugMode) {
-      print('Cache INVALIDATED: $key');
+
     }
   }
 
@@ -136,7 +133,6 @@ class CacheService {
     }
 
     if (kDebugMode) {
-      print('Cache INVALIDATED pattern: $pattern (${keysToRemove.length} entries)');
     }
   }
 
@@ -144,7 +140,6 @@ class CacheService {
   void clear() {
     _cache.clear();
     if (kDebugMode) {
-      print('Cache CLEARED (all)');
     }
   }
 
@@ -182,7 +177,7 @@ class CacheService {
     }
 
     if (kDebugMode) {
-      print('Cache CLEANUP: ${keysToRemove.length} expired entries removed');
+
     }
   }
 }

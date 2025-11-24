@@ -11,7 +11,6 @@ class SupplierProvider {
     if (token == null || token.isEmpty) {
       token = prefs.getString('token');
     }
-    print('🔵 SupplierProvider: Token retrieved: ${token != null && token.isNotEmpty ? "✅ Found (${token.length} chars)" : "❌ Not found"}');
     return token;
   }
 
@@ -25,65 +24,63 @@ class SupplierProvider {
 
   Future<Map<String, dynamic>> getSuppliers() async {
     try {
-      print('🔵 SupplierProvider: Fetching suppliers from ${ApiConfig.baseUrl}/suppliers');
+
       
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/suppliers'),
         headers: await _getHeaders(),
       );
 
-      print('🔵 SupplierProvider: Response status code: ${response.statusCode}');
-      print('🔵 SupplierProvider: Response body: ${response.body}');
+
+
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         
-        print('🔵 SupplierProvider: Decoded data type: ${data.runtimeType}');
-        print('🔵 SupplierProvider: Decoded data: $data');
+
+
         
         // Flexible parsing - handle different response structures
         if (data is Map<String, dynamic>) {
-          print('🔵 SupplierProvider: Checking data structure...');
-          print('   - data["data"] exists? ${data['data'] != null}');
-          print('   - data["proveedores"] exists? ${data['proveedores'] != null}');
+
+
+
           
           if (data['data'] != null) {
-            print('   - data["data"] type: ${data['data'].runtimeType}');
+
             
             // Intentar múltiples estructuras
             if (data['data'] is List) {
-              print('✅ SupplierProvider: Found data["data"] as List with ${(data['data'] as List).length} items');
               return {'success': true, 'data': data['data']};
             } else if (data['data']['proveedores'] is List) {
-              print('✅ SupplierProvider: Found data["data"]["proveedores"] as List');
+
               return {'success': true, 'data': data['data']['proveedores']};
             } else if (data['data']['suppliers'] is List) {
-              print('✅ SupplierProvider: Found data["data"]["suppliers"] as List');
+
               return {'success': true, 'data': data['data']['suppliers']};
             } else if (data['data']['data'] is List) {
-              print('✅ SupplierProvider: Found data["data"]["data"] as List');
+
               return {'success': true, 'data': data['data']['data']};
             }
           } else if (data['proveedores'] is List) {
-            print('✅ SupplierProvider: Found data["proveedores"] as List');
+
             return {'success': true, 'data': data['proveedores']};
           } else if (data['suppliers'] is List) {
-            print('✅ SupplierProvider: Found data["suppliers"] as List');
+
             return {'success': true, 'data': data['suppliers']};
           }
         }
         
-        print('❌ SupplierProvider: Invalid response format');
+
         return {'success': false, 'message': 'Invalid response format'};
       } else if (response.statusCode == 404) {
-        print('❌ SupplierProvider: Endpoint not found (404)');
         return {'success': false, 'message': 'Endpoint /suppliers no existe en el backend'};
       } else {
-        print('❌ SupplierProvider: Error status code: ${response.statusCode}');
+
         return {'success': false, 'message': 'Error al cargar proveedores (${response.statusCode})'};
       }
     } catch (e) {
-      print('❌ SupplierProvider: Exception - $e');
+
       return {'success': false, 'message': 'Error de conexión: $e'};
     }
   }
@@ -154,26 +151,23 @@ class SupplierProvider {
         );
       }
 
-      print('🔵 SupplierProvider: Creating supplier with name: $name');
-      print('🔵 SupplierProvider: Image included: ${imageFile != null}');
+
+
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
-
-      print('🔵 SupplierProvider: Create response status: ${response.statusCode}');
-      print('🔵 SupplierProvider: Create response body (first 200 chars): ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         try {
           json.decode(response.body);
           return {'success': true, 'message': 'Proveedor creado exitosamente'};
         } catch (e) {
-          print('❌ Error parsing JSON response: $e');
-          print('❌ Full response body: ${response.body}');
+
+
           return {'success': false, 'message': 'Error al procesar respuesta del servidor'};
         }
       } else {
-        print('❌ Server returned error status: ${response.statusCode}');
+
         try {
           final data = json.decode(response.body);
           return {'success': false, 'message': data['message'] ?? 'Error al crear proveedor'};
@@ -182,7 +176,7 @@ class SupplierProvider {
         }
       }
     } catch (e) {
-      print('❌ SupplierProvider: Create exception - $e');
+
       return {'success': false, 'message': 'Error de conexión: $e'};
     }
   }
@@ -229,12 +223,10 @@ class SupplierProvider {
             filename: 'supplier_image.jpg',
           ),
         );
-
-        print('🔵 SupplierProvider: Updating supplier $id with new image (PATCH)');
         final streamedResponse = await request.send();
         final response = await http.Response.fromStream(streamedResponse);
 
-        print('🔵 SupplierProvider: Update response status: ${response.statusCode}');
+
 
         if (response.statusCode == 200) {
           return {'success': true, 'message': 'Proveedor actualizado exitosamente'};
@@ -248,7 +240,6 @@ class SupplierProvider {
         }
       } else {
         // Sin imagen, enviar JSON normal con PATCH
-        print('🔵 SupplierProvider: Updating supplier $id without image (PATCH)');
         final body = {
           'name': name,
           if (contactPerson != null && contactPerson.isNotEmpty) 'contactName': contactPerson,
@@ -263,7 +254,7 @@ class SupplierProvider {
           body: json.encode(body),
         );
 
-        print('🔵 SupplierProvider: Update response status: ${response.statusCode}');
+
 
         if (response.statusCode == 200) {
           return {'success': true, 'message': 'Proveedor actualizado exitosamente'};
@@ -277,7 +268,7 @@ class SupplierProvider {
         }
       }
     } catch (e) {
-      print('❌ SupplierProvider: Update exception - $e');
+
       return {'success': false, 'message': 'Error de conexión: $e'};
     }
   }

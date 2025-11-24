@@ -44,10 +44,6 @@ class _PersistenceInitializerState
       final currencyState = ref.read(currencyProvider);
 
       if (kDebugMode) {
-        debugPrint('✅ Persistencia inicializada:');
-        debugPrint('   - Sesión: ${authState.isLoggedIn ? 'Cargada' : 'No cargada'}');
-        debugPrint('   - Tema: ${themeState.isInitialized ? 'Cargado' : 'No cargado'} (${themeState.currentThemeId})');
-        debugPrint('   - Moneda: ${currencyState.isInitialized ? 'Cargada' : 'No cargada'} (${currencyState.currentCurrencyId})');
       }
 
       if (mounted) {
@@ -57,7 +53,7 @@ class _PersistenceInitializerState
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error en PersistenceInitializer: $e');
+
       }
       // Marcar como inicializado incluso en caso de error para no bloquear la app
       if (mounted) {

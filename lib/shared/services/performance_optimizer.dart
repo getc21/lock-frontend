@@ -140,7 +140,7 @@ class PerformanceOptimizer {
   /// Monitorear performance
   void logPerformanceMetrics(String operation, Duration duration) {
     if (kDebugMode) {
-      print('Performance: $operation took ${duration.inMilliseconds}ms');
+
     }
   }
 }

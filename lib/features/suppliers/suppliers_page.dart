@@ -23,11 +23,11 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
   @override
   void initState() {
     super.initState();
-    print('🔵 SuppliersPage: initState called');
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasInitialized && mounted) {
         _hasInitialized = true;
-        print('🔵 SuppliersPage: PostFrameCallback - calling loadSuppliers');
+
         ref.read(supplierProvider.notifier).loadSuppliers();
       }
     });
@@ -35,7 +35,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
 
   @override
   Widget build(BuildContext context) {
-    print('🔵 SuppliersPage: build called');
+
 
     return Consumer(
       builder: (context, ref, _) {

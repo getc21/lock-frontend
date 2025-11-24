@@ -62,7 +62,6 @@ abstract class EntityListNotifier<T> extends StateNotifier<GenericListState<T>> 
       final cached = _cache.get<List<T>>(cacheKey);
       if (cached != null) {
         if (kDebugMode) {
-          print('✅ ${cached.length} items obtenidos del caché ($cacheKey)');
         }
         state = state.copyWith(
           items: cached,
@@ -88,8 +87,6 @@ abstract class EntityListNotifier<T> extends StateNotifier<GenericListState<T>> 
       );
 
       if (kDebugMode) {
-        print(
-            '✅ ${items.length} items cargados y cacheados ($cacheKey) - TTL: 5min');
       }
 
       state = state.copyWith(
@@ -104,7 +101,6 @@ abstract class EntityListNotifier<T> extends StateNotifier<GenericListState<T>> 
         isLoading: false,
       );
       if (kDebugMode) {
-        print('❌ Error cargando items ($cacheKey): $e');
       }
     }
   }
@@ -114,7 +110,6 @@ abstract class EntityListNotifier<T> extends StateNotifier<GenericListState<T>> 
   void invalidateList() {
     _cache.invalidate(cacheKey);
     if (kDebugMode) {
-      print('🗑️ Lista invalidada ($cacheKey)');
     }
   }
 
@@ -122,7 +117,6 @@ abstract class EntityListNotifier<T> extends StateNotifier<GenericListState<T>> 
   void invalidatePattern(String pattern) {
     _cache.invalidatePattern(pattern);
     if (kDebugMode) {
-      print('🗑️ Cachés invalidados por patrón ($pattern)');
     }
   }
 
@@ -130,7 +124,7 @@ abstract class EntityListNotifier<T> extends StateNotifier<GenericListState<T>> 
   void clearCache() {
     _cache.clear();
     if (kDebugMode) {
-      print('🧹 Caché completamente limpiado');
+
     }
   }
 }

@@ -77,8 +77,8 @@ class OrderNotifier extends StateNotifier<OrderState> {
       }
 
       if (kDebugMode) {
-        print('=== OrderNotifier: loadOrders ===');
-        print('effectiveStoreId: $effectiveStoreId');
+
+
       }
 
       final cacheKey = _getCacheKey(

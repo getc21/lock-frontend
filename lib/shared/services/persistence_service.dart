@@ -32,7 +32,7 @@ class PersistenceService {
         await _loadStore(ref);
       }
     } catch (e) {
-      debugPrint('Error inicializando persistencia: $e');
+
     }
   }
 
@@ -43,7 +43,7 @@ class PersistenceService {
       ref.read(authProvider); // Disparar la inicialización
       await Future.delayed(const Duration(milliseconds: 100));
     } catch (e) {
-      debugPrint('Error cargando sesión: $e');
+
     }
   }
 
@@ -54,7 +54,7 @@ class PersistenceService {
       ref.read(themeProvider); // Disparar la inicialización
       await Future.delayed(const Duration(milliseconds: 100));
     } catch (e) {
-      debugPrint('Error cargando tema: $e');
+
     }
   }
 
@@ -65,7 +65,7 @@ class PersistenceService {
       ref.read(currencyProvider); // Disparar la inicialización
       await Future.delayed(const Duration(milliseconds: 100));
     } catch (e) {
-      debugPrint('Error cargando moneda: $e');
+
     }
   }
 
@@ -76,7 +76,7 @@ class PersistenceService {
       // Cargar tiendas (auto-seleccionará la guardada)
       await storeNotifier.loadStores(autoSelect: true);
     } catch (e) {
-      debugPrint('Error cargando tienda: $e');
+
     }
   }
 
@@ -86,7 +86,7 @@ class PersistenceService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
     } catch (e) {
-      debugPrint('Error limpiando datos persistidos: $e');
+
     }
   }
 

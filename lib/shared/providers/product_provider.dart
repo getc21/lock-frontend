@@ -40,20 +40,20 @@ class ProductProvider {
           .replace(queryParameters: queryParams.isEmpty ? null : queryParams);
       
       if (kDebugMode) {
-        print('🔵 ProductProvider: Fetching products from $uri');
-        print('   - storeId: $storeId');
-        print('   - queryParams: $queryParams');
+
+
+
       }
       
       final response = await http.get(uri, headers: _headers);
       final data = jsonDecode(response.body);
 
       if (kDebugMode) {
-        print('🔵 ProductProvider: Response status: ${response.statusCode}');
-        print('   - Response body type: ${data.runtimeType}');
+
+
         if (data is Map) {
-          print('   - status: ${data['status']}');
-          print('   - results: ${data['results']}');
+
+
         }
       }
 
@@ -61,7 +61,7 @@ class ProductProvider {
         // Backend devuelve {status: 'success', results: X, data: {products: [...]}}
         final products = data['data']['products'];
         if (kDebugMode) {
-          print('✅ ProductProvider: Found ${products is List ? products.length : 0} products');
+
         }
         if (products is List) {
           return {'success': true, 'data': products};
@@ -70,7 +70,7 @@ class ProductProvider {
         }
       } else {
         if (kDebugMode) {
-          print('❌ ProductProvider: Error ${response.statusCode}');
+
         }
         return {
           'success': false,
@@ -79,7 +79,7 @@ class ProductProvider {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ProductProvider: Exception: $e');
+
       }
       return {'success': false, 'message': 'Error de conexión: $e'};
     }

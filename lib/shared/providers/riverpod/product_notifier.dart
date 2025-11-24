@@ -68,8 +68,8 @@ class ProductNotifier extends StateNotifier<ProductState> {
       }
 
       if (kDebugMode) {
-        print('=== ProductNotifier: loadProducts ===');
-        print('effectiveStoreId: $effectiveStoreId');
+
+
       }
 
       final cacheKey = _getCacheKey(
