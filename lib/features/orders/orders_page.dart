@@ -370,7 +370,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                                   _formatDate(order['orderDate'] ?? order['createdAt']),
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.white.withOpacity(0.7),
+                                    color: AppColors.white.withValues(alpha: 0.7),
                                   ),
                                 ),
                               ],
@@ -503,7 +503,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                                         Container(
                                           padding: const EdgeInsets.all(AppSizes.spacing8),
                                           decoration: BoxDecoration(
-                                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
                                           ),
                                           child: Icon(
@@ -710,7 +710,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
         vertical: AppSizes.spacing4,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
       ),
       child: Row(

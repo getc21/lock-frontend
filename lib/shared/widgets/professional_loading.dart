@@ -192,7 +192,7 @@ class SimpleLoadingOverlay extends ConsumerWidget {
     final isDarkMode = ThemeUtils.isDarkMode(themeState.themeMode, brightness);
 
     return Container(
-      color: Colors.black.withOpacity(0.1),
+      color: Colors.black.withValues(alpha: 0.1),
       child: Center(
         child: Container(
           padding: const EdgeInsets.all(AppSizes.spacing32),
@@ -201,7 +201,7 @@ class SimpleLoadingOverlay extends ConsumerWidget {
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 20,
                 offset: const Offset(0, 4),
               ),

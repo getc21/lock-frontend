@@ -147,7 +147,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                   borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -193,7 +193,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                                   width: 40,
                                   height: 40,
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                    color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: supplier['foto'] != null && supplier['foto'].toString().isNotEmpty
@@ -372,10 +372,10 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         width: 120,
                         height: 120,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor.withOpacity(0.1),
+                          color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Theme.of(context).primaryColor.withOpacity(0.3),
+                            color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
                             width: 2,
                             style: BorderStyle.solid,
                           ),
@@ -704,14 +704,14 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                             Icon(
                               Icons.inventory_2_outlined,
                               size: 64,
-                              color: AppColors.textSecondary.withOpacity(0.5),
+                              color: AppColors.textSecondary.withValues(alpha: 0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No hay productos de este proveedor',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: AppColors.textSecondary.withOpacity(0.7),
+                                color: AppColors.textSecondary.withValues(alpha: 0.7),
                               ),
                             ),
                           ],
@@ -784,10 +784,10 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: isOutOfStock
-                                              ? AppColors.error.withOpacity(0.1)
+                                              ? AppColors.error.withValues(alpha: 0.1)
                                               : isLowStock
-                                                  ? AppColors.warning.withOpacity(0.1)
-                                                  : AppColors.success.withOpacity(0.1),
+                                                  ? AppColors.warning.withValues(alpha: 0.1)
+                                                  : AppColors.success.withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(4),
                                         ),
                                         child: Text(
@@ -826,7 +826,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                                         product['categoryId']['name'] ?? 'Sin categoría',
                                         style: const TextStyle(fontSize: 11),
                                       ),
-                                      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                                      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                                       padding: EdgeInsets.zero,
                                     ),
                                 ],

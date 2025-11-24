@@ -379,14 +379,14 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
                             Icon(
                               Icons.inventory_2_outlined,
                               size: 64,
-                              color: AppColors.textSecondary.withOpacity(0.5),
+                              color: AppColors.textSecondary.withValues(alpha: 0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No hay productos en esta ubicación',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: AppColors.textSecondary.withOpacity(0.7),
+                                color: AppColors.textSecondary.withValues(alpha: 0.7),
                               ),
                             ),
                           ],
@@ -459,10 +459,10 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: isOutOfStock
-                                              ? AppColors.error.withOpacity(0.1)
+                                              ? AppColors.error.withValues(alpha: 0.1)
                                               : isLowStock
-                                                  ? AppColors.warning.withOpacity(0.1)
-                                                  : AppColors.success.withOpacity(0.1),
+                                                  ? AppColors.warning.withValues(alpha: 0.1)
+                                                  : AppColors.success.withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(4),
                                         ),
                                         child: Text(
@@ -501,7 +501,7 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
                                         product['categoryId']['name'] ?? 'Sin categoría',
                                         style: const TextStyle(fontSize: 11),
                                       ),
-                                      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                                      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                                       padding: EdgeInsets.zero,
                                     ),
                                 ],

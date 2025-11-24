@@ -129,7 +129,7 @@ class _UserDetailContentState extends ConsumerState<_UserDetailContent> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isActive ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                    color: isActive ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

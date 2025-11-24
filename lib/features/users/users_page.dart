@@ -112,7 +112,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -170,7 +170,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                 vertical: AppSizes.spacing4,
               ),
               decoration: BoxDecoration(
-                color: _getRoleColor(user.role.name).withOpacity(0.1),
+                color: _getRoleColor(user.role.name).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
               ),
               child: Text(

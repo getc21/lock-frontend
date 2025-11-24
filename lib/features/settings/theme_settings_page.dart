@@ -308,7 +308,7 @@ class ThemeSettingsPage extends ConsumerWidget {
           boxShadow: [
             if (isSelected)
               BoxShadow(
-                color: theme.primaryColor.withOpacity(0.3),
+                color: theme.primaryColor.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -324,8 +324,8 @@ class ThemeSettingsPage extends ConsumerWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  theme.primaryColor.withOpacity(0.8),
-                  theme.accentColor.withOpacity(0.6),
+                  theme.primaryColor.withValues(alpha: 0.8),
+                  theme.accentColor.withValues(alpha: 0.6),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,

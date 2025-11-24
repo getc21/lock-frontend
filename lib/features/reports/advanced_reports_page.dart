@@ -197,7 +197,7 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
             )
           else if (reportsState.errorMessage.isNotEmpty)
             Card(
-              color: Colors.red.withOpacity(0.1),
+              color: Colors.red.withValues(alpha: 0.1),
               child: Padding(
                 padding: const EdgeInsets.all(AppSizes.spacing24),
                 child: Column(
@@ -690,7 +690,7 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.2),
+                            color: statusColor.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -983,7 +983,7 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
                           dotData: const FlDotData(show: true),
                           belowBarData: BarAreaData(
                             show: true,
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                           ),
                         ),
                       ],
@@ -1283,7 +1283,7 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
                 vertical: 8,
               ),
               decoration: BoxDecoration(
-                color: growthColor.withOpacity(0.1),
+                color: growthColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(

@@ -187,7 +187,7 @@ class _StoresPageState extends ConsumerState<StoresPage> {
 
           return DataRow2(
             decoration: BoxDecoration(
-              color: isCurrent ? Theme.of(context).primaryColor.withOpacity(0.05) : null,
+              color: isCurrent ? Theme.of(context).primaryColor.withValues(alpha: 0.05) : null,
               border: isCurrent 
                 ? Border(left: BorderSide(color: Theme.of(context).primaryColor, width: 3))
                 : null,
@@ -200,7 +200,7 @@ class _StoresPageState extends ConsumerState<StoresPage> {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: isActive 
-                          ? Theme.of(context).primaryColor.withOpacity(0.1)
+                          ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
                           : AppColors.gray200,
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -330,7 +330,7 @@ class _StoresPageState extends ConsumerState<StoresPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -506,9 +506,9 @@ class _StoresPageState extends ConsumerState<StoresPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

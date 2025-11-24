@@ -360,9 +360,9 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                 vertical: AppSizes.spacing4,
               ),
               decoration: BoxDecoration(
-                color: isOutOfStock ? AppColors.error.withOpacity(0.1) :
-                       isLowStock ? AppColors.warning.withOpacity(0.1) :
-                       AppColors.success.withOpacity(0.1),
+                color: isOutOfStock ? AppColors.error.withValues(alpha: 0.1) :
+                       isLowStock ? AppColors.warning.withValues(alpha: 0.1) :
+                       AppColors.success.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
               ),
               child: Text(
@@ -642,10 +642,10 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: Theme.of(dialogContext).primaryColor.withOpacity(0.1),
+                        color: Theme.of(dialogContext).primaryColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Theme.of(dialogContext).primaryColor.withOpacity(0.3),
+                          color: Theme.of(dialogContext).primaryColor.withValues(alpha: 0.3),
                           width: 2,
                           style: BorderStyle.solid,
                         ),

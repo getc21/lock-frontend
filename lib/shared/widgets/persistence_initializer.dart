@@ -95,12 +95,12 @@ class _PersistenceInitializerState
                 end: Alignment.bottomRight,
                 colors: isDarkMode
                     ? [
-                        currentTheme.primaryColor.withOpacity(0.15),
-                        currentTheme.accentColor.withOpacity(0.08),
+                        currentTheme.primaryColor.withValues(alpha: 0.15),
+                        currentTheme.accentColor.withValues(alpha: 0.08),
                       ]
                     : [
-                        currentTheme.primaryColor.withOpacity(0.1),
-                        currentTheme.accentColor.withOpacity(0.05),
+                        currentTheme.primaryColor.withValues(alpha: 0.1),
+                        currentTheme.accentColor.withValues(alpha: 0.05),
                       ],
               ),
             ),

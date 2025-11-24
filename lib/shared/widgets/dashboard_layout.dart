@@ -355,7 +355,7 @@ class DashboardLayout extends ConsumerWidget {
                         end: Alignment.bottomRight,
                         colors: [
                           AppColors.background,
-                          Theme.of(context).primaryColor.withOpacity(0.03),
+                          Theme.of(context).primaryColor.withValues(alpha: 0.03),
                         ],
                       ),
                     ),
@@ -405,7 +405,7 @@ class DashboardLayout extends ConsumerWidget {
           end: Alignment.bottomRight,
           colors: [
             AppColors.white,
-            Theme.of(context).primaryColor.withOpacity(0.08),
+            Theme.of(context).primaryColor.withValues(alpha: 0.08),
           ],
         ),
         border: const Border(
@@ -433,9 +433,9 @@ class DashboardLayout extends ConsumerWidget {
                 vertical: AppSizes.spacing4,
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.3)),
+                border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.3)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -480,9 +480,9 @@ class DashboardLayout extends ConsumerWidget {
                 vertical: AppSizes.spacing8,
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.3)),
+                border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.3)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -730,7 +730,7 @@ class DashboardLayout extends ConsumerWidget {
           boxShadow: [
             if (isSelected)
               BoxShadow(
-                color: theme.primaryColor.withOpacity(0.3),
+                color: theme.primaryColor.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -746,8 +746,8 @@ class DashboardLayout extends ConsumerWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  theme.primaryColor.withOpacity(0.8),
-                  theme.accentColor.withOpacity(0.6),
+                  theme.primaryColor.withValues(alpha: 0.8),
+                  theme.accentColor.withValues(alpha: 0.6),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -1082,7 +1082,7 @@ class _SidebarWidget extends StatelessWidget {
       ),
       child: Material(
         color: isSelected
-            ? Theme.of(context).primaryColor.withOpacity(0.1)
+            ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
         child: InkWell(

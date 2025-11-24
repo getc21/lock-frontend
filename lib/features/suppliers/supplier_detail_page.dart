@@ -169,8 +169,8 @@ class _SupplierDetailContentState extends ConsumerState<_SupplierDetailContent> 
                   ),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? Colors.green.withOpacity(0.2)
-                        : Colors.red.withOpacity(0.2),
+                        ? Colors.green.withValues(alpha: 0.2)
+                        : Colors.red.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

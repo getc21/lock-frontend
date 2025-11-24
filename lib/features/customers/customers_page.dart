@@ -176,7 +176,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                   children: [
                     CircleAvatar(
                       radius: 20,
-                      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
+                      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
                       child: Text(
                         fullName.isNotEmpty ? fullName[0].toUpperCase() : 'C',
                         style: TextStyle(
@@ -238,7 +238,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                 vertical: AppSizes.spacing4,
               ),
               decoration: BoxDecoration(
-                color: AppColors.info.withOpacity(0.1),
+                color: AppColors.info.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
               ),
               child: Text(
@@ -528,7 +528,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                         gradient: LinearGradient(
                           colors: [
                             Theme.of(context).primaryColor,
-                            Theme.of(context).primaryColor.withOpacity(0.7),
+                            Theme.of(context).primaryColor.withValues(alpha: 0.7),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -541,7 +541,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                             children: [
                               CircleAvatar(
                                 radius: 40,
-                                backgroundColor: AppColors.white.withOpacity(0.2),
+                                backgroundColor: AppColors.white.withValues(alpha: 0.2),
                                 child: Text(
                                   fullName.isNotEmpty ? fullName[0].toUpperCase() : 'C',
                                   style: const TextStyle(
@@ -587,7 +587,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.warning.withOpacity(0.3),
+                                color: AppColors.warning.withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Text(
@@ -709,9 +709,9 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
