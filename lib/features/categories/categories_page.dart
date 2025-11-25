@@ -17,6 +17,9 @@ class CategoriesPage extends ConsumerStatefulWidget {
 }
 
 class _CategoriesPageState extends ConsumerState<CategoriesPage> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  
   @override
   void initState() {
     super.initState();
@@ -26,6 +29,12 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
         ref.read(categoryProvider.notifier).loadCategories();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -39,27 +48,30 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header con botón de agregar
+          // Search and Add Button
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Gestión de Categorías',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Buscar categorías...',
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
                 ),
               ),
+              const SizedBox(width: AppSizes.spacing16),
               ElevatedButton.icon(
                 onPressed: () => _showCategoryDialog(context, ref),
                 icon: const Icon(Icons.add),
                 label: const Text('Nueva Categoría'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).primaryColor,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing20,
-                    vertical: AppSizes.spacing12,
-                  ),
                 ),
               ),
             ],
@@ -79,9 +91,56 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                     );
                   }
 
+                  // Filtrar categorías
+                  final filteredCategories = categoryState.categories
+                      .where((c) => _searchQuery.isEmpty ||
+                          ((c['name'] as String?) ?? '').toLowerCase().contains(_searchQuery.toLowerCase()))
+                      .toList();
+
                   if (categoryState.categories.isEmpty) {
-                    return const Center(
-                      child: Text('No hay categorías registradas'),
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.spacing24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.category_outlined, size: 64, color: AppColors.textSecondary),
+                            const SizedBox(height: AppSizes.spacing16),
+                            const Text(
+                              'No hay categorías disponibles',
+                              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: AppSizes.spacing8),
+                            ElevatedButton.icon(
+                              onPressed: () => _showCategoryDialog(context, ref),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Agregar Primera Categoría'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  if (filteredCategories.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.spacing24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.search_off, size: 64, color: AppColors.textSecondary),
+                            const SizedBox(height: AppSizes.spacing16),
+                            const Text(
+                              'No se encontraron categorías',
+                              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
                     );
                   }
 
@@ -107,7 +166,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                         size: ColumnSize.S,
                       ),
                     ],
-                    rows: categoryState.categories.map((category) {
+                    rows: filteredCategories.map((category) {
                       final categoryName = category['name'] ?? '';
                       final categoryDescription = category['description'] ?? '-';
                       // Backend devuelve 'foto', no 'image'

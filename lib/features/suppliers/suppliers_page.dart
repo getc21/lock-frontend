@@ -19,6 +19,8 @@ class SuppliersPage extends ConsumerStatefulWidget {
 
 class _SuppliersPageState extends ConsumerState<SuppliersPage> {
   bool _hasInitialized = false;
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -31,6 +33,12 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
         ref.read(supplierProvider.notifier).loadSuppliers();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -90,8 +98,26 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                 ),
               ],
             ),
-            const SizedBox(height: AppSizes.spacing24),
-            // Data Table
+            const SizedBox(height: AppSizes.spacing16),
+            // Search Bar
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      hintText: 'Buscar proveedores...',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
             if (supplierState.isLoading)
               SizedBox(
                 height: 600,
@@ -181,7 +207,12 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         size: ColumnSize.S,
                       ),
                     ],
-                    rows: supplierState.suppliers.map((supplier) {
+                    rows: supplierState.suppliers
+                        .where((s) => _searchQuery.isEmpty ||
+                            ((s['name'] as String?) ?? '').toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                            ((s['contactName'] as String?) ?? '').toLowerCase().contains(_searchQuery.toLowerCase()))
+                        .toList()
+                        .map((supplier) {
                       return DataRow2(
                         onTap: () => _showSupplierProducts(context, supplier),
                         cells: [

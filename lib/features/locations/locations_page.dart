@@ -18,6 +18,8 @@ class LocationsPage extends ConsumerStatefulWidget {
 
 class _LocationsPageState extends ConsumerState<LocationsPage> {
   bool _hasInitialized = false;
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -28,6 +30,12 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
         ref.read(locationProvider.notifier).loadLocationsForCurrentStore();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -86,9 +94,26 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.spacing24),
-
-          // Tabla de ubicaciones
+          const SizedBox(height: AppSizes.spacing16),
+          // Search Bar
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Buscar ubicaciones...',
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
           SizedBox(
             height: 600,
             child: Card(
@@ -120,7 +145,11 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
                                 size: ColumnSize.S,
                               ),
                             ],
-                            rows: locationState.locations.map((location) {
+                            rows: locationState.locations
+                                .where((loc) => _searchQuery.isEmpty ||
+                                    ((loc['name'] as String?) ?? '').toLowerCase().contains(_searchQuery.toLowerCase()))
+                                .toList()
+                                .map((location) {
                               final locationName = location['name'] ?? '';
                               final locationDescription = location['description'] ?? '-';
                               

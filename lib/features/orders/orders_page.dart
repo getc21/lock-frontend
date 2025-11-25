@@ -135,6 +135,15 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                         'No hay órdenes disponibles',
                         style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
                       ),
+                      const SizedBox(height: AppSizes.spacing8),
+                      ElevatedButton.icon(
+                        onPressed: () => context.go('/orders/create'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Crear Primera Orden'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                        ),
+                      ),
                     ],
                   ),
                 ),
