@@ -79,6 +79,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _loadSavedSession();
   }
 
+  // Inicializar autenticación (público para esperar en PersistenceInitializer)
+  Future<void> initializeAuth() async {
+    await _loadSavedSession();
+  }
+
   // Cargar sesión guardada
   Future<void> _loadSavedSession() async {
     state = state.copyWith(isLoading: true);

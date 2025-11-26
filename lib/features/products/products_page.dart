@@ -9,7 +9,7 @@ import 'dart:convert';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
-import '../../shared/widgets/professional_loading.dart';
+import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/product_notifier.dart';
 import '../../shared/providers/riverpod/category_notifier.dart';
 import '../../shared/providers/riverpod/location_notifier.dart';
@@ -134,39 +134,42 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                 return Card(
                   child: SizedBox(
                     height: 600,
-                    child: ProfessionalLoading(
-                      message: 'Cargando productos...',
-                      rowCount: 8,
-                      columnCount: 7,
+                    child: Center(
+                      child: LoadingIndicator(
+                        message: 'Cargando productos...',
+                      ),
                     ),
                   ),
                 );
               }
 
               if (productState.products.isEmpty) {
-                return Card(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSizes.spacing24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.textSecondary),
-                          const SizedBox(height: AppSizes.spacing16),
-                          const Text(
-                            'No hay productos disponibles',
-                            style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
-                          ),
-                          const SizedBox(height: AppSizes.spacing8),
-                          ElevatedButton.icon(
-                            onPressed: () => _showAddProductDialog(),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Agregar Primer Producto'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).primaryColor,
+                return SizedBox(
+                  height: 600,
+                  child: Card(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.spacing24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.textSecondary),
+                            const SizedBox(height: AppSizes.spacing16),
+                            const Text(
+                              'No hay productos disponibles',
+                              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: AppSizes.spacing8),
+                            ElevatedButton.icon(
+                              onPressed: () => _showAddProductDialog(),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Agregar Primer Producto'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

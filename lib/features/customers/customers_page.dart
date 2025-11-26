@@ -102,30 +102,37 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
               height: 600,
               child: Card(
                 child: Center(
-                  child: LoadingIndicator(message: 'Cargando clientes...'),
+                  child: LoadingIndicator(
+                    message: 'Cargando clientes...',
+                  ),
                 ),
               ),
             )
           else if (customerState.customers.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.spacing24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.people_outline, size: 64, color: AppColors.textSecondary),
-                    const SizedBox(height: AppSizes.spacing16),
-                    const Text('No hay clientes disponibles', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
-                    const SizedBox(height: AppSizes.spacing8),
-                    ElevatedButton.icon(
-                      onPressed: () => _showCustomerDialog(),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Agregar Primer Cliente'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                      ),
+            SizedBox(
+              height: 600,
+              child: Card(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.people_outline, size: 64, color: AppColors.textSecondary),
+                        const SizedBox(height: AppSizes.spacing16),
+                        const Text('No hay clientes disponibles', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
+                        const SizedBox(height: AppSizes.spacing8),
+                        ElevatedButton.icon(
+                          onPressed: () => _showCustomerDialog(),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Agregar Primer Cliente'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             )

@@ -43,7 +43,7 @@ class BellezAppWeb extends ConsumerWidget {
     }
     
     return MaterialApp.router(
-      title: 'BellezApp - Panel de Administración',
+      title: 'naturalMARKET',
       debugShowCheckedModeBanner: false,
       theme: currentTheme,
       locale: const Locale('es', 'ES'),

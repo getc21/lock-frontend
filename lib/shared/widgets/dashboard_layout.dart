@@ -53,6 +53,22 @@ class DashboardLayout extends ConsumerWidget {
     );
   }
 
+  String? _getSelectedStoreId(dynamic storeState) {
+    // Obtener el ID de la tienda actual si existe y está en la lista
+    if (storeState.currentStore != null && storeState.stores.isNotEmpty) {
+      final currentStoreId = storeState.currentStore['_id'];
+      if (currentStoreId != null &&
+          storeState.stores.any((s) => s['_id'] == currentStoreId)) {
+        return currentStoreId as String?;
+      }
+    }
+    // Si no hay tienda seleccionada válida, retornar la primera
+    if (storeState.stores.isNotEmpty) {
+      return storeState.stores.first['_id'] as String?;
+    }
+    return null;
+  }
+
   void _showThemeModal(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
@@ -411,53 +427,71 @@ class DashboardLayout extends ConsumerWidget {
           const SizedBox(width: AppSizes.spacing24),
 
           // ⭐ SELECTOR DE TIENDA - SOLO PARA ADMINISTRADORES
-          if (isAdmin && storeState.stores.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.spacing12,
-                vertical: AppSizes.spacing4,
-              ),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                border: Border.all(
-                  color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+          if (isAdmin)
+            Tooltip(
+              message: storeState.stores.isEmpty
+                  ? 'Por favor, añade una tienda primero'
+                  : 'Cambiar tienda',
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.spacing12,
+                  vertical: AppSizes.spacing4,
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.store,
-                    size: 16,
-                    color: Theme.of(context).primaryColor,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                  border: Border.all(
+                    color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
                   ),
-                  const SizedBox(width: AppSizes.spacing8),
-                  DropdownButton<String>(
-                    value: storeState.currentStore?['_id'],
-                    underline: const SizedBox(),
-                    isDense: true,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.store,
+                      size: 16,
+                      color: Theme.of(context).primaryColor,
                     ),
-                    items: storeState.stores.map((store) {
-                      return DropdownMenuItem<String>(
-                        value: store['_id'],
-                        child: Text(store['name'] ?? 'Sin nombre'),
-                      );
-                    }).toList(),
-                    onChanged: (storeId) {
-                      if (storeId != null) {
-                        final store = storeState.stores.firstWhere(
-                          (s) => s['_id'] == storeId,
-                        );
-                        ref.read(storeProvider.notifier).selectStore(store);
-                      }
-                    },
-                  ),
-                ],
+                    const SizedBox(width: AppSizes.spacing8),
+                    if (storeState.stores.isEmpty)
+                      Text(
+                        'Sin tiendas',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )
+                    else
+                      DropdownButton<String>(
+                        value: _getSelectedStoreId(storeState),
+                        underline: const SizedBox(),
+                        isDense: true,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        items: storeState.stores.map((store) {
+                          return DropdownMenuItem<String>(
+                            value: store['_id'] as String?,
+                            child: Text(store['name'] ?? 'Sin nombre'),
+                          );
+                        }).toList(),
+                        onChanged: (storeId) {
+                          if (storeId != null) {
+                            final store = storeState.stores.firstWhere(
+                              (s) => s['_id'] == storeId,
+                              orElse: () => {},
+                            );
+                            if (store.isNotEmpty) {
+                              ref.read(storeProvider.notifier).selectStore(store);
+                            }
+                          }
+                        },
+                      ),
+                  ],
+                ),
               ),
             )
           else if (!isAdmin && storeState.currentStore != null)
@@ -808,20 +842,18 @@ class _SidebarWidget extends StatelessWidget {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Theme.of(context).primaryColor,
-                              Theme.of(context).colorScheme.secondary,
-                            ],
-                          ),
                           borderRadius: BorderRadius.circular(
                             AppSizes.radiusMedium,
                           ),
                         ),
-                        child: const Icon(
-                          Icons.spa,
-                          color: AppColors.white,
-                          size: 20,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMedium,
+                          ),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     )
@@ -834,31 +866,26 @@ class _SidebarWidget extends StatelessWidget {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Theme.of(context).primaryColor,
-                                  Theme.of(context).colorScheme.secondary,
-                                ],
-                              ),
                               borderRadius: BorderRadius.circular(
                                 AppSizes.radiusMedium,
                               ),
                             ),
-                            child: const Icon(
-                              Icons.spa,
-                              color: AppColors.white,
-                              size: 20,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusMedium,
+                              ),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                           const SizedBox(width: AppSizes.spacing12),
-                          const Text(
-                            'BellezApp',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                          Expanded(
+                            child: Image.asset(
+                              'assets/images/NOMBRE.png',
+                              height: 24,
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ],

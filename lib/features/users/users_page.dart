@@ -4,6 +4,7 @@ import 'package:data_table_2/data_table_2.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
+import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/user_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/models/user.dart';
@@ -86,10 +87,14 @@ class _UsersPageState extends ConsumerState<UsersPage> {
 
             // Data Table
             if (userState.isLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(AppSizes.spacing48),
-                  child: CircularProgressIndicator(),
+              SizedBox(
+                height: 600,
+                child: Card(
+                  child: Center(
+                    child: LoadingIndicator(
+                      message: 'Cargando usuarios...',
+                    ),
+                  ),
                 ),
               )
             else if (userState.users.isEmpty)

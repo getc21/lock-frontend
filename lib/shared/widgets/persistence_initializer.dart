@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/riverpod/auth_notifier.dart';
 import '../providers/riverpod/theme_notifier.dart';
 import '../providers/riverpod/currency_notifier.dart';
 import '../utils/theme_utils.dart';
@@ -33,6 +34,7 @@ class _PersistenceInitializerState
     try {
       // Esperar a que se inicialicen todos los notifiers desde SharedPreferences
       await Future.wait([
+        ref.read(authProvider.notifier).initializeAuth(),
         ref.read(themeProvider.notifier).initializeTheme(),
         ref.read(currencyProvider.notifier).initializeCurrency(),
       ]);
@@ -73,6 +75,7 @@ class _PersistenceInitializerState
 
       return MaterialApp(
         debugShowCheckedModeBanner: false,
+        title: 'naturalMARKET',
         home: Scaffold(
           backgroundColor: bgColor,
           body: Container(

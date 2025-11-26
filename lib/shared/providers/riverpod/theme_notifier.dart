@@ -76,7 +76,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   ];
 
   ThemeNotifier() : super(ThemeState(
-    currentThemeId: 'beauty',
+    currentThemeId: 'nature',
     themeMode: ThemeMode.system,
     isInitialized: false,
   ));
@@ -95,7 +95,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   Future<void> initializeTheme() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedThemeId = prefs.getString('theme_id') ?? 'beauty';
+      final savedThemeId = prefs.getString('theme_id') ?? 'nature';
       final savedThemeMode = prefs.getString('theme_mode') ?? 'system';
 
       state = state.copyWith(
@@ -145,7 +145,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
       await prefs.remove('theme_mode');
 
       state = state.copyWith(
-        currentThemeId: 'beauty',
+        currentThemeId: 'nature',
         themeMode: ThemeMode.system,
       );
     } catch (e) {

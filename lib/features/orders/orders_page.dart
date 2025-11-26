@@ -123,47 +123,53 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
             )
           else if (orderState.orders.isEmpty)
             Card(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSizes.spacing24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.receipt_long_outlined, size: 64, color: AppColors.textSecondary),
-                      const SizedBox(height: AppSizes.spacing16),
-                      const Text(
-                        'No hay órdenes disponibles',
-                        style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: AppSizes.spacing8),
-                      ElevatedButton.icon(
-                        onPressed: () => context.go('/orders/create'),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Crear Primera Orden'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
+              child: SizedBox(
+                height: 600,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.receipt_long_outlined, size: 64, color: AppColors.textSecondary),
+                        const SizedBox(height: AppSizes.spacing16),
+                        const Text(
+                          'No hay órdenes disponibles',
+                          style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: AppSizes.spacing8),
+                        ElevatedButton.icon(
+                          onPressed: () => context.go('/orders/create'),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Crear Primera Orden'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             )
           else if (filteredOrders.isEmpty)
             Card(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSizes.spacing24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.filter_list_outlined, size: 64, color: AppColors.textSecondary),
-                      const SizedBox(height: AppSizes.spacing16),
-                      const Text(
-                        'No hay órdenes con este filtro',
-                        style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
-                      ),
-                    ],
+              child: SizedBox(
+                height: 600,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.filter_list_outlined, size: 64, color: AppColors.textSecondary),
+                        const SizedBox(height: AppSizes.spacing16),
+                        const Text(
+                          'No hay órdenes con este filtro',
+                          style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

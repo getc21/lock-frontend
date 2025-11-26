@@ -43,317 +43,356 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
 
   @override
   Widget build(BuildContext context) {
-
-
     return Consumer(
       builder: (context, ref, _) {
         final supplierState = ref.watch(supplierProvider);
-        ref.watch(currencyProvider); // Permite reconstruir cuando cambia la moneda
+        ref.watch(
+          currencyProvider,
+        ); // Permite reconstruir cuando cambia la moneda
 
         return DashboardLayout(
-      currentRoute: '/suppliers',
-      title: 'Proveedores',
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.spacing24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Proveedores',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+          currentRoute: '/suppliers',
+          title: 'Proveedores',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: const InputDecoration(
+                        hintText: 'Buscar proveedores...',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.spacing16),
+                  ElevatedButton.icon(
+                    onPressed: () => _showSupplierDialog(context),
+                    icon: const Icon(Icons.add, size: 20),
+                    label: const Text('Nuevo Proveedor'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.spacing24,
+                        vertical: AppSizes.spacing16,
                       ),
                     ),
-                    const SizedBox(height: AppSizes.spacing8),
-                    Text(
-                      '${supplierState.suppliers.length} proveedores registrados',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSizes.spacing16),
+              if (supplierState.isLoading)
+                SizedBox(
+                  height: 600,
+                  child: Card(
+                    child: Center(
+                      child: LoadingIndicator(
+                        message: 'Cargando proveedores...',
                       ),
                     ),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: () => _showSupplierDialog(context),
-                  icon: const Icon(Icons.add, size: 20),
-                  label: const Text('Nuevo Proveedor'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.spacing24,
-                      vertical: AppSizes.spacing16,
-                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSizes.spacing16),
-            // Search Bar
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      hintText: 'Buscar proveedores...',
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ),
-            if (supplierState.isLoading)
-              SizedBox(
-                height: 600,
-                child: Card(
-                  child: Center(
-                    child: LoadingIndicator(
-                      message: 'Cargando proveedores...',
-                    ),
-                  ),
-                ),
-              )
-            else if (supplierState.errorMessage.isNotEmpty)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSizes.spacing48),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.error_outline, size: 64, color: AppColors.error),
-                      const SizedBox(height: AppSizes.spacing16),
-                      Text(
-                        'Error: ${supplierState.errorMessage}',
-                        style: const TextStyle(
-                          fontSize: 16,
+                )
+              else if (supplierState.errorMessage.isNotEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing48),
+                    child: Column(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
                           color: AppColors.error,
                         ),
-                      ),
-                      const SizedBox(height: AppSizes.spacing16),
-                      ElevatedButton(
-                        onPressed: () => ref.read(supplierProvider.notifier).loadSuppliers(),
-                        child: const Text('Reintentar'),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else if (supplierState.suppliers.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(AppSizes.spacing48),
-                  child: Text(
-                    'No hay proveedores registrados',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.textSecondary,
+                        const SizedBox(height: AppSizes.spacing16),
+                        Text(
+                          'Error: ${supplierState.errorMessage}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: AppColors.error,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.spacing16),
+                        ElevatedButton(
+                          onPressed: () => ref
+                              .read(supplierProvider.notifier)
+                              .loadSuppliers(),
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              )
-            else
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
+                )
+              else if (supplierState.suppliers.isEmpty)
+                Card(
+                  child: SizedBox(
+                    height: 600,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.spacing24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.local_shipping_outlined, size: 64, color: AppColors.textSecondary),
+                            const SizedBox(height: AppSizes.spacing16),
+                            const Text(
+                              'No hay proveedores disponibles',
+                              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: AppSizes.spacing8),
+                            ElevatedButton.icon(
+                              onPressed: () => _showSupplierDialog(context),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Agregar Primer Proveedor'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-                child: SizedBox(
-                  height: 600,
-                  child: DataTable2(
-                    columnSpacing: AppSizes.spacing12,
-                    horizontalMargin: AppSizes.spacing12,
-                    minWidth: 900,
-                    columns: const [
-                      DataColumn2(
-                        label: Text('Proveedor'),
-                        size: ColumnSize.L,
-                      ),
-                      DataColumn2(
-                        label: Text('Contacto'),
-                        size: ColumnSize.M,
-                      ),
-                      DataColumn2(
-                        label: Text('Teléfono'),
-                        size: ColumnSize.M,
-                      ),
-                      DataColumn2(
-                        label: Text('Email'),
-                        size: ColumnSize.L,
-                      ),
-                      DataColumn2(
-                        label: Text('Acciones'),
-                        size: ColumnSize.S,
-                      ),
-                    ],
-                    rows: supplierState.suppliers
-                        .where((s) => _searchQuery.isEmpty ||
-                            ((s['name'] as String?) ?? '').toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                            ((s['contactName'] as String?) ?? '').toLowerCase().contains(_searchQuery.toLowerCase()))
-                        .toList()
-                        .map((supplier) {
-                      return DataRow2(
-                        onTap: () => _showSupplierProducts(context, supplier),
-                        cells: [
-                          DataCell(
-                            Row(
-                              children: [
-                                // Imagen o icono del proveedor
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: supplier['foto'] != null && supplier['foto'].toString().isNotEmpty
-                                      ? ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: Image.network(
-                                            supplier['foto'],
-                                            width: 40,
-                                            height: 40,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return Icon(
-                                                Icons.store_outlined,
-                                                color: Theme.of(context).primaryColor,
-                                                size: 24,
-                                              );
-                                            },
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.store_outlined,
-                                          color: Theme.of(context).primaryColor,
-                                          size: 24,
-                                        ),
-                                ),
-                                const SizedBox(width: 12),
-                                // Nombre y dirección
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
+                  ),
+                )
+              else
+                Card(
+                  child: SizedBox(
+                    height: 600,
+                    child: DataTable2(
+                      columnSpacing: AppSizes.spacing12,
+                      horizontalMargin: AppSizes.spacing12,
+                      minWidth: 900,
+                      columns: const [
+                        DataColumn2(
+                          label: Text('Proveedor'),
+                          size: ColumnSize.L,
+                        ),
+                        DataColumn2(
+                          label: Text('Contacto'),
+                          size: ColumnSize.M,
+                        ),
+                        DataColumn2(
+                          label: Text('Teléfono'),
+                          size: ColumnSize.M,
+                        ),
+                        DataColumn2(label: Text('Email'), size: ColumnSize.L),
+                        DataColumn2(
+                          label: Text('Acciones'),
+                          size: ColumnSize.S,
+                        ),
+                      ],
+                      rows: supplierState.suppliers
+                          .where(
+                            (s) =>
+                                _searchQuery.isEmpty ||
+                                ((s['name'] as String?) ?? '')
+                                    .toLowerCase()
+                                    .contains(_searchQuery.toLowerCase()) ||
+                                ((s['contactName'] as String?) ?? '')
+                                    .toLowerCase()
+                                    .contains(_searchQuery.toLowerCase()),
+                          )
+                          .toList()
+                          .map((supplier) {
+                            return DataRow2(
+                              onTap: () =>
+                                  _showSupplierProducts(context, supplier),
+                              cells: [
+                                DataCell(
+                                  Row(
                                     children: [
-                                      Text(
-                                        supplier['name'] ?? 'Sin nombre',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
+                                      // Imagen o icono del proveedor
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .primaryColor
+                                              .withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                        child:
+                                            supplier['foto'] != null &&
+                                                supplier['foto']
+                                                    .toString()
+                                                    .isNotEmpty
+                                            ? ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: Image.network(
+                                                  supplier['foto'],
+                                                  width: 40,
+                                                  height: 40,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) {
+                                                        return Icon(
+                                                          Icons
+                                                              .store_outlined,
+                                                          color: Theme.of(
+                                                            context,
+                                                          ).primaryColor,
+                                                          size: 24,
+                                                        );
+                                                      },
+                                                ),
+                                              )
+                                            : Icon(
+                                                Icons.store_outlined,
+                                                color: Theme.of(
+                                                  context,
+                                                ).primaryColor,
+                                                size: 24,
+                                              ),
                                       ),
-                                      if (supplier['address'] != null && supplier['address'].toString().isNotEmpty)
-                                        Flexible(
-                                          child: Text(
-                                            supplier['address'],
-                                            style: const TextStyle(
-                                              fontSize: 11,
+                                      const SizedBox(width: 12),
+                                      // Nombre y dirección
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              supplier['name'] ??
+                                                  'Sin nombre',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            if (supplier['address'] != null &&
+                                                supplier['address']
+                                                    .toString()
+                                                    .isNotEmpty)
+                                              Flexible(
+                                                child: Text(
+                                                  supplier['address'],
+                                                  style: const TextStyle(
+                                                    fontSize: 11,
+                                                    color: AppColors
+                                                        .textSecondary,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(supplier['contactName'] ?? '-'),
+                                ),
+                                DataCell(
+                                  supplier['contactPhone'] != null &&
+                                          supplier['contactPhone']
+                                              .toString()
+                                              .isNotEmpty
+                                      ? Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.phone_outlined,
+                                              size: 16,
                                               color: AppColors.textSecondary,
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
+                                            const SizedBox(width: 4),
+                                            Text(supplier['contactPhone']),
+                                          ],
+                                        )
+                                      : const Text('-'),
                                 ),
-                              ],
-                            ),
-                          ),
-                          DataCell(
-                            Text(supplier['contactName'] ?? '-'),
-                          ),
-                          DataCell(
-                            supplier['contactPhone'] != null && supplier['contactPhone'].toString().isNotEmpty
-                                ? Row(
+                                DataCell(
+                                  supplier['contactEmail'] != null &&
+                                          supplier['contactEmail']
+                                              .toString()
+                                              .isNotEmpty
+                                      ? Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.email_outlined,
+                                              size: 16,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text(
+                                                supplier['contactEmail'],
+                                                maxLines: 1,
+                                                overflow:
+                                                    TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : const Text('-'),
+                                ),
+                                DataCell(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.phone_outlined, size: 16, color: AppColors.textSecondary),
-                                      const SizedBox(width: 4),
-                                      Text(supplier['contactPhone']),
-                                    ],
-                                  )
-                                : const Text('-'),
-                          ),
-                          DataCell(
-                            supplier['contactEmail'] != null && supplier['contactEmail'].toString().isNotEmpty
-                                ? Row(
-                                    children: [
-                                      const Icon(Icons.email_outlined, size: 16, color: AppColors.textSecondary),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          supplier['contactEmail'],
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.edit_outlined,
+                                          size: 18,
                                         ),
+                                        onPressed: () => _showSupplierDialog(
+                                          context,
+                                          supplier: supplier,
+                                        ),
+                                        tooltip: 'Editar',
+                                        color: AppColors.textPrimary,
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.delete_outline,
+                                          size: 18,
+                                        ),
+                                        onPressed: () => _showDeleteDialog(
+                                          context,
+                                          supplier['_id'] ??
+                                              supplier['id'] ??
+                                              '',
+                                          supplier['name'] ?? 'Sin nombre',
+                                        ),
+                                        tooltip: 'Eliminar',
+                                        color: AppColors.textPrimary,
                                       ),
                                     ],
-                                  )
-                                : const Text('-'),
-                          ),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit_outlined, size: 18),
-                                  onPressed: () => _showSupplierDialog(
-                                    context,
-                                    supplier: supplier,
                                   ),
-                                  tooltip: 'Editar',
-                                  color: AppColors.textPrimary,
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, size: 18),
-                                  onPressed: () => _showDeleteDialog(
-                                    context,
-                                    supplier['_id'] ?? supplier['id'] ?? '',
-                                    supplier['name'] ?? 'Sin nombre',
-                                  ),
-                                  tooltip: 'Eliminar',
-                                  color: AppColors.textPrimary,
                                 ),
                               ],
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
+                            );
+                          })
+                          .toList(),
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
-      ),
-      );
-    },
-  );
+            ],
+          ),
+        );
+      },
+    );
   }
 
   String _formatCurrency(num value) {
@@ -366,20 +405,32 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     Map<String, dynamic>? supplier,
   }) {
     final nameController = TextEditingController(text: supplier?['name'] ?? '');
-    final contactPersonController = TextEditingController(text: supplier?['contactName'] ?? '');
-    final phoneController = TextEditingController(text: supplier?['contactPhone'] ?? '');
-    final emailController = TextEditingController(text: supplier?['contactEmail'] ?? '');
-    final addressController = TextEditingController(text: supplier?['address'] ?? '');
+    final contactPersonController = TextEditingController(
+      text: supplier?['contactName'] ?? '',
+    );
+    final phoneController = TextEditingController(
+      text: supplier?['contactPhone'] ?? '',
+    );
+    final emailController = TextEditingController(
+      text: supplier?['contactEmail'] ?? '',
+    );
+    final addressController = TextEditingController(
+      text: supplier?['address'] ?? '',
+    );
 
     showDialog(
       context: context,
       builder: (context) => Consumer(
         builder: (context, ref, _) {
           final formState = ref.watch(supplierFormProvider(supplier));
-          final formNotifier = ref.watch(supplierFormProvider(supplier).notifier);
+          final formNotifier = ref.watch(
+            supplierFormProvider(supplier).notifier,
+          );
 
           return AlertDialog(
-            title: Text(supplier == null ? 'Nuevo Proveedor' : 'Editar Proveedor'),
+            title: Text(
+              supplier == null ? 'Nuevo Proveedor' : 'Editar Proveedor',
+            ),
             content: SizedBox(
               width: 500,
               child: SingleChildScrollView(
@@ -394,7 +445,9 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         } catch (e) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Error al seleccionar imagen')),
+                              const SnackBar(
+                                content: Text('Error al seleccionar imagen'),
+                              ),
                             );
                           }
                         }
@@ -403,10 +456,14 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         width: 120,
                         height: 120,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+                            color: Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.3),
                             width: 2,
                             style: BorderStyle.solid,
                           ),
@@ -421,11 +478,19 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
                                     return Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(context).primaryColor),
+                                        Icon(
+                                          Icons.add_photo_alternate,
+                                          size: 40,
+                                          color: Theme.of(context).primaryColor,
+                                        ),
                                         const SizedBox(height: 8),
-                                        Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
+                                        Text(
+                                          'Seleccionar imagen',
+                                          style: TextStyle(fontSize: 12),
+                                        ),
                                       ],
                                     );
                                   },
@@ -434,9 +499,16 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                             : Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(context).primaryColor),
+                                  Icon(
+                                    Icons.add_photo_alternate,
+                                    size: 40,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
                                   const SizedBox(height: 8),
-                                  Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
+                                  Text(
+                                    'Seleccionar imagen',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                 ],
                               ),
                       ),
@@ -504,7 +576,10 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         '* Campos requeridos',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ],
@@ -513,7 +588,9 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
             ),
             actions: [
               TextButton(
-                onPressed: formState.isLoading ? null : () => Navigator.of(context).pop(),
+                onPressed: formState.isLoading
+                    ? null
+                    : () => Navigator.of(context).pop(),
                 child: const Text('Cancelar'),
               ),
               ElevatedButton(
@@ -525,7 +602,9 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         if (name.isEmpty) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('El nombre es requerido')),
+                              const SnackBar(
+                                content: Text('El nombre es requerido'),
+                              ),
                             );
                           }
                           return;
@@ -538,26 +617,52 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         try {
                           bool success;
                           if (supplier == null) {
-                            success = await ref.read(supplierProvider.notifier).createSupplier(
-                              name: name,
-                              contactPerson: contactPersonController.text.trim().isEmpty ? null : contactPersonController.text.trim(),
-                              phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
-                              email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
-                              address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
-                              imageFile: formState.selectedImage,
-                              imageBytes: formState.imageBytes,
-                            );
+                            success = await ref
+                                .read(supplierProvider.notifier)
+                                .createSupplier(
+                                  name: name,
+                                  contactPerson:
+                                      contactPersonController.text
+                                          .trim()
+                                          .isEmpty
+                                      ? null
+                                      : contactPersonController.text.trim(),
+                                  phone: phoneController.text.trim().isEmpty
+                                      ? null
+                                      : phoneController.text.trim(),
+                                  email: emailController.text.trim().isEmpty
+                                      ? null
+                                      : emailController.text.trim(),
+                                  address: addressController.text.trim().isEmpty
+                                      ? null
+                                      : addressController.text.trim(),
+                                  imageFile: formState.selectedImage,
+                                  imageBytes: formState.imageBytes,
+                                );
                           } else {
-                            success = await ref.read(supplierProvider.notifier).updateSupplier(
-                              id: supplier['_id'] ?? supplier['id'] ?? '',
-                              name: name,
-                              contactPerson: contactPersonController.text.trim().isEmpty ? null : contactPersonController.text.trim(),
-                              phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
-                              email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
-                              address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
-                              imageFile: formState.selectedImage,
-                              imageBytes: formState.imageBytes,
-                            );
+                            success = await ref
+                                .read(supplierProvider.notifier)
+                                .updateSupplier(
+                                  id: supplier['_id'] ?? supplier['id'] ?? '',
+                                  name: name,
+                                  contactPerson:
+                                      contactPersonController.text
+                                          .trim()
+                                          .isEmpty
+                                      ? null
+                                      : contactPersonController.text.trim(),
+                                  phone: phoneController.text.trim().isEmpty
+                                      ? null
+                                      : phoneController.text.trim(),
+                                  email: emailController.text.trim().isEmpty
+                                      ? null
+                                      : emailController.text.trim(),
+                                  address: addressController.text.trim().isEmpty
+                                      ? null
+                                      : addressController.text.trim(),
+                                  imageFile: formState.selectedImage,
+                                  imageBytes: formState.imageBytes,
+                                );
                           }
 
                           if (context.mounted) {
@@ -585,7 +690,9 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : Text(supplier == null ? 'Crear' : 'Actualizar'),
@@ -611,10 +718,14 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
 
           return AlertDialog(
             title: const Text('Eliminar Proveedor'),
-            content: Text('¿Está seguro de que desea eliminar al proveedor "$supplierName"?'),
+            content: Text(
+              '¿Está seguro de que desea eliminar al proveedor "$supplierName"?',
+            ),
             actions: [
               TextButton(
-                onPressed: formState.isDeleting ? null : () => Navigator.of(context).pop(),
+                onPressed: formState.isDeleting
+                    ? null
+                    : () => Navigator.of(context).pop(),
                 child: const Text('Cancelar'),
               ),
               ElevatedButton(
@@ -626,7 +737,9 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         }
 
                         try {
-                          final success = await ref.read(supplierProvider.notifier).deleteSupplier(supplierId);
+                          final success = await ref
+                              .read(supplierProvider.notifier)
+                              .deleteSupplier(supplierId);
 
                           if (context.mounted) {
                             formNotifier.setDeleting(false);
@@ -653,7 +766,9 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : const Text('Eliminar'),
@@ -665,15 +780,18 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     );
   }
 
-  void _showSupplierProducts(BuildContext context, Map<String, dynamic> supplier) {
+  void _showSupplierProducts(
+    BuildContext context,
+    Map<String, dynamic> supplier,
+  ) {
     final supplierName = supplier['name'] ?? 'Proveedor';
     final supplierId = supplier['_id'];
     final productState = ref.watch(productProvider);
-    
+
     // Filtrar productos por proveedor
     final supplierProducts = productState.products.where((product) {
-      final productSupplierId = product['supplierId'] is Map 
-          ? product['supplierId']['_id'] 
+      final productSupplierId = product['supplierId'] is Map
+          ? product['supplierId']['_id']
           : product['supplierId'];
       return productSupplierId == supplierId;
     }).toList();
@@ -724,7 +842,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
               const SizedBox(height: AppSizes.spacing16),
               const Divider(),
               const SizedBox(height: AppSizes.spacing16),
-              
+
               // Lista de productos
               Expanded(
                 child: supplierProducts.isEmpty
@@ -735,14 +853,18 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                             Icon(
                               Icons.inventory_2_outlined,
                               size: 64,
-                              color: AppColors.textSecondary.withValues(alpha: 0.5),
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.5,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No hay productos de este proveedor',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: AppColors.textSecondary.withValues(alpha: 0.7),
+                                color: AppColors.textSecondary.withValues(
+                                  alpha: 0.7,
+                                ),
                               ),
                             ),
                           ],
@@ -755,9 +877,11 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                           final stock = product['stock'] ?? 0;
                           final isOutOfStock = stock == 0;
                           final isLowStock = stock > 0 && stock < 10;
-                          
+
                           return Card(
-                            margin: const EdgeInsets.only(bottom: AppSizes.spacing12),
+                            margin: const EdgeInsets.only(
+                              bottom: AppSizes.spacing12,
+                            ),
                             child: ListTile(
                               leading: product['foto'] != null
                                   ? ClipRRect(
@@ -767,16 +891,22 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                                         width: 50,
                                         height: 50,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            Container(
-                                          width: 50,
-                                          height: 50,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.gray100,
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: const Icon(Icons.inventory_2_outlined),
-                                        ),
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Container(
+                                                  width: 50,
+                                                  height: 50,
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.gray100,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.inventory_2_outlined,
+                                                  ),
+                                                ),
                                       ),
                                     )
                                   : Container(
@@ -786,11 +916,15 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                                         color: AppColors.gray100,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Icon(Icons.inventory_2_outlined),
+                                      child: const Icon(
+                                        Icons.inventory_2_outlined,
+                                      ),
                                     ),
                               title: Text(
                                 product['name'] ?? 'Sin nombre',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -815,11 +949,19 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: isOutOfStock
-                                              ? AppColors.error.withValues(alpha: 0.1)
+                                              ? AppColors.error.withValues(
+                                                  alpha: 0.1,
+                                                )
                                               : isLowStock
-                                                  ? AppColors.warning.withValues(alpha: 0.1)
-                                                  : AppColors.success.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(4),
+                                              ? AppColors.warning.withValues(
+                                                  alpha: 0.1,
+                                                )
+                                              : AppColors.success.withValues(
+                                                  alpha: 0.1,
+                                                ),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                         ),
                                         child: Text(
                                           '$stock',
@@ -829,8 +971,8 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                                             color: isOutOfStock
                                                 ? AppColors.error
                                                 : isLowStock
-                                                    ? AppColors.warning
-                                                    : AppColors.success,
+                                                ? AppColors.warning
+                                                : AppColors.success,
                                           ),
                                         ),
                                       ),
@@ -850,14 +992,17 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  if (product['categoryId'] != null && 
+                                  if (product['categoryId'] != null &&
                                       product['categoryId'] is Map)
                                     Chip(
                                       label: Text(
-                                        product['categoryId']['name'] ?? 'Sin categoría',
+                                        product['categoryId']['name'] ??
+                                            'Sin categoría',
                                         style: const TextStyle(fontSize: 11),
                                       ),
-                                      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                                      backgroundColor: Theme.of(
+                                        context,
+                                      ).primaryColor.withValues(alpha: 0.1),
                                       padding: EdgeInsets.zero,
                                     ),
                                 ],
@@ -874,4 +1019,3 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     );
   }
 }
-

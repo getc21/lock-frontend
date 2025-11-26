@@ -118,33 +118,40 @@ class _StoresPageState extends ConsumerState<StoresPage> {
               height: 600,
               child: Card(
                 child: Center(
-                  child: LoadingIndicator(message: 'Cargando tiendas...'),
+                  child: LoadingIndicator(
+                    message: 'Cargando tiendas...',
+                  ),
                 ),
               ),
             )
           else if (storeState.stores.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.spacing24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.store_outlined, size: 64, color: AppColors.textSecondary),
-                    const SizedBox(height: AppSizes.spacing16),
-                    const Text(
-                      'No hay tiendas registradas',
-                      style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+            SizedBox(
+              height: 600,
+              child: Card(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.store_outlined, size: 64, color: AppColors.textSecondary),
+                        const SizedBox(height: AppSizes.spacing16),
+                        const Text(
+                          'No hay tiendas registradas',
+                          style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(height: AppSizes.spacing8),
+                        ElevatedButton.icon(
+                          onPressed: () => _showStoreDialog(context, null),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Crear Primera Tienda'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: AppSizes.spacing8),
-                    ElevatedButton.icon(
-                      onPressed: () => _showStoreDialog(context, null),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Crear Primera Tienda'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             )

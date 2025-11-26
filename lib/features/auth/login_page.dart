@@ -80,29 +80,27 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       children: [
                         // Logo
                         Container(
-                          width: 80,
-                          height: 80,
+                          width: 100,
+                          height: 100,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [primaryColor, secondaryColor],
-                            ),
                             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
                           ),
-                          child: const Icon(
-                            Icons.spa,
-                            color: AppColors.white,
-                            size: 40,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                         const SizedBox(height: AppSizes.spacing24),
                         
-                        // Title
-                        const Text(
-                          'BellezApp',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                        // Title - Logo de nombre
+                        SizedBox(
+                          height: 60,
+                          child: Image.asset(
+                            'assets/images/NOMBRE.png',
+                            fit: BoxFit.contain,
                           ),
                         ),
                         const SizedBox(height: AppSizes.spacing8),
@@ -170,6 +168,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           height: AppSizes.buttonLarge,
                           child: ElevatedButton(
                             onPressed: authState.isLoading ? null : _handleLogin,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                            ),
                             child: authState.isLoading
                                 ? const SizedBox(
                                     width: 20,
@@ -181,15 +182,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   )
                                 : const Text('Iniciar Sesión'),
                           ),
-                        ),
-                        const SizedBox(height: AppSizes.spacing16),
-                        
-                        // Forgot Password
-                        TextButton(
-                          onPressed: () {
-                            // TODO: Implementar recuperación de contraseña
-                          },
-                          child: const Text('¿Olvidaste tu contraseña?'),
                         ),
                       ],
                     ),
