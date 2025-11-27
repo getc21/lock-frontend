@@ -1,3 +1,4 @@
+import 'package:bellezapp_web/shared/widgets/loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -451,6 +452,18 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
   Widget build(BuildContext context) {
     final orderState = ref.watch(orderProvider);
     ref.watch(currencyProvider); // Permite reconstruir cuando cambia la moneda
+    
+    // Mostrar loading si está cargando órdenes
+    if (orderState.isLoading) {
+      return DashboardLayout(
+        title: 'Reportes',
+        currentRoute: '/reports',
+        child: LoadingIndicator(
+          message: 'Cargando reportes...',
+          color: Theme.of(context).primaryColor,
+        ),
+      );
+    }
     
     return DashboardLayout(
       title: 'Reportes',

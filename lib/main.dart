@@ -4,15 +4,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'shared/config/app_router.dart';
 import 'shared/providers/riverpod/theme_notifier.dart';
-import 'shared/widgets/persistence_initializer.dart';
+import 'shared/providers/riverpod/auth_notifier.dart';
+import 'shared/providers/riverpod/currency_notifier.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializar persistencia ANTES de crear ProviderScope
+  final container = ProviderContainer();
+  try {
+    await Future.wait([
+      container.read(authProvider.notifier).initializeAuth(),
+      container.read(themeProvider.notifier).initializeTheme(),
+      container.read(currencyProvider.notifier).initializeCurrency(),
+    ]);
+  } catch (e) {
+    debugPrint('Error initializing persistence: $e');
+  }
+  
   runApp(
     ProviderScope(
-      child: PersistenceInitializer(
-        child: BellezAppWeb(),
-      ),
+      child: BellezAppWeb(),
     ),
   );
 }

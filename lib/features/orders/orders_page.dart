@@ -1,3 +1,4 @@
+import 'package:bellezapp_web/shared/widgets/loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,7 +7,6 @@ import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
-import '../../shared/widgets/professional_loading.dart';
 import '../../shared/providers/riverpod/order_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/services/pdf_service.dart';
@@ -114,10 +114,10 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
             Card(
               child: SizedBox(
                 height: 600,
-                child: ProfessionalLoading(
-                  message: 'Cargando órdenes...',
-                  rowCount: 8,
-                  columnCount: 6,
+                child: Center(
+                  child: LoadingIndicator(
+                    message: 'Cargando órdenes...',
+                  ),
                 ),
               ),
             )

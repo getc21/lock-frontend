@@ -881,7 +881,8 @@ class _SidebarWidget extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: AppSizes.spacing12),
-                          Expanded(
+                          SizedBox(
+                            width: 100,
                             child: Image.asset(
                               'assets/images/NOMBRE.png',
                               height: 24,

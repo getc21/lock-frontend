@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
@@ -309,25 +310,64 @@ class ProductProvider {
     required String operation, // 'add' o 'subtract'
   }) async {
     try {
+      final url = Uri.parse('$baseUrl/products/$id/stock');
+      
+      if (kDebugMode) {
+        print('🔍 Actualizando stock en: $url');
+        print('🔍 Quantity: $quantity, Operation: $operation');
+      }
+
+      // PATCH - Como está definido en el backend
       final response = await http.patch(
-        Uri.parse('$baseUrl/products/$id/stock'),
+        url,
         headers: _headers,
         body: jsonEncode({
           'quantity': quantity,
           'operation': operation,
         }),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException('Request timeout after 30s'),
       );
+
+      if (kDebugMode) {
+        print('🔍 Status: ${response.statusCode}');
+        print('🔍 Response: ${response.body}');
+      }
+
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return {'success': true, 'data': data['data']};
+      } else if (response.statusCode == 401) {
+        return {
+          'success': false,
+          'message': 'Sesión expirada. Por favor inicia sesión nuevamente.',
+        };
+      } else if (response.statusCode == 403) {
+        return {
+          'success': false,
+          'message': 'No tienes permisos para actualizar el stock.',
+        };
+      } else if (response.statusCode == 404) {
+        return {
+          'success': false,
+          'message': 'Producto o endpoint no encontrado.',
+        };
       } else {
         return {
           'success': false,
-          'message': data['message'] ?? 'Error actualizando stock'
+          'message': data['message'] ?? 'Error actualizando stock (${response.statusCode})'
         };
       }
+    } on TimeoutException catch (e) {
+      if (kDebugMode) print('⏱️ Timeout: $e');
+      return {
+        'success': false,
+        'message': 'La solicitud tardó demasiado. Intenta nuevamente.'
+      };
     } catch (e) {
+      if (kDebugMode) print('❌ Error: $e');
       return {'success': false, 'message': 'Error de conexión: $e'};
     }
   }

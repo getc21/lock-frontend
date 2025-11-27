@@ -1,3 +1,4 @@
+import 'package:bellezapp_web/shared/widgets/loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,6 +83,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         }
       },
     );
+
+    // Mostrar loading si los datos están cargando
+    if (productState.isLoading || orderState.isLoading || customerState.isLoading) {
+      return DashboardLayout(
+        title: 'Dashboard',
+        currentRoute: '/dashboard',
+        child: LoadingIndicator(
+          message: 'Cargando datos del dashboard...',
+          color: Theme.of(context).primaryColor,
+        ),
+      );
+    }
 
     return DashboardLayout(
       title: 'Dashboard',
