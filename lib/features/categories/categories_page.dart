@@ -282,46 +282,48 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                           }
                         }
                       },
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
-                            width: 2,
-                            style: BorderStyle.solid,
+                      child: Center(
+                        child: Container(
+                          width: 144,
+                          height: 144,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+                              width: 2,
+                              style: BorderStyle.solid,
+                            ),
                           ),
-                        ),
-                        child: formState.imagePreview.isNotEmpty
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  formState.imagePreview,
-                                  width: 120,
-                                  height: 120,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(context).primaryColor),
-                                        const SizedBox(height: 8),
-                                        const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
-                                      ],
-                                    );
-                                  },
+                          child: formState.imagePreview.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.network(
+                                    formState.imagePreview,
+                                    width: 144,
+                                    height: 144,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(context).primaryColor),
+                                          const SizedBox(height: 8),
+                                          const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(context).primaryColor),
+                                    const SizedBox(height: 8),
+                                    const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
+                                  ],
                                 ),
-                              )
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(context).primaryColor),
-                                  const SizedBox(height: 8),
-                                  const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
-                                ],
-                              ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppSizes.spacing24),

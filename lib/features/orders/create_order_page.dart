@@ -179,11 +179,11 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
             return Card(
               margin: const EdgeInsets.only(bottom: AppSizes.spacing8),
               child: ListTile(
-                leading: product['image'] != null
+                leading: product['foto'] != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          product['image'],
+                          product['foto'],
                           width: 50,
                           height: 50,
                           fit: BoxFit.cover,

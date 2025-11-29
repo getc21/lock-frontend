@@ -455,19 +455,22 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (product['foto'] != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      product['foto'],
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => 
-                        Container(
-                          height: 200,
-                          color: AppColors.gray100,
-                          child: const Icon(Icons.inventory_2_outlined, size: 64),
-                        ),
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        product['foto'],
+                        height: 240,
+                        width: 240,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => 
+                          Container(
+                            height: 240,
+                            width: 240,
+                            color: AppColors.gray100,
+                            child: const Icon(Icons.inventory_2_outlined, size: 64),
+                          ),
+                      ),
                     ),
                   ),
                 const SizedBox(height: 16),
@@ -637,46 +640,48 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                       await pickImage();
                       setState(() {});
                     },
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: Theme.of(dialogContext).primaryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Theme.of(dialogContext).primaryColor.withValues(alpha: 0.3),
-                          width: 2,
-                          style: BorderStyle.solid,
+                    child: Center(
+                      child: Container(
+                        width: 144,
+                        height: 144,
+                        decoration: BoxDecoration(
+                          color: Theme.of(dialogContext).primaryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(dialogContext).primaryColor.withValues(alpha: 0.3),
+                            width: 2,
+                            style: BorderStyle.solid,
+                          ),
                         ),
-                      ),
-                      child: imagePreview.isNotEmpty
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.network(
-                                imagePreview,
-                                width: 120,
-                                height: 120,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(dialogContext).primaryColor),
-                                      const SizedBox(height: 8),
-                                      const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
-                                    ],
-                                  );
-                                },
+                        child: imagePreview.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.network(
+                                  imagePreview,
+                                  width: 144,
+                                  height: 144,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(dialogContext).primaryColor),
+                                        const SizedBox(height: 8),
+                                        const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(dialogContext).primaryColor),
+                                  const SizedBox(height: 8),
+                                  const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
+                                ],
                               ),
-                            )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(dialogContext).primaryColor),
-                                const SizedBox(height: 8),
-                                const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
-                              ],
-                            ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSizes.spacing24),
