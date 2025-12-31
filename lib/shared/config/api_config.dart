@@ -9,12 +9,12 @@ class ApiConfig {
   
   // Detecta automáticamente si estamos en emulador, web o dispositivo físico
   static String get baseUrl {
-    // Para Web, usar URL de producción
+    // Para Web, usar URL local para desarrollo
     if (kIsWeb) {
-      // Producción
-      return 'https://naturalmarket.onrender.com/api';
-      // Desarrollo local (descomentar para usar localhost)
-      // return 'http://localhost:$_port/api';
+      // Desarrollo local
+      return 'http://localhost:$_port/api';
+      // Producción (descomentar para usar)
+      // return 'https://naturalmarket.onrender.com/api';
       // Si necesitas acceder desde otra computadora en la red:
       // return 'http://$_localIP:$_port/api';
     }

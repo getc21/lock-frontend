@@ -7,6 +7,7 @@ import '../providers/riverpod/auth_notifier.dart';
 import '../providers/riverpod/store_notifier.dart';
 import '../providers/riverpod/theme_notifier.dart';
 import '../providers/riverpod/currency_notifier.dart';
+import '../providers/riverpod/product_notifier.dart';
 
 // Provider para el estado de colapso del sidebar
 final dashboardCollapseProvider = StateProvider<bool>((ref) => false);
@@ -478,7 +479,7 @@ class DashboardLayout extends ConsumerWidget {
                             child: Text(store['name'] ?? 'Sin nombre'),
                           );
                         }).toList(),
-                        onChanged: (storeId) {
+                        onChanged: (storeId) async {
                           if (storeId != null) {
                             final store = storeState.stores.firstWhere(
                               (s) => s['_id'] == storeId,
@@ -486,6 +487,8 @@ class DashboardLayout extends ConsumerWidget {
                             );
                             if (store.isNotEmpty) {
                               ref.read(storeProvider.notifier).selectStore(store);
+                              // Recargar productos para la nueva tienda
+                              await ref.read(productProvider.notifier).loadProductsForCurrentStore(forceRefresh: true);
                             }
                           }
                         },

@@ -670,9 +670,15 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     final ImagePicker picker = ImagePicker();
     var isLoading = false;
     
-    var selectedCategoryId = product?['categoryId']?['_id'] as String?;
-    var selectedSupplierId = product?['supplierId']?['_id'] as String?;
-    var selectedLocationId = product?['locationId']?['_id'] as String?;
+    var selectedCategoryId = product?['categoryId'] is Map 
+        ? (product?['categoryId']?['_id'] as String?)
+        : (product?['categoryId'] as String?);
+    var selectedSupplierId = product?['supplierId'] is Map 
+        ? (product?['supplierId']?['_id'] as String?)
+        : (product?['supplierId'] as String?);
+    var selectedLocationId = product?['locationId'] is Map 
+        ? (product?['locationId']?['_id'] as String?)
+        : (product?['locationId'] as String?);
     var selectedExpiryDate = product?['expiryDate'] != null 
         ? DateTime.parse(product!['expiryDate']) 
         : null;
@@ -814,7 +820,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                       prefixIcon: Icon(Icons.local_shipping_outlined),
                     ),
                     items: supplierState.suppliers.map((supplier) {
-                      final id = supplier['_id']?.toString() ?? supplier['id']?.toString() ?? '''''' '';
+                      final id = supplier['_id']?.toString() ?? supplier['id']?.toString() ?? '';
                       final name = supplier['name']?.toString() ?? 'Sin nombre';
                       return DropdownMenuItem<String>(
                         value: id,
@@ -825,23 +831,45 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   ),
                   const SizedBox(height: AppSizes.spacing16),
 
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedLocationId,
-                    decoration: const InputDecoration(
-                      labelText: 'Ubicación *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.location_on_outlined),
+                  if (isEditing)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.info_outlined, color: AppColors.warning, size: 20),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'La ubicación se edita desde el inventario de cada tienda',
+                              style: TextStyle(fontSize: 12, color: AppColors.warning),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedLocationId,
+                      decoration: const InputDecoration(
+                        labelText: 'Ubicación *',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.location_on_outlined),
+                      ),
+                      items: locationState.locations.map((location) {
+                        final id = location['_id']?.toString() ?? location['id']?.toString() ?? '';
+                        final name = location['name']?.toString() ?? 'Sin nombre';
+                        return DropdownMenuItem<String>(
+                          value: id,
+                          child: Text(name),
+                        );
+                      }).toList(),
+                      onChanged: (value) => setState(() => selectedLocationId = value),
                     ),
-                    items: locationState.locations.map((location) {
-                      final id = location['_id']?.toString() ?? location['id']?.toString() ?? '''''' '';
-                      final name = location['name']?.toString() ?? 'Sin nombre';
-                      return DropdownMenuItem<String>(
-                        value: id,
-                        child: Text(name),
-                      );
-                    }).toList(),
-                    onChanged: (value) => setState(() => selectedLocationId = value),
-                  ),
                   const SizedBox(height: AppSizes.spacing16),
 
                   Row(
