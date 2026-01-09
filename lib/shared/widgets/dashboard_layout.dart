@@ -420,12 +420,15 @@ class DashboardLayout extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing24),
       child: Row(
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: AppSizes.spacing24),
@@ -955,6 +958,13 @@ class _SidebarWidget extends StatelessWidget {
                     icon: Icons.people_outline,
                     label: 'Clientes',
                     route: '/customers',
+                    isSidebarCollapsed: isSidebarCollapsed,
+                  ),
+                  _buildNavItem(
+                    context: context,
+                    icon: Icons.trending_down_outlined,
+                    label: 'Gastos',
+                    route: '/expenses/report',
                     isSidebarCollapsed: isSidebarCollapsed,
                   ),
                   // ⭐ SOLO MOSTRAR TIENDAS, USUARIOS Y REPORTES PARA ADMINISTRADORES

@@ -14,6 +14,8 @@ import '../../features/suppliers/suppliers_page.dart';
 import '../../features/customers/customers_page.dart';
 import '../../features/stores/stores_page.dart';
 import '../../features/settings/theme_settings_page.dart';
+import '../../features/expenses/expense_report_page.dart';
+import '../../features/expenses/expense_form_page.dart';
 import '../../shared/providers/riverpod/auth_notifier.dart';
 import 'route_transitions.dart';
 
@@ -135,6 +137,37 @@ class AppRouter {
           state: state,
           transitionType: RouteTransitionType.fade,
         ),
+      ),
+
+      // Rutas de gastos
+      GoRoute(
+        path: '/expenses',
+        name: 'expenses',
+        pageBuilder: (context, state) => _buildPage(
+          child: const ExpenseReportPage(),
+          state: state,
+          transitionType: RouteTransitionType.fade,
+        ),
+        routes: [
+          GoRoute(
+            path: 'report',
+            name: 'expenseReport',
+            pageBuilder: (context, state) => _buildPage(
+              child: const ExpenseReportPage(),
+              state: state,
+              transitionType: RouteTransitionType.fade,
+            ),
+          ),
+          GoRoute(
+            path: 'new',
+            name: 'newExpense',
+            pageBuilder: (context, state) => _buildPage(
+              child: const ExpenseFormPage(),
+              state: state,
+              transitionType: RouteTransitionType.fade,
+            ),
+          ),
+        ],
       ),
 
       // Ruta de categorías
