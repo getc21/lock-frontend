@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
@@ -83,6 +86,9 @@ class _ExpenseReportPageState extends ConsumerState<ExpenseReportPage> {
     if (store == null) return;
 
     final expenseNotifier = ref.read(expenseProvider.notifier);
+    final storeId = store['_id'] as String?;
+    
+    if (storeId == null) return;
 
     if (_isCustomDateRange && _startDate != null && _endDate != null) {
       // Ajustar fechas para incluir todo el día final
@@ -90,13 +96,13 @@ class _ExpenseReportPageState extends ConsumerState<ExpenseReportPage> {
       final endDate = _endDate!.add(Duration(hours: 23, minutes: 59, seconds: 59));
       
       await expenseNotifier.loadExpenseReport(
-        storeId: store['_id'],
+        storeId: storeId,
         startDate: startDate,
         endDate: endDate,
       );
     } else {
       await expenseNotifier.loadExpenseReport(
-        storeId: store['_id'],
+        storeId: storeId,
         period: _selectedPeriod,
       );
     }
@@ -125,6 +131,294 @@ class _ExpenseReportPageState extends ConsumerState<ExpenseReportPage> {
         _loadReport();
       });
     }
+  }
+
+  Future<void> _generateExpensePDF() async {
+    final now = DateTime.now();
+    final firstDayOfMonth = DateTime(now.year, now.month, 1);
+    
+    final startDatePicker = await showDatePicker(
+      context: context,
+      initialDate: firstDayOfMonth,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+
+    if (startDatePicker == null) return;
+
+    final endDatePicker = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: startDatePicker,
+      lastDate: DateTime.now(),
+    );
+
+    if (endDatePicker == null) return;
+
+    final store = ref.read(storeProvider).currentStore;
+    if (store == null) return;
+    
+    final expenseNotifier = ref.read(expenseProvider.notifier);
+
+    // Cargar gastos para el rango de fechas
+    await expenseNotifier.loadExpenseReport(
+      storeId: store['_id'],
+      startDate: startDatePicker,
+      endDate: endDatePicker.add(Duration(hours: 23, minutes: 59, seconds: 59)),
+    );
+
+    final expenseState = ref.read(expenseProvider);
+    final report = expenseState.report;
+
+    if (report != null) {
+      _createAndPrintPDF(report, startDatePicker, endDatePicker, store);
+    }
+  }
+
+  Future<void> _createAndPrintPDF(
+    ExpenseReport report,
+    DateTime startDate,
+    DateTime endDate,
+    Map<String, dynamic>? store,
+  ) async {
+    final pdf = pw.Document();
+    final currencyNotifier = ref.read(currencyProvider.notifier);
+
+    // Usar fuentes que soporten Unicode
+    final ttfFont = await PdfGoogleFonts.robotoRegular();
+    final ttfFontBold = await PdfGoogleFonts.robotoBold();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: pw.EdgeInsets.all(40),
+        build: (context) => [
+          // Encabezado
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'REPORTE DE GASTOS',
+                style: pw.TextStyle(
+                  fontSize: 24,
+                  fontWeight: pw.FontWeight.bold,
+                  font: ttfFontBold,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Text(
+                store?['name'] ?? 'Tienda',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  color: PdfColors.grey700,
+                  font: ttfFont,
+                ),
+              ),
+              pw.Container(
+                margin: pw.EdgeInsets.symmetric(vertical: 16),
+                child: pw.Divider(),
+              ),
+            ],
+          ),
+
+          // Rango de fechas
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'Período:',
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      font: ttfFontBold,
+                    ),
+                  ),
+                  pw.Text(
+                    '${DateFormat('dd/MM/yyyy').format(startDate)} - ${DateFormat('dd/MM/yyyy').format(endDate)}',
+                    style: pw.TextStyle(font: ttfFont),
+                  ),
+                ],
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    'Fecha de Generación:',
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      font: ttfFontBold,
+                    ),
+                  ),
+                  pw.Text(
+                    DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
+                    style: pw.TextStyle(font: ttfFont),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 24),
+
+          // Resumen
+          pw.Container(
+            padding: pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300)),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'RESUMEN',
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 14,
+                    font: ttfFontBold,
+                  ),
+                ),
+                pw.SizedBox(height: 12),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'Total Gastos:',
+                          style: pw.TextStyle(font: ttfFont),
+                        ),
+                        pw.Text(
+                          '${currencyNotifier.symbol}${report.totalExpense.toStringAsFixed(2)}',
+                          style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 16,
+                            font: ttfFontBold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'Número de Transacciones:',
+                          style: pw.TextStyle(font: ttfFont),
+                        ),
+                        pw.Text(
+                          '${report.expenseCount}',
+                          style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 16,
+                            font: ttfFontBold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'Promedio por Gasto:',
+                          style: pw.TextStyle(font: ttfFont),
+                        ),
+                        pw.Text(
+                          '${currencyNotifier.symbol}${report.averageExpense.toStringAsFixed(2)}',
+                          style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 16,
+                            font: ttfFontBold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 24),
+
+          // Desglose por categoría
+          pw.Text(
+            'DESGLOSE POR CATEGORÍA',
+            style: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 14,
+              font: ttfFontBold,
+            ),
+          ),
+          pw.SizedBox(height: 12),
+          pw.TableHelper.fromTextArray(
+            headers: ['Categoría', 'Total', 'Transacciones', 'Porcentaje'],
+            data: report.byCategory
+                .map((cat) => [
+                  cat.name,
+                  '${currencyNotifier.symbol}${cat.total.toStringAsFixed(2)}',
+                  '${cat.count}',
+                  '${(cat.total / report.totalExpense * 100).toStringAsFixed(1)}%',
+                ])
+                .toList(),
+            cellHeight: 30,
+            cellAlignment: pw.Alignment.centerLeft,
+            headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              font: ttfFontBold,
+            ),
+            cellStyle: pw.TextStyle(font: ttfFont),
+          ),
+          pw.SizedBox(height: 24),
+
+          // Top 10 gastos
+          pw.Text(
+            'PRINCIPALES GASTOS',
+            style: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 14,
+              font: ttfFontBold,
+            ),
+          ),
+          pw.SizedBox(height: 12),
+          pw.TableHelper.fromTextArray(
+            headers: ['Fecha', 'Descripción', 'Monto'],
+            data: report.topExpenses
+                .take(10)
+                .map((exp) => [
+                  DateFormat('dd/MM/yyyy').format(exp.date),
+                  exp.description ?? 'Sin descripción',
+                  '${currencyNotifier.symbol}${exp.amount.toStringAsFixed(2)}',
+                ])
+                .toList(),
+            cellHeight: 30,
+            cellAlignment: pw.Alignment.centerLeft,
+            headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              font: ttfFontBold,
+            ),
+            cellStyle: pw.TextStyle(font: ttfFont),
+          ),
+          pw.SizedBox(height: 40),
+
+          // Pie de página
+          pw.Container(
+            alignment: pw.Alignment.center,
+            child: pw.Text(
+              'Documento generado automáticamente por Bellezapp',
+              style: pw.TextStyle(
+                fontSize: 10,
+                color: PdfColors.grey600,
+                font: ttfFont,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Generar y mostrar el PDF
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Reporte_Gastos_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf',
+    );
   }
 
   // Vista para empleados
@@ -285,15 +579,30 @@ class _ExpenseReportPageState extends ConsumerState<ExpenseReportPage> {
                 // BOTÓN REGISTRAR GASTO
                 Align(
                   alignment: Alignment.centerRight,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      context.push('/expenses/new');
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Registrar Gasto'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).primaryColor,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _generateExpensePDF,
+                        icon: const Icon(Icons.picture_as_pdf),
+                        label: const Text('Generar PDF'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                      SizedBox(width: AppSizes.spacing12),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          context.push('/expenses/new');
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Registrar Gasto'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 SizedBox(height: AppSizes.spacing12),
