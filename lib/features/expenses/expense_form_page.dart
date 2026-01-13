@@ -76,6 +76,13 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
         await Future.delayed(Duration(milliseconds: 500));
 
         if (mounted) {
+          // 🔴 RECARGAR REPORTE antes de navegar
+          final storeId = store['_id'] as String;
+          await ref.read(expenseProvider.notifier).loadExpenseReport(
+            storeId: storeId,
+            period: 'monthly',
+          );
+          
           // Navegar de vuelta al reporte de gastos
           context.go('/expenses/report');
         }

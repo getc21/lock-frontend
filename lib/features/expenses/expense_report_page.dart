@@ -17,7 +17,6 @@ import '../../shared/widgets/loading_indicator.dart';
 // Re-export las clases que ya existen en expense_notifier
 export '../../shared/providers/riverpod/expense_notifier.dart'
     show ExpenseReport, ExpenseCategory, ExpenseItem;
-
 class ExpenseReportPage extends ConsumerStatefulWidget {
   const ExpenseReportPage({super.key});
 
@@ -35,15 +34,14 @@ class _ExpenseReportPageState extends ConsumerState<ExpenseReportPage> {
   void initState() {
     super.initState();
     _setDefaultDates();
-    // Cargar reporte después de que el widget esté completamente construido
+    
+    // Cargar reporte inicial después de construir el widget
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Verificar si es empleado para cargar solo hoy
       final authState = ref.read(authProvider);
       if (authState.isEmployee && !authState.isManager && !authState.isAdmin) {
         // Para empleados, cargar solo gastos del día actual
         final store = ref.read(storeProvider).currentStore;
         if (store != null) {
-          final today = DateTime.now();
           ref.read(expenseProvider.notifier).loadExpenses(store['_id']);
         }
       } else {
@@ -83,17 +81,29 @@ class _ExpenseReportPageState extends ConsumerState<ExpenseReportPage> {
 
   Future<void> _loadReport() async {
     final store = ref.read(storeProvider).currentStore;
-    if (store == null) return;
+    if (store == null) {
+      print('🔴 [ExpenseReport] No hay tienda seleccionada');
+      return;
+    }
+
+    final storeId = store['_id'] as String?;
+    final storeName = store['name'] as String? ?? 'Sin nombre';
+    
+    if (storeId == null) {
+      print('🔴 [ExpenseReport] storeId es nulo');
+      return;
+    }
+
+    print('🟡 [ExpenseReport] Cargando reporte para tienda: $storeName ($storeId)');
 
     final expenseNotifier = ref.read(expenseProvider.notifier);
-    final storeId = store['_id'] as String?;
-    
-    if (storeId == null) return;
 
     if (_isCustomDateRange && _startDate != null && _endDate != null) {
       // Ajustar fechas para incluir todo el día final
       final startDate = _startDate!;
       final endDate = _endDate!.add(Duration(hours: 23, minutes: 59, seconds: 59));
+      
+      print('📊 [ExpenseReport] Rango personalizado: ${startDate.toString()} a ${endDate.toString()}');
       
       await expenseNotifier.loadExpenseReport(
         storeId: storeId,
@@ -101,11 +111,15 @@ class _ExpenseReportPageState extends ConsumerState<ExpenseReportPage> {
         endDate: endDate,
       );
     } else {
+      print('📊 [ExpenseReport] Período: $_selectedPeriod');
+      
       await expenseNotifier.loadExpenseReport(
         storeId: storeId,
         period: _selectedPeriod,
       );
     }
+    
+    print('✅ [ExpenseReport] Reporte cargado exitosamente');
   }
 
   Future<void> _selectDateRange() async {
@@ -650,8 +664,25 @@ class _ExpenseReportPageState extends ConsumerState<ExpenseReportPage> {
   Widget build(BuildContext context) {
     final expenseState = ref.watch(expenseProvider);
     final authState = ref.watch(authProvider);
+    final storeState = ref.watch(storeProvider);  // 🔴 Observar cambios de tienda
     final isEmployeeOnly = authState.isEmployee && !authState.isManager && !authState.isAdmin;
     final report = expenseState.report;
+
+    // 🔴 EFECTO: Recargar reporte cuando cambia la tienda
+    // Este listener se ejecuta cada vez que storeProvider cambia
+    ref.listen<StoreState>(storeProvider, (previous, next) {
+      if (previous != null && next != null) {
+        final prevStoreId = previous.currentStore?['_id'];
+        final nextStoreId = next.currentStore?['_id'];
+        
+        if (prevStoreId != null && 
+            nextStoreId != null && 
+            prevStoreId != nextStoreId) {
+          print('🔴 [ExpenseReport-BUILD] Tienda cambió de $prevStoreId a $nextStoreId');
+          _loadReport();
+        }
+      }
+    });
 
     return DashboardLayout(
       title: 'Reportes de Gastos',
