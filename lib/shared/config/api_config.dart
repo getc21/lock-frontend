@@ -8,7 +8,7 @@ class ApiConfig {
   static const String _port = '3000';
   
   // URL de producción - CAMBIAR SEGÚN TU DOMINIO
-  static const String _productionUrl = 'https://bellezapp-api.onrender.com/api';
+  static const String _productionUrl = 'https://naturalmarket.onrender.com/api';
   
   // Detecta automáticamente si estamos en emulador, web o dispositivo físico
   static String get baseUrl {
