@@ -12,12 +12,12 @@ class ApiConfig {
   
   // Detecta automáticamente si estamos en emulador, web o dispositivo físico
   static String get baseUrl {
-    // Para Web, usar URL de producción
+    // Para Web, usar localhost para desarrollo
     if (kIsWeb) {
-      // Producción
-      return _productionUrl;
-      // Desarrollo local (comentado)
-      // return 'http://localhost:$_port/api';
+      // DESARROLLO LOCAL
+      return 'http://localhost:$_port/api';
+      // Producción (comentado)
+      // return _productionUrl;
       // Si necesitas acceder desde otra computadora en la red:
       // return 'http://$_localIP:$_port/api';
     }

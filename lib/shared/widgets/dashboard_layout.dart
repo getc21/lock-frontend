@@ -955,6 +955,13 @@ class _SidebarWidget extends StatelessWidget {
                   ),
                   _buildNavItem(
                     context: context,
+                    icon: Icons.assignment_return_outlined,
+                    label: 'Devoluciones',
+                    route: '/returns',
+                    isSidebarCollapsed: isSidebarCollapsed,
+                  ),
+                  _buildNavItem(
+                    context: context,
                     icon: Icons.people_outline,
                     label: 'Clientes',
                     route: '/customers',

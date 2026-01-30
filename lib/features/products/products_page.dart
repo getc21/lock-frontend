@@ -38,16 +38,31 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   @override
   void initState() {
     super.initState();
+    // Cargar datos en primer acceso
     _loadData();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Cada vez que la página se reconstruye, recargar productos
+    // Esto es importante para reflejar cambios de otras páginas (como devoluciones)
+    print('🔄 ProductsPage didChangeDependencies - recargando productos');
+    // IMPORTANT: Use addPostFrameCallback to delay provider modification
+    // until after the widget tree is done building (required by Riverpod)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(productProvider.notifier).loadProductsForCurrentStore(forceRefresh: true);
+      }
+    });
+  }
+
   void _loadData() {
-      if (kDebugMode) debugPrint(' ProductsPage: _loadData called');
+    if (kDebugMode) debugPrint('ProductsPage: _loadData called');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_hasInitialized) {
         _hasInitialized = true;
-      if (kDebugMode) debugPrint(' ProductsPage: Loading data in optimized sequence');
-        final productState = ref.read(productProvider);
+        if (kDebugMode) debugPrint('ProductsPage: Loading data in optimized sequence');
         final supplierState = ref.read(supplierProvider);
         final categoryState = ref.read(categoryProvider);
         final locationState = ref.read(locationProvider);
@@ -61,11 +76,8 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           criticalFutures.add(ref.read(supplierProvider.notifier).loadSuppliers());
         }
         
-        // PARALLEL: Load products and locations
+        // PARALLEL: Load locations only
         final parallelFutures = <Future>[];
-        if (productState.products.isEmpty) {
-          parallelFutures.add(ref.read(productProvider.notifier).loadProductsForCurrentStore());
-        }
         if (locationState.locations.isEmpty) {
           parallelFutures.add(ref.read(locationProvider.notifier).loadLocations());
         }

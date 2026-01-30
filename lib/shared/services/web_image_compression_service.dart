@@ -163,7 +163,7 @@ class WebImageCompressionService {
     final completer = Completer<String>();
     final reader = FileReader();
     
-    reader.addEventListener('load', (event) {
+    reader.addEventListener('load', ((JSObject event) {
       try {
         final List<int> bytes = List<int>.from(
           (reader.result as JSUint8Array).toDart,
@@ -172,11 +172,11 @@ class WebImageCompressionService {
       } catch (e) {
         completer.completeError(e);
       }
-    }.toJS);
+    }).toJS as EventListener);
     
-    reader.addEventListener('error', (event) {
+    reader.addEventListener('error', ((JSObject event) {
       completer.completeError('Failed to read blob');
-    }.toJS);
+    }).toJS as EventListener);
     
     reader.readAsArrayBuffer(blob);
     return completer.future;
@@ -187,13 +187,13 @@ class WebImageCompressionService {
     final completer = Completer<Blob>();
     
     canvas.toBlob(
-      (blob) {
+      ((JSObject? blob) {
         if (blob != null) {
-          completer.complete(blob);
+          completer.complete(blob as Blob);
         } else {
           completer.completeError('Failed to convert canvas to blob');
         }
-      }.toJS,
+      }).toJS,
       'image/jpeg',
       quality.toJS,
     );
@@ -207,13 +207,13 @@ class WebImageCompressionService {
     late EventListener onLoadListener;
     late EventListener onErrorListener;
     
-    onLoadListener = (((event) {
+    onLoadListener = (((JSObject event) {
       img.removeEventListener('load', onLoadListener);
       img.removeEventListener('error', onErrorListener);
       completer.complete();
     }).toJS as EventListener);
     
-    onErrorListener = (((event) {
+    onErrorListener = (((JSObject event) {
       img.removeEventListener('load', onLoadListener);
       img.removeEventListener('error', onErrorListener);
       completer.completeError('Failed to load image');

@@ -82,12 +82,16 @@ class ProductNotifier extends StateNotifier<ProductState> {
 
       // SIEMPRE intentar obtener del caché primero (incluso si forceRefresh)
       final cached = _cache.get<List<Map<String, dynamic>>>(cacheKey);
+      print('📦 Verificando caché: forceRefresh=$forceRefresh, existe=${cached != null}');
+      
       if (cached != null && !forceRefresh) {
         // Mostrar datos en caché inmediatamente SIN loading
+        print('   ✅ Usando datos en caché (${cached.length} productos)');
         state = state.copyWith(products: cached, isLoading: false, errorMessage: '');
         return;
       } else if (cached == null) {
         // Si no hay caché, mostrar loading
+        print('   ⏳ No hay caché, mostrando loading');
         state = state.copyWith(isLoading: true, errorMessage: '');
       }
       // Si forceRefresh=true, continuar sin cambiar isLoading (mantendrá el estado anterior)
@@ -104,7 +108,9 @@ class ProductNotifier extends StateNotifier<ProductState> {
         final products = List<Map<String, dynamic>>.from(result['data']);
         _cache.set(cacheKey, products, ttl: const Duration(minutes: 10));
         state = state.copyWith(products: products, isLoading: false);
+        print('   ✅ Productos cargados desde servidor: ${products.length} items');
       } else {
+        print('   ❌ Error del servidor: ${result['message']}');
         state = state.copyWith(
           errorMessage: result['message'] ?? 'Error cargando productos',
           isLoading: false,
@@ -122,10 +128,14 @@ class ProductNotifier extends StateNotifier<ProductState> {
   Future<void> loadProductsForCurrentStore({bool forceRefresh = false}) async {
     _initProductProvider();
     final storeState = ref.read(storeProvider);
+    
+    print('📦 loadProductsForCurrentStore llamado - forceRefresh: $forceRefresh');
 
     if (storeState.currentStore != null) {
+      print('   Cargando para tienda: ${storeState.currentStore!['_id']}');
       await loadProducts(storeId: storeState.currentStore!['_id'], forceRefresh: forceRefresh);
     } else {
+      print('   ❌ No hay tienda seleccionada');
       state = state.copyWith(products: []);
     }
   }
@@ -352,7 +362,62 @@ class ProductNotifier extends StateNotifier<ProductState> {
   }
 
   void clearProducts() {
+    print('🗑️ Limpiando productos y caché...');
+    // Limpiar el estado
     state = ProductState();
+    // Limpiar TAMBIÉN el caché interno
+    _cache.invalidatePattern('products:');
+    print('   ✅ Productos y caché limpiados');
+  }
+
+  /// Actualizar stock cuando se procesa una devolución
+  /// Aumenta el stock de los productos devueltos
+  void updateStockAfterReturn({
+    required List<dynamic> returnedItems,
+  }) {
+    final updatedProducts = state.products.map((product) {
+      final productId = product['_id']?.toString() ?? '';
+      
+      // Buscar si este producto está en los items devueltos
+      int totalReturnQty = 0;
+      
+      for (final returnedItem in returnedItems) {
+        // Extraer productId del item devuelto (puede ser string o Map)
+        String itemProductId = '';
+        final pId = returnedItem.productId ?? returnedItem['productId'];
+        
+        if (pId is Map) {
+          itemProductId = (pId['_id'] ?? pId['id'])?.toString() ?? '';
+        } else {
+          itemProductId = pId?.toString() ?? '';
+        }
+        
+        // Comparar IDs
+        if (productId == itemProductId) {
+          final returnQty = returnedItem.returnQuantity ?? returnedItem['returnQuantity'] ?? 0;
+          totalReturnQty += (returnQty as num).toInt();
+          
+          print('📦 Actualizando stock: productId=$productId, returnQty=$totalReturnQty');
+        }
+      }
+
+      if (totalReturnQty == 0) {
+        return product; // No fue devuelto, mantener igual
+      }
+
+      // Aumentar el stock
+      final updatedProduct = Map<String, dynamic>.from(product);
+      final currentStock = (product['stock'] as num?)?.toInt() ?? 0;
+      final newStock = currentStock + totalReturnQty;
+
+      print('✅ Nuevo stock para $productId: $currentStock → $newStock');
+      updatedProduct['stock'] = newStock;
+
+      return updatedProduct;
+    }).toList();
+
+    state = state.copyWith(products: updatedProducts);
+    print('🔄 Estado de productos actualizado. Total productos: ${updatedProducts.length}');
   }
 
   // Obtener stock del producto en todas las tiendas

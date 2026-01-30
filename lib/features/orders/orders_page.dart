@@ -9,6 +9,7 @@ import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/providers/riverpod/order_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
+import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/services/pdf_service.dart';
 
 class OrdersPage extends ConsumerStatefulWidget {
@@ -38,10 +39,11 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Actualizar órdenes en background cuando volvemos (sin bloquear UI)
-    // Usa caché si existe, carga nuevos datos en background
-    // Envuelto en Future para no modificar el provider durante la construcción
-    Future(() {
+    // Detectar si la tienda cambió y recargar órdenes
+    final currentStore = ref.read(storeProvider).currentStore;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Recargar órdenes cuando volvemos a esta página
+      // Usa caché si existe, carga nuevos datos en background
       ref.read(orderProvider.notifier).loadOrdersForCurrentStore(forceRefresh: true);
     });
   }
@@ -57,6 +59,16 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     // Observar estado de órdenes y moneda
     final orderState = ref.watch(orderProvider);
     ref.watch(currencyProvider); // Permite reconstruir cuando cambia la moneda
+    
+    // CRITICAL: Detectar cambios de tienda
+    final storeState = ref.watch(storeProvider);
+    // Recargar órdenes si la tienda actual cambió
+    ref.listen(storeProvider.select((s) => s.currentStore?['_id']), (previous, next) {
+      if (previous != next && next != null) {
+        // La tienda cambió, recargar órdenes
+        ref.read(orderProvider.notifier).loadOrdersForCurrentStore(forceRefresh: true);
+      }
+    });
     
     // Filtrar órdenes según el filtro de pago
     final filteredOrders = orderState.orders
@@ -300,6 +312,13 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                   icon: const Icon(Icons.visibility_outlined, size: 20),
                   onPressed: () => _showOrderDetails(order),
                   tooltip: 'Ver detalles',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.assignment_return_outlined, size: 20),
+                  onPressed: () => context.go(
+                    '/returns/create/${order['_id']}?customerName=$customerName',
+                  ),
+                  tooltip: 'Crear devolución',
                 ),
                 IconButton(
                   icon: const Icon(Icons.print_outlined, size: 20),

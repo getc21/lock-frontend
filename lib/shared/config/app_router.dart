@@ -16,7 +16,10 @@ import '../../features/stores/stores_page.dart';
 import '../../features/settings/theme_settings_page.dart';
 import '../../features/expenses/expense_report_page.dart';
 import '../../features/expenses/expense_form_page.dart';
+import '../../features/returns/pages/returns_list_page.dart';
+import '../../features/returns/pages/create_return_page.dart';
 import '../../shared/providers/riverpod/auth_notifier.dart';
+import '../../shared/providers/riverpod/store_notifier.dart';
 import 'route_transitions.dart';
 
 /// Configuración de rutas optimizada para SPA
@@ -102,6 +105,37 @@ class AppRouter {
               state: state,
               transitionType: RouteTransitionType.fade,
             ),
+          ),
+        ],
+      ),
+
+      // Rutas de devoluciones
+      GoRoute(
+        path: '/returns',
+        name: 'returns',
+        pageBuilder: (context, state) {
+          return _buildPage(
+            child: const ReturnsListPage(),
+            state: state,
+            transitionType: RouteTransitionType.fade,
+          );
+        },
+        routes: [
+          GoRoute(
+            path: 'create/:orderId',
+            name: 'createReturn',
+            pageBuilder: (context, state) {
+              final orderId = state.pathParameters['orderId']!;
+              final customerName = state.uri.queryParameters['customerName'] ?? 'Cliente';
+              return _buildPage(
+                child: CreateReturnPage(
+                  orderId: orderId,
+                  customerName: customerName,
+                ),
+                state: state,
+                transitionType: RouteTransitionType.fade,
+              );
+            },
           ),
         ],
       ),

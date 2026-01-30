@@ -357,6 +357,67 @@ class OrderNotifier extends StateNotifier<OrderState> {
   void clearOrders() {
     state = OrderState();
   }
+
+  /// Actualizar orden cuando se procesa una devolución
+  /// Reduce las cantidades de los items devueltos y recalcula el total
+  void updateOrderAfterReturn({
+    required String orderId,
+    required List<dynamic> returnedItems,
+  }) {
+    final updatedOrders = state.orders.map((order) {
+      if (order['_id'] != orderId) return order;
+
+      // Crear una copia de la orden
+      final updatedOrder = Map<String, dynamic>.from(order);
+      final items = List<Map<String, dynamic>>.from(order['items'] ?? []);
+
+      // Reducir cantidades de items devueltos
+      for (final returnedItem in returnedItems) {
+        // Extraer productId (puede ser string o Map)
+        String itemProductId = '';
+        final pId = returnedItem.productId ?? returnedItem['productId'];
+        
+        if (pId is Map) {
+          itemProductId = (pId['_id'] ?? pId['id'])?.toString() ?? '';
+        } else {
+          itemProductId = pId?.toString() ?? '';
+        }
+
+        final itemIndex = items.indexWhere(
+          (item) => item['productId'].toString() == itemProductId,
+        );
+
+        if (itemIndex >= 0) {
+          final item = Map<String, dynamic>.from(items[itemIndex]);
+          final currentQty = (item['quantity'] as num?)?.toInt() ?? 0;
+          final returnQty = (returnedItem.returnQuantity ?? returnedItem['returnQuantity'] ?? 0) as num;
+
+          item['quantity'] = currentQty - returnQty.toInt();
+
+          if (item['quantity'] <= 0) {
+            items.removeAt(itemIndex);
+          } else {
+            items[itemIndex] = item;
+          }
+        }
+      }
+
+      // Recalcular total
+      double newTotal = 0;
+      for (final item in items) {
+        final price = (item['price'] as num?)?.toDouble() ?? 0;
+        final qty = (item['quantity'] as num?)?.toDouble() ?? 0;
+        newTotal += price * qty;
+      }
+
+      updatedOrder['items'] = items;
+      updatedOrder['totalOrden'] = newTotal;
+
+      return updatedOrder;
+    }).toList();
+
+    state = state.copyWith(orders: updatedOrders);
+  }
 }
 
 // Provider
