@@ -11,7 +11,12 @@ import 'dart:typed_data';
 import 'package:web/web.dart' as web;
 
 class PdfService {
-  // ...existing code...
+  // Obtener hora actual de Bolivia (UTC-4)
+  static DateTime _getBoliviaTime() {
+    // Bolivia está en zona UTC-4
+    final utcNow = DateTime.now().toUtc();
+    return utcNow.add(const Duration(hours: -4));
+  }
   static Future<String> generateInventoryRotationPdf({
     required Map<String, dynamic> data,
     required DateTime startDate,
@@ -50,7 +55,7 @@ class PdfService {
       ),
     );
 
-    return await _savePdf(pdf, 'Rotacion_Inventario_${DateFormat('dd-MM-yyyy').format(DateTime.now())}');
+    return await _savePdf(pdf, 'Rotacion_Inventario_${DateFormat('dd-MM-yyyy').format(_getBoliviaTime())}');
   }
 
   static Future<String> generateProfitabilityPdf({
@@ -91,7 +96,7 @@ class PdfService {
       ),
     );
 
-    return await _savePdf(pdf, 'Rentabilidad_${DateFormat('dd-MM-yyyy').format(DateTime.now())}');
+    return await _savePdf(pdf, 'Rentabilidad_${DateFormat('dd-MM-yyyy').format(_getBoliviaTime())}');
   }
 
   static Future<String> generateSalesTrendsPdf({
@@ -134,7 +139,7 @@ class PdfService {
       ),
     );
 
-    return await _savePdf(pdf, 'Tendencias_Ventas_${DateFormat('dd-MM-yyyy').format(DateTime.now())}');
+    return await _savePdf(pdf, 'Tendencias_Ventas_${DateFormat('dd-MM-yyyy').format(_getBoliviaTime())}');
   }
 
   static Future<String> generateComparisonPdf({
@@ -192,7 +197,7 @@ class PdfService {
       ),
     );
 
-    return await _savePdf(pdf, 'Comparacion_Periodos_${DateFormat('dd-MM-yyyy').format(DateTime.now())}');
+    return await _savePdf(pdf, 'Comparacion_Periodos_${DateFormat('dd-MM-yyyy').format(_getBoliviaTime())}');
   }
 
   //
@@ -214,7 +219,7 @@ class PdfService {
           style: const pw.TextStyle(fontSize: 12),
         ),
         pw.Text(
-          'Generado: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
+          'Generado: ${DateFormat('dd/MM/yyyy HH:mm').format(_getBoliviaTime())}',
           style: const pw.TextStyle(fontSize: 10),
         ),
       ],
