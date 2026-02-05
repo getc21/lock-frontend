@@ -57,7 +57,6 @@ class ReturnsService {
   // Prueba de conectividad
   Future<bool> healthCheck() async {
     try {
-      print('[DEBUG] Iniciando health check a: $baseUrl/returns/test/debug');
       // Crear un Dio limpio sin headers problemáticos para el health check
       final cleanDio = Dio();
       final response = await cleanDio.get(
@@ -66,12 +65,8 @@ class ReturnsService {
           validateStatus: (status) => true,
         ),
       );
-      print('[DEBUG] Health check response status: ${response.statusCode}');
-      print('[DEBUG] Health check response body: ${response.data}');
       return response.statusCode == 200;
     } catch (e) {
-      print('[DEBUG] Health check error: $e');
-      print('[DEBUG] Error type: ${e.runtimeType}');
       return false;
     }
   }
@@ -100,11 +95,6 @@ class ReturnsService {
         'notes': notes != null ? [notes] : [],  // Convert to array for backend
         'storeId': storeId,
       };
-      
-      print('📤 Enviando crear devolución:');
-      print('   storeId: $storeId (tipo: ${storeId.runtimeType})');
-      print('   items: ${requestData['items']}');
-      print('   reasonDetails: ${requestData['reasonDetails']}');
       
       final response = await dio.post(
         '$baseUrl/returns/request',
@@ -153,8 +143,6 @@ class ReturnsService {
         queryParams['refundMethod'] = refundMethod;
       }
 
-      print('Fetching returns from: $baseUrl/returns with params: $queryParams');
-
       final response = await dio.get(
         '$baseUrl/returns',
         queryParameters: queryParams,
@@ -163,12 +151,8 @@ class ReturnsService {
         ),
       );
 
-      print('Response status: ${response.statusCode}');
-      print('Response data: ${response.data}');
-
       // Manejar 304 No Modified
       if (response.statusCode == 304) {
-        print('Warning: Servidor retornó 304 Not Modified');
         return {
           'returns': [],
           'summary': {},
@@ -190,7 +174,6 @@ class ReturnsService {
         'summary': response.data['summary'] ?? {},
       };
     } catch (e) {
-      print('Error fetching returns: $e');
       throw Exception('Error al obtener devoluciones: $e');
     }
   }
@@ -297,16 +280,11 @@ final returnsServiceProvider = Provider((ref) {
   
   // Agregar token de autenticación
   if (authState.token.isNotEmpty) {
-    print('[DEBUG] Adding auth token to headers');
     dio.options.headers['Authorization'] = 'Bearer ${authState.token}';
-  } else {
-    print('[DEBUG] No auth token available');
   }
   
   // NO agregar headers que causen problemas CORS
   // Los headers de cache deben ser manejados por el backend, no el cliente
-  
-  print('[DEBUG] ReturnsService initialized with baseUrl: http://localhost:3000/api');
   
   return ReturnsService(dio);
 });

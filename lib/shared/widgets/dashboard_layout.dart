@@ -948,33 +948,12 @@ class _SidebarWidget extends StatelessWidget {
                   ),
                   _buildNavItem(
                     context: context,
-                    icon: Icons.receipt_long_outlined,
-                    label: 'Ventas',
-                    route: '/orders',
-                    isSidebarCollapsed: isSidebarCollapsed,
-                  ),
-                  _buildNavItem(
-                    context: context,
-                    icon: Icons.assignment_return_outlined,
-                    label: 'Devoluciones',
-                    route: '/returns',
-                    isSidebarCollapsed: isSidebarCollapsed,
-                  ),
-                  _buildNavItem(
-                    context: context,
                     icon: Icons.people_outline,
                     label: 'Clientes',
                     route: '/customers',
                     isSidebarCollapsed: isSidebarCollapsed,
                   ),
-                  _buildNavItem(
-                    context: context,
-                    icon: Icons.trending_down_outlined,
-                    label: 'Gastos',
-                    route: '/expenses/report',
-                    isSidebarCollapsed: isSidebarCollapsed,
-                  ),
-                  // ⭐ SOLO MOSTRAR TIENDAS, USUARIOS Y REPORTES PARA ADMINISTRADORES
+                  // ⭐ SOLO MOSTRAR TIENDAS Y USUARIOS PARA ADMINISTRADORES
                   if (isAdmin) ...[
                     _buildNavItem(
                       context: context,
@@ -990,6 +969,59 @@ class _SidebarWidget extends StatelessWidget {
                       route: '/users',
                       isSidebarCollapsed: isSidebarCollapsed,
                     ),
+                  ],
+                  // Divisor entre grupos
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+                    child: Divider(
+                      height: 1,
+                      indent: isSidebarCollapsed ? 0 : AppSizes.spacing16,
+                      endIndent: isSidebarCollapsed ? 0 : AppSizes.spacing16,
+                    ),
+                  ),
+                  _buildNavItem(
+                    context: context,
+                    icon: Icons.receipt_long_outlined,
+                    label: 'Ventas',
+                    route: '/orders',
+                    isSidebarCollapsed: isSidebarCollapsed,
+                  ),
+                  _buildNavItem(
+                    context: context,
+                    icon: Icons.assignment_return_outlined,
+                    label: 'Devoluciones',
+                    route: '/returns',
+                    isSidebarCollapsed: isSidebarCollapsed,
+                  ),
+                  _buildNavItem(
+                    context: context,
+                    icon: Icons.trending_down_outlined,
+                    label: 'Gastos',
+                    route: '/expenses/report',
+                    isSidebarCollapsed: isSidebarCollapsed,
+                  ),
+                  _buildNavItem(
+                    context: context,
+                    icon: Icons.description_outlined,
+                    label: 'Cotizaciones',
+                    route: '/quotations',
+                    isSidebarCollapsed: isSidebarCollapsed,
+                  ),
+                  _buildNavItem(
+                    context: context,
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: 'Caja',
+                    route: '/cash-register',
+                    isSidebarCollapsed: isSidebarCollapsed,
+                  ),
+                  _buildNavItem(
+                    context: context,
+                    icon: Icons.receipt_outlined,
+                    label: 'Comprobantes',
+                    route: '/receipts',
+                    isSidebarCollapsed: isSidebarCollapsed,
+                  ),
+                  if (isAdmin)
                     _buildNavItem(
                       context: context,
                       icon: Icons.analytics_outlined,
@@ -997,7 +1029,6 @@ class _SidebarWidget extends StatelessWidget {
                       route: '/reports',
                       isSidebarCollapsed: isSidebarCollapsed,
                     ),
-                  ],
                 ],
               ),
             ),
@@ -1076,18 +1107,20 @@ class _SidebarWidget extends StatelessWidget {
                           size: AppSizes.iconMedium,
                         ),
                         const SizedBox(width: AppSizes.spacing12),
-                        Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: isSelected
-                                ? Theme.of(context).primaryColor
-                                : AppColors.textPrimary,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            fontSize: 14,
+                        Flexible(
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Theme.of(context).primaryColor
+                                  : AppColors.textPrimary,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],

@@ -184,7 +184,7 @@ class OrderNotifier extends StateNotifier<OrderState> {
   }
 
   // Crear orden
-  Future<bool> createOrder({
+  Future<Map<String, dynamic>?> createOrder({
     required String storeId,
     String? customerId,
     required List<Map<String, dynamic>> items,
@@ -215,20 +215,23 @@ class OrderNotifier extends StateNotifier<OrderState> {
         // Refrescar lista de órdenes
         await loadOrders(storeId: storeId, forceRefresh: true);
         state = state.copyWith(isLoading: false);
-        return true;
+        
+        // Retornar los datos de la orden creada (incluye receiptNumber)
+        final createdOrder = result['data'] as Map<String, dynamic>?;
+        return createdOrder;
       } else {
         state = state.copyWith(
           isLoading: false,
           errorMessage: result['message'] ?? 'Error creando orden',
         );
-        return false;
+        return null;
       }
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Error de conexión: $e',
       );
-      return false;
+      return null;
     }
   }
 

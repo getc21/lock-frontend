@@ -6,13 +6,19 @@ import '../../core/constants/app_sizes.dart';
 import '../../shared/providers/riverpod/product_notifier.dart';
 import '../../shared/providers/riverpod/customer_notifier.dart';
 import '../../shared/providers/riverpod/order_notifier.dart';
+import '../../shared/providers/riverpod/quotation_list_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/providers/riverpod/order_form_notifier.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 
 class CreateOrderPage extends ConsumerStatefulWidget {
-  const CreateOrderPage({super.key});
+  final bool isQuotation;
+  
+  const CreateOrderPage({
+    super.key,
+    this.isQuotation = false,
+  });
 
   @override
   ConsumerState<CreateOrderPage> createState() => _CreateOrderPageState();
@@ -53,7 +59,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
     ref.watch(currencyProvider); // Permite reconstruir cuando cambia la moneda
     
     return DashboardLayout(
-      title: 'Nueva Orden',
+      title: widget.isQuotation ? 'Nueva Cotización' : 'Nueva Orden',
       currentRoute: '/orders',
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.spacing16),
@@ -494,39 +500,42 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
         padding: const EdgeInsets.all(AppSizes.spacing16),
         child: Column(
           children: [
-            Consumer(
-              builder: (context, consumerRef, _) {
-                final formState = consumerRef.watch(orderFormProvider);
-                final paymentMethod = formState.paymentMethod;
+            // Solo mostrar método de pago si NO es cotización
+            if (!widget.isQuotation)
+              Consumer(
+                builder: (context, consumerRef, _) {
+                  final formState = consumerRef.watch(orderFormProvider);
+                  final paymentMethod = formState.paymentMethod;
 
-                return Row(
-                  children: [
-                    const Text(
-                      'Método de pago:',
-                      style: TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(width: AppSizes.spacing8),
-                    Expanded(
-                      child: DropdownButton<String>(
-                        value: paymentMethod,
-                        isExpanded: true,
-                        items: const [
-                          DropdownMenuItem(value: 'efectivo', child: Text('Efectivo')),
-                          DropdownMenuItem(value: 'tarjeta', child: Text('Tarjeta')),
-                          DropdownMenuItem(value: 'transferencia', child: Text('Transferencia')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            consumerRef.read(orderFormProvider.notifier).setPaymentMethod(value);
-                          }
-                        },
+                  return Row(
+                    children: [
+                      const Text(
+                        'Método de pago:',
+                        style: TextStyle(fontWeight: FontWeight.w500),
                       ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const Divider(),
+                      const SizedBox(width: AppSizes.spacing8),
+                      Expanded(
+                        child: DropdownButton<String>(
+                          value: paymentMethod,
+                          isExpanded: true,
+                          items: const [
+                            DropdownMenuItem(value: 'efectivo', child: Text('Efectivo')),
+                            DropdownMenuItem(value: 'tarjeta', child: Text('Tarjeta')),
+                            DropdownMenuItem(value: 'qr', child: Text('Pago por QR')),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              consumerRef.read(orderFormProvider.notifier).setPaymentMethod(value);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            if (!widget.isQuotation)
+              const Divider(),
             Consumer(
               builder: (context, consumerRef, _) {
                 // Watch orderFormProvider para que se reconstruya cuando cambien los items
@@ -586,6 +595,27 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                       ),
                     ),
                     const SizedBox(width: AppSizes.spacing8),
+                    if (!widget.isQuotation)
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: (items.isEmpty || isCreating) ? null : _createQuotation,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey[600],
+                          ),
+                          child: isCreating
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Text('Realizar Cotización'),
+                        ),
+                      ),
+                    if (!widget.isQuotation)
+                      const SizedBox(width: AppSizes.spacing8),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: (items.isEmpty || isCreating) ? null : _createOrder,
@@ -601,7 +631,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
                               )
-                            : const Text('Realizar Venta'),
+                            : Text(widget.isQuotation ? 'Realizar Cotización' : 'Realizar Venta'),
                       ),
                     ),
                   ],
@@ -834,6 +864,96 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
     );
   }
 
+  Future<void> _createQuotation() async {
+    final formState = ref.read(orderFormProvider);
+    final cartItems = formState.cartItems;
+    
+    if (cartItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Agrega productos antes de crear la cotización'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final formNotifier = ref.read(orderFormProvider.notifier);
+    formNotifier.setIsCreatingOrder(true);
+
+    try {
+      // Preparar los items de la cotización
+      final items = cartItems.map((item) {
+        return {
+          'productId': item['_id'],
+          'quantity': item['quantity'],
+          'price': item['price'],
+        };
+      }).toList();
+
+      // Obtener el ID de la tienda actual
+      final storeState = ref.read(storeProvider);
+      final currentStoreId = storeState.currentStore?['_id'] as String?;
+      
+      if (currentStoreId == null) {
+        throw Exception('No hay tienda seleccionada');
+      }
+
+      // Crear la cotización
+      final quotationNotifier = ref.read(quotationListProvider(currentStoreId).notifier);
+      final customerId = formState.selectedCustomer != null 
+        ? formState.selectedCustomer!['_id'] as String 
+        : null;
+      
+      final success = await quotationNotifier.createQuotation(
+        storeId: currentStoreId,
+        items: items,
+        customerId: customerId,
+      );
+
+      // Verificar que el widget todavía está montado antes de actualizar UI
+      if (!mounted) return;
+
+      if (success) {
+        // Mostrar mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Cotización creada exitosamente!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Recargar las cotizaciones para mostrar la nueva
+        await ref.read(quotationListProvider(currentStoreId).notifier).refreshQuotations();
+
+        // Redirigir a la página de cotizaciones
+        if (mounted) {
+          context.go('/quotations');
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo crear la cotización'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // Verificar que el widget todavía está montado antes de mostrar error
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo crear la cotización: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      formNotifier.setIsCreatingOrder(false);
+    }
+  }
+
   Future<void> _createOrder() async {
     final formState = ref.read(orderFormProvider);
     final cartItems = formState.cartItems;
@@ -871,7 +991,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
 
       // Crear la orden
       final orderNotifier = ref.read(orderProvider.notifier);
-      final success = await orderNotifier.createOrder(
+      final createdOrder = await orderNotifier.createOrder(
         storeId: currentStoreId,
         items: items,
         paymentMethod: formState.paymentMethod,
@@ -881,15 +1001,64 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
       // Verificar que el widget todavía está montado antes de actualizar UI
       if (!mounted) return;
 
-      if (success) {
-        // Mostrar mensaje de éxito
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Orden creada exitosamente!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+      if (createdOrder != null) {
+        final receiptNumber = createdOrder['receiptNumber'] as String? ?? 'N/A';
+        
+        // Mostrar diálogo con número de comprobante
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('✓ Orden Creada Exitosamente'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Tu orden ha sido creada correctamente.'),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    border: Border.all(color: Colors.green.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Número de Comprobante:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        receiptNumber,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                          fontFamily: 'Courier',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
         );
+
+        // Esperar a que se cierre el diálogo
+        await Future.delayed(const Duration(milliseconds: 500));
 
         // Recargar productos para actualizar el stock (FORZAR recarga desde servidor)
         final productNotifier = ref.read(productProvider.notifier);

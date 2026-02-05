@@ -40,7 +40,6 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Detectar si la tienda cambió y recargar órdenes
-    final currentStore = ref.read(storeProvider).currentStore;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Recargar órdenes cuando volvemos a esta página
       // Usa caché si existe, carga nuevos datos en background
@@ -61,7 +60,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     ref.watch(currencyProvider); // Permite reconstruir cuando cambia la moneda
     
     // CRITICAL: Detectar cambios de tienda
-    final storeState = ref.watch(storeProvider);
+    ref.watch(storeProvider);
     // Recargar órdenes si la tienda actual cambió
     ref.listen(storeProvider.select((s) => s.currentStore?['_id']), (previous, next) {
       if (previous != next && next != null) {
@@ -70,9 +69,9 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
       }
     });
     
-    // Filtrar órdenes según el filtro de pago
+    // Filtrar órdenes (excluir cotizaciones) según el filtro de pago
     final filteredOrders = orderState.orders
-        .where((o) => _paymentFilter == 'Todos' || o['paymentMethod'] == _paymentFilter)
+        .where((o) => o['type'] != 'quotation' && (o['isQuotation'] != true) && (_paymentFilter == 'Todos' || o['paymentMethod'] == _paymentFilter))
         .toList();
     
     // Paginación

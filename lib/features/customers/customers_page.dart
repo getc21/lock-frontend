@@ -164,6 +164,8 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
   }
 
   List<DataRow2> _buildCustomerRows(List<dynamic> customers) {
+    final orderState = ref.watch(orderProvider);
+    
     return customers
         .where((c) =>
             _searchQuery.isEmpty ||
@@ -171,8 +173,24 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
             (c['email'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList()
         .map((customer) {
-      final points = customer['loyaltyPoints'] as int? ?? 0;
-      final isVIP = points >= 100;
+      // Calcular puntos dinámicamente basados en órdenes
+      final customerId = customer['_id'];
+      final customerOrders = orderState.orders
+          .where((order) {
+            final orderId = order['customerId'] is Map
+                ? (order['customerId'] as Map)['_id']
+                : order['customerId'];
+            return orderId == customerId;
+          })
+          .toList();
+      
+      // Calcular puntos: 1 punto por cada $1 gastado
+      final points = customerOrders.fold<int>(0, (sum, order) {
+        final total = (order['total'] as num? ?? order['totalOrden'] as num? ?? 0).toInt();
+        return sum + total;
+      });
+      
+      final isVIP = points >= 2000;
       final fullName = customer['name']?.toString() ?? 'Sin nombre';
       return DataRow2(
         cells: [
@@ -239,22 +257,39 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
           DataCell(Text(customer['email'] ?? 'Sin email')),
           DataCell(Text(customer['phone'] ?? 'Sin teléfono')),
           DataCell(
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.spacing8,
-                vertical: AppSizes.spacing4,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.info.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-              ),
-              child: Text(
-                '$points pts',
-                style: const TextStyle(
-                  color: AppColors.info,
-                  fontWeight: FontWeight.w600,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing8,
+                    vertical: AppSizes.spacing4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: points >= 2000
+                        ? AppColors.warning.withValues(alpha: 0.1)
+                        : AppColors.info.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  ),
+                  child: Text(
+                    '$points pts',
+                    style: TextStyle(
+                      color: points >= 2000 ? AppColors.warning : AppColors.info,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 2),
+                Text(
+                  '${customerOrders.length} compras',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
           DataCell(

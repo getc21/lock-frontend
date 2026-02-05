@@ -47,7 +47,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     super.didChangeDependencies();
     // Cada vez que la página se reconstruye, recargar productos
     // Esto es importante para reflejar cambios de otras páginas (como devoluciones)
-    print('🔄 ProductsPage didChangeDependencies - recargando productos');
     // IMPORTANT: Use addPostFrameCallback to delay provider modification
     // until after the widget tree is done building (required by Riverpod)
     WidgetsBinding.instance.addPostFrameCallback((_) {

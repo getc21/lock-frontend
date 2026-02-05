@@ -18,8 +18,13 @@ import '../../features/expenses/expense_report_page.dart';
 import '../../features/expenses/expense_form_page.dart';
 import '../../features/returns/pages/returns_list_page.dart';
 import '../../features/returns/pages/create_return_page.dart';
+import '../../features/quotations/pages/quotations_page.dart';
+import '../../features/quotations/pages/create_quotation_page.dart';
+import '../../features/quotations/pages/quotation_detail_page.dart';
+import '../../features/cash_register/pages/cash_register_page.dart';
+import '../../features/cash_register/pages/cash_movements_page.dart';
+import '../../features/receipts/receipts_page.dart';
 import '../../shared/providers/riverpod/auth_notifier.dart';
-import '../../shared/providers/riverpod/store_notifier.dart';
 import 'route_transitions.dart';
 
 /// Configuración de rutas optimizada para SPA
@@ -100,11 +105,14 @@ class AppRouter {
           GoRoute(
             path: 'create',
             name: 'createOrder',
-            pageBuilder: (context, state) => _buildPage(
-              child: const CreateOrderPage(),
-              state: state,
-              transitionType: RouteTransitionType.fade,
-            ),
+            pageBuilder: (context, state) {
+              final isQuotation = state.uri.queryParameters['isQuotation'] == 'true';
+              return _buildPage(
+                child: CreateOrderPage(isQuotation: isQuotation),
+                state: state,
+                transitionType: RouteTransitionType.fade,
+              );
+            },
           ),
         ],
       ),
@@ -265,6 +273,73 @@ class AppRouter {
         name: 'themeSettings',
         pageBuilder: (context, state) => _buildPage(
           child: const ThemeSettingsPage(),
+          state: state,
+          transitionType: RouteTransitionType.fade,
+        ),
+      ),
+
+      // Rutas de cotizaciones
+      GoRoute(
+        path: '/quotations',
+        name: 'quotations',
+        pageBuilder: (context, state) => _buildPage(
+          child: const QuotationsPage(),
+          state: state,
+          transitionType: RouteTransitionType.fade,
+        ),
+        routes: [
+          GoRoute(
+            path: 'create',
+            name: 'createQuotation',
+            pageBuilder: (context, state) => _buildPage(
+              child: const CreateQuotationPage(),
+              state: state,
+              transitionType: RouteTransitionType.fade,
+            ),
+          ),
+          GoRoute(
+            path: ':id',
+            name: 'quotationDetail',
+            pageBuilder: (context, state) {
+              final quotationId = state.pathParameters['id']!;
+              return _buildPage(
+                child: QuotationDetailPage(quotationId: quotationId),
+                state: state,
+                transitionType: RouteTransitionType.fade,
+              );
+            },
+          ),
+        ],
+      ),
+
+      // Ruta de caja
+      GoRoute(
+        path: '/cash-register',
+        name: 'cashRegister',
+        pageBuilder: (context, state) => _buildPage(
+          child: const CashRegisterPage(),
+          state: state,
+          transitionType: RouteTransitionType.fade,
+        ),
+      ),
+
+      // Ruta de movimientos de caja
+      GoRoute(
+        path: '/cash-movements',
+        name: 'cashMovements',
+        pageBuilder: (context, state) => _buildPage(
+          child: const CashMovementsPage(),
+          state: state,
+          transitionType: RouteTransitionType.fade,
+        ),
+      ),
+
+      // Ruta de comprobantes
+      GoRoute(
+        path: '/receipts',
+        name: 'receipts',
+        pageBuilder: (context, state) => _buildPage(
+          child: const ReceiptsPage(),
           state: state,
           transitionType: RouteTransitionType.fade,
         ),

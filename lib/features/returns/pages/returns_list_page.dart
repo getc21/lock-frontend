@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/widgets/dashboard_layout.dart';
@@ -6,7 +7,7 @@ import '../models/return_models.dart';
 import '../services/returns_service.dart';
 
 class ReturnsListPage extends ConsumerWidget {
-  const ReturnsListPage({Key? key}) : super(key: key);
+  const ReturnsListPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,6 +59,7 @@ class ReturnsListPage extends ConsumerWidget {
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () {
+                          // ignore: unused_result
                           ref.refresh(returnsProvider(ReturnFilters(storeId: currentStoreId)));
                         },
                         child: const Text('Reintentar'),
@@ -201,8 +203,7 @@ class ReturnsListPage extends ConsumerWidget {
 
 class ReturnRequestCard extends StatelessWidget {
   final ReturnRequest returnRequest;
-  const ReturnRequestCard({required this.returnRequest, Key? key})
-      : super(key: key);
+  const ReturnRequestCard({required this.returnRequest, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +216,7 @@ class ReturnRequestCard extends StatelessWidget {
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: Colors.blue.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(4),
                 topRight: Radius.circular(4),

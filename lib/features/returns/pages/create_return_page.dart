@@ -14,8 +14,8 @@ class CreateReturnPage extends ConsumerStatefulWidget {
   const CreateReturnPage({
     required this.orderId,
     this.customerName,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   ConsumerState<CreateReturnPage> createState() => _CreateReturnPageState();
@@ -126,10 +126,6 @@ class _CreateReturnPageState extends ConsumerState<CreateReturnPage> {
         ? (storeIdValue['_id']?.toString() ?? '')
         : (storeIdValue?.toString() ?? '');
     
-    print('🔍 Extrayendo storeId:');
-    print('   Valor original: $storeIdValue (tipo: ${storeIdValue.runtimeType})');
-    print('   storeId extraído: $storeId (tipo: ${storeId.runtimeType})');
-    
     // Si no hay detalles, usar un valor por defecto basado en la categoría
     final reasonDetails = reasonDetailsController.text.trim().isNotEmpty
         ? reasonDetailsController.text.trim()
@@ -168,12 +164,10 @@ class _CreateReturnPageState extends ConsumerState<CreateReturnPage> {
         // IMPORTANTE: Limpiar completamente el caché y estado de productos
         // Esto asegura que cuando el usuario vuelva a productos, se recargue desde servidor
         ref.read(productProvider.notifier).clearProducts();
-        print('🧹 Caché de productos limpiado completamente');
         
         // CRITICAL: Invalidar el provider de devoluciones para que se recargue la lista
         // Esto asegura que la nueva devolución aparezca en la página de devoluciones
         ref.invalidate(returnsProvider);
-        print('🔄 Provider de devoluciones invalidado');
         
         // Recargar desde servidor en background
         Future.microtask(() {
@@ -339,7 +333,7 @@ class _CreateReturnPageState extends ConsumerState<CreateReturnPage> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<ReturnType>(
-              value: selectedType,
+              initialValue: selectedType,
               items: ReturnType.values
                   .map((type) => DropdownMenuItem(value: type, child: Text(type.label)))
                   .toList(),
@@ -357,7 +351,7 @@ class _CreateReturnPageState extends ConsumerState<CreateReturnPage> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<ReturnReasonCategory>(
-              value: selectedReason,
+              initialValue: selectedReason,
               items: ReturnReasonCategory.values
                   .map((reason) => DropdownMenuItem(value: reason, child: Text(reason.label)))
                   .toList(),
@@ -384,7 +378,7 @@ class _CreateReturnPageState extends ConsumerState<CreateReturnPage> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<RefundMethod>(
-              value: selectedRefundMethod,
+              initialValue: selectedRefundMethod,
               items: RefundMethod.values
                   .map((method) => DropdownMenuItem(value: method, child: Text(method.label)))
                   .toList(),
@@ -397,7 +391,7 @@ class _CreateReturnPageState extends ConsumerState<CreateReturnPage> {
 
             // Total de reembolso
             Card(
-              color: Colors.blue.withOpacity(0.1),
+              color: Colors.blue.withValues(alpha: 0.1),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
