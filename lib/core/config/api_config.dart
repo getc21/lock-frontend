@@ -14,8 +14,8 @@ class ApiConfig {
       return 'http://localhost:3000';
     }
     
-    // En producción
-    return 'https://naturalmarkets.net';
+    // En producción (usa subdomain api.naturalmarkets.net)
+    return 'https://api.naturalmarkets.net';
   }
 
   // Endpoints
