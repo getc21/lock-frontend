@@ -49,8 +49,8 @@ class ReturnFilters {
 
 class ReturnsService {
   final Dio dio;
-  // Probar con localhost primero para verificar conectividad
-  final String baseUrl = 'http://localhost:3000/api';
+  // URL del backend en producción
+  final String baseUrl = 'https://api.naturalmarkets.net';
 
   ReturnsService(this.dio);
 

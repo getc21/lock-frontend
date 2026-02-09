@@ -9,14 +9,9 @@ class ApiConfig {
   
   // Detecta automáticamente si estamos en emulador, web o dispositivo físico
   static String get baseUrl {
-    // Para Web, usar localhost para desarrollo
+    // Para Web, usar URL de producción
     if (kIsWeb) {
-      // DESARROLLO LOCAL
-      return 'http://localhost:$_port/api';
-      // Producción (comentado)
-      // return _productionUrl;
-      // Si necesitas acceder desde otra computadora en la red:
-      // return 'http://$_localIP:$_port/api';
+      return 'https://api.naturalmarkets.net';
     }
     
     // Para dispositivos móviles (en desarrollo usa IP local, en producción usa URL remota)
@@ -24,9 +19,9 @@ class ApiConfig {
   }
   
   // Método para cambiar manualmente la configuración (útil para debugging)
-  static String getUrlForMode({required bool useLocalhost}) {
-    if (useLocalhost) {
-      return 'http://localhost:$_port/api';
+  static String getUrlForMode({required bool useProduction}) {
+    if (useProduction) {
+      return 'https://api.naturalmarkets.net';
     } else {
       return 'http://$_localIP:$_port/api';
     }

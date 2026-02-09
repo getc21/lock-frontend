@@ -1,20 +1,6 @@
-/// API Configuration for Frontend
-/// 
-/// Este archivo centraliza la configuración de URL de API
-/// Cambia según el ambiente (desarrollo vs producción)
-
 class ApiConfig {
-  // Detectar ambiente
-  static const String _isDev = String.fromEnvironment('FLUTTER_APP_ENV', defaultValue: 'development');
-  
-  // Base URL según ambiente
+  // En producción, siempre usa la URL remota
   static String get baseUrl {
-    // En desarrollo local
-    if (_isDev == 'development') {
-      return 'http://localhost:3000';
-    }
-    
-    // En producción (usa subdomain api.naturalmarkets.net)
     return 'https://api.naturalmarkets.net';
   }
 
@@ -47,8 +33,6 @@ class ApiConfig {
   // Users
   static String get users => '$baseUrl/api/users';
   static String user(String id) => '$baseUrl/api/users/$id';
-
-  // Add more endpoints as needed...
 
   // Timeout
   static const Duration timeout = Duration(seconds: 30);

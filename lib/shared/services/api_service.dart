@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   final String? token;
-  static const String baseUrl = 'http://localhost:3000/api';
+  static const String baseUrl = 'https://api.naturalmarkets.net';
 
   ApiService({this.token});
 
