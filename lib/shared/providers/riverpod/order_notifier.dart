@@ -10,22 +10,34 @@ class OrderState {
   final List<Map<String, dynamic>> orders;
   final bool isLoading;
   final String errorMessage;
+  final int currentPage;
+  final int totalPages;
+  final int totalItems;
 
   OrderState({
     this.orders = const [],
     this.isLoading = false,
     this.errorMessage = '',
+    this.currentPage = 1,
+    this.totalPages = 1,
+    this.totalItems = 0,
   });
 
   OrderState copyWith({
     List<Map<String, dynamic>>? orders,
     bool? isLoading,
     String? errorMessage,
+    int? currentPage,
+    int? totalPages,
+    int? totalItems,
   }) {
     return OrderState(
       orders: orders ?? this.orders,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage ?? this.errorMessage,
+      currentPage: currentPage ?? this.currentPage,
+      totalPages: totalPages ?? this.totalPages,
+      totalItems: totalItems ?? this.totalItems,
     );
   }
 }
@@ -64,6 +76,8 @@ class OrderNotifier extends StateNotifier<OrderState> {
     String? startDate,
     String? endDate,
     bool forceRefresh = false,
+    int page = 1,
+    int limit = 50,
   }) async {
     _initOrderProvider();
 
@@ -107,17 +121,25 @@ class OrderNotifier extends StateNotifier<OrderState> {
         status: status,
         startDate: startDate,
         endDate: endDate,
+        page: page,
+        limit: limit,
       );
 
       if (result['success']) {
         final orders = List<Map<String, dynamic>>.from(result['data']);
-        // Almacenar en caché con 10 minutos de TTL
         _cache.set(
           cacheKey,
           orders,
           ttl: const Duration(minutes: 10),
         );
-        state = state.copyWith(orders: orders, isLoading: false);
+        final pag = result['pagination'] as Map<String, dynamic>?;
+        state = state.copyWith(
+          orders: orders,
+          isLoading: false,
+          currentPage: pag?['page'] as int? ?? page,
+          totalPages: pag?['pages'] as int? ?? 1,
+          totalItems: pag?['total'] as int? ?? orders.length,
+        );
       } else {
         state = state.copyWith(
           errorMessage: result['message'] ?? 'Error cargando órdenes',

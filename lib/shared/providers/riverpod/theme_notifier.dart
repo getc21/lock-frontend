@@ -46,6 +46,13 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   // Temas disponibles
   static final List<ThemeModel> _availableThemes = [
     ThemeModel(
+      id: 'synergy',
+      name: 'SynergyApp',
+      description: 'Tema principal de la plataforma',
+      primaryColor: const Color(0xFF6366F1),
+      accentColor: const Color(0xFFEC4899),
+    ),
+    ThemeModel(
       id: 'beauty',
       name: 'Belleza Rosada',
       description: 'Tema elegante con tonos rosados',
@@ -76,8 +83,8 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   ];
 
   ThemeNotifier() : super(ThemeState(
-    currentThemeId: 'nature',
-    themeMode: ThemeMode.system,
+    currentThemeId: 'synergy',
+    themeMode: ThemeMode.light,
     isInitialized: false,
   ));
 
@@ -95,7 +102,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   Future<void> initializeTheme() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedThemeId = prefs.getString('theme_id') ?? 'nature';
+      final savedThemeId = prefs.getString('theme_id') ?? 'synergy';
       final savedThemeMode = prefs.getString('theme_mode') ?? 'system';
 
       state = state.copyWith(
@@ -145,8 +152,8 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
       await prefs.remove('theme_mode');
 
       state = state.copyWith(
-        currentThemeId: 'nature',
-        themeMode: ThemeMode.system,
+        currentThemeId: 'synergy',
+        themeMode: ThemeMode.light,
       );
     } catch (e) {
       // Failed to reset theme preferences, UI will update but not persist

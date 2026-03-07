@@ -7,6 +7,10 @@ import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/category_notifier.dart';
 import '../../shared/providers/riverpod/product_notifier.dart';
 import '../../shared/providers/riverpod/category_form_notifier.dart';
+import '../../shared/services/input_validator.dart';
+import '../../shared/services/debouncer.dart';
+import '../../core/utils/responsive.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
@@ -17,6 +21,7 @@ class CategoriesPage extends ConsumerStatefulWidget {
 
 class _CategoriesPageState extends ConsumerState<CategoriesPage> {
   final _searchController = TextEditingController();
+  final _debouncer = Debouncer();
   String _searchQuery = '';
   
   @override
@@ -32,6 +37,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -58,8 +64,8 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                     prefixIcon: Icon(Icons.search),
                   ),
                   onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
+                    _debouncer.run(() {
+                      if (mounted) setState(() => _searchQuery = value);
                     });
                   },
                 ),
@@ -340,7 +346,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
           return AlertDialog(
             title: Text(isEditing ? 'Editar Categoría' : 'Nueva Categoría'),
             content: SizedBox(
-              width: 500,
+              width: Responsive(context).dialogWidth(preferred: 500),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -352,9 +358,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                           await formNotifier.selectImage();
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Error al seleccionar imagen')),
-                            );
+                            AppSnackbar.error(context, 'Error al seleccionar imagen');
                           }
                         }
                       },
@@ -448,9 +452,15 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                     : () async {
                         if (nameController.text.trim().isEmpty) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('El nombre es requerido')),
-                            );
+                            AppSnackbar.warning(context, 'El nombre es requerido');
+                          }
+                          return;
+                        }
+                        // Injection protection
+                        if (InputValidator.containsHtmlOrScript(nameController.text) ||
+                            InputValidator.containsHtmlOrScript(descriptionController.text)) {
+                          if (context.mounted) {
+                            AppSnackbar.warning(context, 'Entrada no válida detectada');
                           }
                           return;
                         }
@@ -464,15 +474,15 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                           if (isEditing) {
                             success = await ref.read(categoryProvider.notifier).updateCategory(
                               id: category['_id'],
-                              name: nameController.text.trim(),
-                              description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
+                              name: InputValidator.sanitize(nameController.text.trim()),
+                              description: descriptionController.text.trim().isEmpty ? null : InputValidator.sanitize(descriptionController.text.trim()),
                               imageFile: formState.selectedImage,
                               imageBytes: formState.imageBytes,
                             );
                           } else {
                             success = await ref.read(categoryProvider.notifier).createCategory(
-                              name: nameController.text.trim(),
-                              description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
+                              name: InputValidator.sanitize(nameController.text.trim()),
+                              description: descriptionController.text.trim().isEmpty ? null : InputValidator.sanitize(descriptionController.text.trim()),
                               imageFile: formState.selectedImage,
                               imageBytes: formState.imageBytes,
                             );
@@ -487,9 +497,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                         } catch (e) {
                           if (context.mounted) {
                             formNotifier.setLoading(false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
+                            AppSnackbar.error(context, 'Error: $e');
                           }
                         }
                       },
@@ -520,9 +528,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     final categoryId = category['_id'];
 
     if (categoryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ID de categoría no válido')),
-      );
+      AppSnackbar.warning(context, 'ID de categoría no válido');
       return;
     }
 
@@ -561,9 +567,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                         } catch (e) {
                           if (context.mounted) {
                             formNotifier.setDeleting(false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
+                            AppSnackbar.error(context, 'Error: $e');
                           }
                         }
                       },

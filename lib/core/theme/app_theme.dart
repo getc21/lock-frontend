@@ -13,6 +13,12 @@ class AppTheme {
       useMaterial3: true,
       brightness: brightness,
       
+      // Accessibility: comfortable density for web touch targets
+      visualDensity: VisualDensity.comfortable,
+      
+      // Focus visible: clear indicator for keyboard navigation
+      focusColor: primaryColor.withValues(alpha: 0.2),
+      
       // Color Scheme
       colorScheme: ColorScheme(
         brightness: brightness,
@@ -202,6 +208,36 @@ class AppTheme {
           fontSize: 14,
           color: AppColors.textPrimary,
         ),
+      ),
+      
+      // Scrollbar Theme — always visible on web for discoverability
+      scrollbarTheme: ScrollbarThemeData(
+        thumbVisibility: WidgetStateProperty.all(true),
+        thickness: WidgetStateProperty.all(6.0),
+        radius: const Radius.circular(3),
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.dragged)) {
+            return AppColors.gray500;
+          }
+          if (states.contains(WidgetState.hovered)) {
+            return AppColors.gray400;
+          }
+          return AppColors.gray300;
+        }),
+      ),
+      
+      // Tooltip Theme — accessible tooltips
+      tooltipTheme: TooltipThemeData(
+        textStyle: GoogleFonts.inter(
+          fontSize: 12,
+          color: AppColors.white,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.gray800,
+          borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+        ),
+        waitDuration: const Duration(milliseconds: 500),
+        showDuration: const Duration(seconds: 3),
       ),
       
       // Text Theme

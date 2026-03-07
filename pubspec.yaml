@@ -73,6 +73,7 @@ dependencies:
   # Web interop
   web: ^1.0.0
   dio: ^5.9.0
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:

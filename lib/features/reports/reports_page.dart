@@ -10,6 +10,7 @@ import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/providers/riverpod/order_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/services/pdf_export_service.dart';
+import '../../core/utils/app_snackbar.dart';
 import 'advanced_reports_page.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
@@ -1063,12 +1064,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
 
   Future<void> _exportToPdf() async {
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Preparando reporte en PDF...'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      AppSnackbar.info(context, 'Preparando reporte en PDF...');
 
       final orderState = ref.read(orderProvider);
       final filteredOrders = _getFilteredOrders(orderState);
@@ -1136,13 +1132,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       await OpenFilex.open(filePath);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Reporte PDF generado correctamente'),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackbar.success(context, 'Reporte PDF generado correctamente');
       }
     } catch (e) {
       String errorMessage = 'Error al generar PDF';
@@ -1159,13 +1149,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       }
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            duration: const Duration(seconds: 4),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackbar.error(context, errorMessage);
       }
     }
   }

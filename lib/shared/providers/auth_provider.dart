@@ -2,12 +2,15 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
+import '../services/secure_http_client.dart';
 
 class AuthProvider {
   static String get baseUrl => ApiConfig.baseUrl;
   String? _token;
+  String? _refreshToken;
 
   String? get token => _token;
+  String? get refreshToken => _refreshToken;
   bool get isAuthenticated => _token != null;
 
   // Constructor privado para inicializar automáticamente
@@ -24,6 +27,7 @@ class AuthProvider {
   Future<void> loadToken() async {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('auth_token');
+    _refreshToken = prefs.getString('refresh_token');
   }
 
   // Guardar token
@@ -33,11 +37,20 @@ class AuthProvider {
     await prefs.setString('auth_token', token);
   }
 
-  // Eliminar token
+  // Guardar refresh token
+  Future<void> _saveRefreshToken(String refreshToken) async {
+    _refreshToken = refreshToken;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('refresh_token', refreshToken);
+  }
+
+  // Eliminar tokens
   Future<void> clearToken() async {
     _token = null;
+    _refreshToken = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
+    await prefs.remove('refresh_token');
   }
 
   // Headers con token
@@ -58,11 +71,15 @@ class AuthProvider {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        // El backend devuelve: { status: 'success', data: { user: {...}, token: '...' } }
+        // El backend devuelve: { status: 'success', data: { user: {...}, token: '...', refreshToken: '...' } }
         final responseData = data['data'];
         final token = responseData['token'];
+        final refreshToken = responseData['refreshToken'];
         if (token != null) {
           await _saveToken(token);
+        }
+        if (refreshToken != null) {
+          await _saveRefreshToken(refreshToken);
         }
         return {'success': true, 'data': responseData};
       } else {
@@ -110,8 +127,9 @@ class AuthProvider {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 201) {
-        // El backend devuelve: { status: 'success', data: { user: {...}, token: '...' } }
+        // El backend devuelve: { status: 'success', data: { user: {...}, token: '...', refreshToken: '...' } }
         final responseData = data['data'];
+        // Don't auto-save token for register (user creation flow)
         return {'success': true, 'data': responseData};
       } else {
         return {
@@ -124,6 +142,55 @@ class AuthProvider {
     }
   }
 
+  // Refresh access token using refresh token
+  Future<Map<String, dynamic>> refreshAccessToken() async {
+    try {
+      if (_refreshToken == null) {
+        return {'success': false, 'message': 'No refresh token available'};
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': _refreshToken}),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        final responseData = data['data'];
+        final newToken = responseData['token'];
+        final newRefreshToken = responseData['refreshToken'];
+        if (newToken != null) {
+          await _saveToken(newToken);
+        }
+        if (newRefreshToken != null) {
+          await _saveRefreshToken(newRefreshToken);
+        }
+        return {'success': true, 'data': responseData};
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Error refreshing token',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error de conexión: $e'};
+    }
+  }
+
+  // Server-side logout (invalidate refresh token)
+  Future<void> serverLogout() async {
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/auth/logout'),
+        headers: _headers,
+      );
+    } catch (_) {
+      // Silently fail - we'll clear local tokens anyway
+    }
+  }
+
   // Get Profile
   Future<Map<String, dynamic>> getProfile() async {
     try {
@@ -131,6 +198,7 @@ class AuthProvider {
         Uri.parse('$baseUrl/auth/profile'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       final data = jsonDecode(response.body);
 
@@ -159,6 +227,7 @@ class AuthProvider {
         Uri.parse('$baseUrl/users'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
       if (response.statusCode == 200) {
         // El backend devuelve { status: 'success', data: { users: [...] } }
@@ -188,6 +257,7 @@ class AuthProvider {
         Uri.parse('$baseUrl/users/$userId/stores'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       final data = jsonDecode(response.body);
 
@@ -217,6 +287,7 @@ class AuthProvider {
         headers: _headers,
         body: jsonEncode(userData),
       );
+      await SecureHttpClient.checkResponse(response);
 
       final data = jsonDecode(response.body);
 
@@ -240,6 +311,7 @@ class AuthProvider {
         Uri.parse('$baseUrl/users/$userId'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       // Manejar respuesta vacía o con solo status code
       if (response.body.isEmpty || response.body.trim().isEmpty) {
         if (response.statusCode == 200 || response.statusCode == 204) {

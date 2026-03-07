@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
+import '../services/secure_http_client.dart';
 
 class StoreProvider {
   static String get baseUrl => ApiConfig.baseUrl;
@@ -20,6 +21,7 @@ class StoreProvider {
         Uri.parse('$baseUrl/stores'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -47,6 +49,7 @@ class StoreProvider {
         Uri.parse('$baseUrl/stores/$id'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -80,6 +83,7 @@ class StoreProvider {
           if (email != null) 'email': email,
         }),
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 201) {
@@ -115,6 +119,7 @@ class StoreProvider {
         headers: _headers,
         body: jsonEncode(body),
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -137,6 +142,7 @@ class StoreProvider {
         Uri.parse('$baseUrl/stores/$id'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 204) {
         return <String, dynamic>{'success': true};
@@ -162,6 +168,7 @@ class StoreProvider {
           'userId': userId,
         }),
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -184,6 +191,7 @@ class StoreProvider {
         Uri.parse('$baseUrl/stores/$storeId/users/$userId'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 204 || response.statusCode == 200) {
         return <String, dynamic>{'success': true};

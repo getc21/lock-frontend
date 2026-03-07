@@ -8,6 +8,9 @@ import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/user_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/models/user.dart';
+import '../../shared/services/input_validator.dart';
+import '../../core/utils/responsive.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class UsersPage extends ConsumerStatefulWidget {
   const UsersPage({super.key});
@@ -240,11 +243,13 @@ class _UsersPageState extends ConsumerState<UsersPage> {
 
   Color _getRoleColor(String role) {
     switch (role) {
+      case 'superadmin':
+        return Colors.red;
       case 'admin':
         return Colors.purple;
       case 'manager':
         return Colors.blue;
-      case 'employee':
+      case 'cashier':
         return Colors.green;
       default:
         return AppColors.textSecondary;
@@ -253,22 +258,25 @@ class _UsersPageState extends ConsumerState<UsersPage> {
 
   String _getRoleName(UserRole role) {
     switch (role) {
+      case UserRole.superadmin:
+        return 'Super Admin';
       case UserRole.admin:
         return 'Administrador';
       case UserRole.manager:
         return 'Gerente';
-      case UserRole.employee:
-        return 'Empleado';
+      case UserRole.cashier:
+        return 'Cajero';
     }
   }
 
   void _showUserDialog(BuildContext context, {User? user}) {
+    final formKey = GlobalKey<FormState>();
     final usernameController = TextEditingController(text: user?.username ?? '');
     final firstNameController = TextEditingController(text: user?.firstName ?? '');
     final lastNameController = TextEditingController(text: user?.lastName ?? '');
     final emailController = TextEditingController(text: user?.email ?? '');
     final passwordController = TextEditingController();
-    var selectedRole = user?.role.name ?? 'employee';
+    var selectedRole = user?.role.name ?? 'cashier';
     final isLoading = ValueNotifier<bool>(false);
 
     showDialog(
@@ -279,84 +287,109 @@ class _UsersPageState extends ConsumerState<UsersPage> {
           builder: (ctx, loading, _) => AlertDialog(
             title: Text(user == null ? 'Nuevo Usuario' : 'Editar Usuario'),
             content: SizedBox(
-              width: 500,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: usernameController,
-                      enabled: user == null && !loading,
-                      decoration: InputDecoration(
-                        labelText: 'Username',
-                        border: const OutlineInputBorder(),
-                        hintText: 'Ej: carlos',
-                        filled: user != null,
-                        fillColor: user != null ? Colors.grey[200] : null,
+              width: Responsive(context).dialogWidth(preferred: 500),
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: usernameController,
+                        enabled: user == null && !loading,
+                        decoration: InputDecoration(
+                          labelText: 'Username *',
+                          border: const OutlineInputBorder(),
+                          hintText: 'Ej: carlos',
+                          filled: user != null,
+                          fillColor: user != null ? Colors.grey[200] : null,
+                        ),
+                        validator: (value) => InputValidator.validateUsername(value),
                       ),
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: firstNameController,
-                      enabled: !loading,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre',
-                        border: OutlineInputBorder(),
-                        hintText: 'Ej: Carlos',
+                      const SizedBox(height: AppSizes.spacing16),
+                      TextFormField(
+                        controller: firstNameController,
+                        enabled: !loading,
+                        decoration: const InputDecoration(
+                          labelText: 'Nombre *',
+                          border: OutlineInputBorder(),
+                          hintText: 'Ej: Carlos',
+                        ),
+                        validator: (value) => InputValidator.validateName(value, field: 'Nombre'),
                       ),
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: lastNameController,
-                      enabled: !loading,
-                      decoration: const InputDecoration(
-                        labelText: 'Apellido',
-                        border: OutlineInputBorder(),
-                        hintText: 'Ej: Pérez',
+                      const SizedBox(height: AppSizes.spacing16),
+                      TextFormField(
+                        controller: lastNameController,
+                        enabled: !loading,
+                        decoration: const InputDecoration(
+                          labelText: 'Apellido',
+                          border: OutlineInputBorder(),
+                          hintText: 'Ej: Pérez',
+                        ),
+                        validator: (value) {
+                          if (value != null && value.isNotEmpty) {
+                            if (InputValidator.containsHtmlOrScript(value)) {
+                              return 'Entrada no válida';
+                            }
+                            if (value.length > 50) return 'Máximo 50 caracteres';
+                          }
+                          return null;
+                        },
                       ),
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: emailController,
-                      enabled: !loading,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: AppSizes.spacing16),
+                      TextFormField(
+                        controller: emailController,
+                        enabled: !loading,
+                        decoration: const InputDecoration(
+                          labelText: 'Email *',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) => InputValidator.validateEmail(value),
                       ),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: passwordController,
-                      enabled: !loading,
-                      decoration: InputDecoration(
-                        labelText: user == null ? 'Contraseña' : 'Nueva Contraseña (opcional)',
-                        border: const OutlineInputBorder(),
+                      const SizedBox(height: AppSizes.spacing16),
+                      TextFormField(
+                        controller: passwordController,
+                        enabled: !loading,
+                        decoration: InputDecoration(
+                          labelText: user == null ? 'Contraseña *' : 'Nueva Contraseña (opcional)',
+                          border: const OutlineInputBorder(),
+                        ),
+                        obscureText: true,
+                        validator: (value) {
+                          if (user == null) {
+                            return InputValidator.validatePassword(value);
+                          }
+                          // On edit, password is optional but if provided must be strong
+                          if (value != null && value.isNotEmpty && value.length < 6) {
+                            return 'Mínimo 6 caracteres';
+                          }
+                          return null;
+                        },
                       ),
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedRole,
-                      decoration: const InputDecoration(
-                        labelText: 'Rol',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: AppSizes.spacing16),
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedRole,
+                        decoration: const InputDecoration(
+                          labelText: 'Rol',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'admin', child: Text('Administrador')),
+                          DropdownMenuItem(value: 'manager', child: Text('Gerente')),
+                          DropdownMenuItem(value: 'cashier', child: Text('Cajero')),
+                        ],
+                        onChanged: loading
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  setState(() => selectedRole = value);
+                                }
+                              },
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'admin', child: Text('Administrador')),
-                        DropdownMenuItem(value: 'manager', child: Text('Gerente')),
-                        DropdownMenuItem(value: 'employee', child: Text('Empleado')),
-                      ],
-                      onChanged: loading
-                          ? null
-                          : (value) {
-                              if (value != null) {
-                                setState(() => selectedRole = value);
-                              }
-                            },
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                  ],
+                      const SizedBox(height: AppSizes.spacing16),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -369,29 +402,13 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                 onPressed: loading
                     ? null
                     : () async {
-                        final username = usernameController.text.trim();
-                        final firstName = firstNameController.text.trim();
-                        final lastName = lastNameController.text.trim();
-                        final email = emailController.text.trim();
+                        if (!formKey.currentState!.validate()) return;
+
+                        final username = InputValidator.sanitize(usernameController.text.trim());
+                        final firstName = InputValidator.sanitize(firstNameController.text.trim());
+                        final lastName = InputValidator.sanitize(lastNameController.text.trim());
+                        final email = InputValidator.sanitize(emailController.text.trim());
                         final password = passwordController.text.trim();
-
-                        if (username.isEmpty || firstName.isEmpty || email.isEmpty) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Username, nombre y email son requeridos')),
-                            );
-                          }
-                          return;
-                        }
-
-                        if (user == null && password.isEmpty) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('La contraseña es requerida para nuevos usuarios')),
-                            );
-                          }
-                          return;
-                        }
 
                         if (context.mounted) {
                           isLoading.value = true;
@@ -527,7 +544,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
           builder: (ctx, loading, _) => AlertDialog(
             title: const Text('Asignar Tienda'),
             content: SizedBox(
-              width: 400,
+              width: Responsive(context).dialogWidth(preferred: 400),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -570,9 +587,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     : () async {
                         if (selectedStoreId.isEmpty) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Debe seleccionar una tienda')),
-                            );
+                            AppSnackbar.warning(context, 'Debe seleccionar una tienda');
                           }
                           return;
                         }

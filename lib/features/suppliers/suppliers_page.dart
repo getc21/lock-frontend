@@ -9,6 +9,10 @@ import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/supplier_notifier.dart';
 import '../../shared/providers/riverpod/product_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
+import '../../shared/services/input_validator.dart';
+import '../../shared/services/debouncer.dart';
+import '../../core/utils/responsive.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class SuppliersPage extends ConsumerStatefulWidget {
   const SuppliersPage({super.key});
@@ -20,6 +24,7 @@ class SuppliersPage extends ConsumerStatefulWidget {
 class _SuppliersPageState extends ConsumerState<SuppliersPage> {
   bool _hasInitialized = false;
   final _searchController = TextEditingController();
+  final _debouncer = Debouncer();
   String _searchQuery = '';
 
   @override
@@ -37,6 +42,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -66,8 +72,8 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         prefixIcon: Icon(Icons.search),
                       ),
                       onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
+                        _debouncer.run(() {
+                          if (mounted) setState(() => _searchQuery = value);
                         });
                       },
                     ),
@@ -432,7 +438,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
               supplier == null ? 'Nuevo Proveedor' : 'Editar Proveedor',
             ),
             content: SizedBox(
-              width: 500,
+              width: Responsive(context).dialogWidth(preferred: 500),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -444,11 +450,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                           await formNotifier.selectImage();
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Error al seleccionar imagen'),
-                              ),
-                            );
+                            AppSnackbar.error(context, 'Error al seleccionar imagen');
                           }
                         }
                       },
@@ -601,11 +603,16 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
 
                         if (name.isEmpty) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('El nombre es requerido'),
-                              ),
-                            );
+                            AppSnackbar.warning(context, 'El nombre es requerido');
+                          }
+                          return;
+                        }
+
+                        // Injection protection
+                        final allFields = [nameController.text, contactPersonController.text, phoneController.text, emailController.text, addressController.text];
+                        if (allFields.any((f) => InputValidator.containsHtmlOrScript(f))) {
+                          if (context.mounted) {
+                            AppSnackbar.warning(context, 'Entrada no válida detectada');
                           }
                           return;
                         }
@@ -620,22 +627,22 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                             success = await ref
                                 .read(supplierProvider.notifier)
                                 .createSupplier(
-                                  name: name,
+                                  name: InputValidator.sanitize(name),
                                   contactPerson:
                                       contactPersonController.text
                                           .trim()
                                           .isEmpty
                                       ? null
-                                      : contactPersonController.text.trim(),
+                                      : InputValidator.sanitize(contactPersonController.text.trim()),
                                   phone: phoneController.text.trim().isEmpty
                                       ? null
-                                      : phoneController.text.trim(),
+                                      : InputValidator.sanitize(phoneController.text.trim()),
                                   email: emailController.text.trim().isEmpty
                                       ? null
-                                      : emailController.text.trim(),
+                                      : InputValidator.sanitize(emailController.text.trim()),
                                   address: addressController.text.trim().isEmpty
                                       ? null
-                                      : addressController.text.trim(),
+                                      : InputValidator.sanitize(addressController.text.trim()),
                                   imageFile: formState.selectedImage,
                                   imageBytes: formState.imageBytes,
                                 );
@@ -644,22 +651,22 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                                 .read(supplierProvider.notifier)
                                 .updateSupplier(
                                   id: supplier['_id'] ?? supplier['id'] ?? '',
-                                  name: name,
+                                  name: InputValidator.sanitize(name),
                                   contactPerson:
                                       contactPersonController.text
                                           .trim()
                                           .isEmpty
                                       ? null
-                                      : contactPersonController.text.trim(),
+                                      : InputValidator.sanitize(contactPersonController.text.trim()),
                                   phone: phoneController.text.trim().isEmpty
                                       ? null
-                                      : phoneController.text.trim(),
+                                      : InputValidator.sanitize(phoneController.text.trim()),
                                   email: emailController.text.trim().isEmpty
                                       ? null
-                                      : emailController.text.trim(),
+                                      : InputValidator.sanitize(emailController.text.trim()),
                                   address: addressController.text.trim().isEmpty
                                       ? null
-                                      : addressController.text.trim(),
+                                      : InputValidator.sanitize(addressController.text.trim()),
                                   imageFile: formState.selectedImage,
                                   imageBytes: formState.imageBytes,
                                 );
@@ -674,9 +681,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         } catch (e) {
                           if (context.mounted) {
                             formNotifier.setLoading(false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
+                            AppSnackbar.error(context, 'Error: $e');
                           }
                         }
                       },
@@ -750,9 +755,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         } catch (e) {
                           if (context.mounted) {
                             formNotifier.setDeleting(false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
+                            AppSnackbar.error(context, 'Error: $e');
                           }
                         }
                       },

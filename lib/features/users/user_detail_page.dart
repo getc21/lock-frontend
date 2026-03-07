@@ -5,6 +5,7 @@ import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/user_detail_notifier.dart';
 import '../../shared/providers/riverpod/user_detail_selectors.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class UserDetailPage extends ConsumerStatefulWidget {
   final String userId;
@@ -167,9 +168,7 @@ class _UserDetailContentState extends ConsumerState<_UserDetailContent> {
                 const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Usuario actualizado'), backgroundColor: Colors.green),
-                    );
+                    AppSnackbar.success(context, 'Usuario actualizado');
                   },
                   child: const Text('Guardar Cambios'),
                 ),

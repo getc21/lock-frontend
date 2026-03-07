@@ -5,6 +5,7 @@ import 'package:bellezapp_web/shared/models/quotation.dart';
 import 'package:bellezapp_web/shared/providers/riverpod/quotation_form_notifier.dart';
 import 'package:bellezapp_web/shared/providers/riverpod/store_notifier.dart';
 import 'package:bellezapp_web/shared/widgets/dashboard_layout.dart';
+import '../../../core/utils/app_snackbar.dart';
 
 class CreateQuotationPage extends ConsumerStatefulWidget {
   const CreateQuotationPage({super.key});
@@ -54,9 +55,7 @@ class _CreateQuotationPageState extends ConsumerState<CreateQuotationPage> {
     final price = double.tryParse(_priceController.text) ?? 0;
 
     if (_productNameController.text.isEmpty || quantity <= 0 || price < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, complete todos los campos')),
-      );
+      AppSnackbar.warning(context, 'Por favor, complete todos los campos');
       return;
     }
 
@@ -82,16 +81,12 @@ class _CreateQuotationPageState extends ConsumerState<CreateQuotationPage> {
 
   Future<void> _submitQuotation(QuotationFormState state) async {
     if (_customerNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, ingrese el nombre del cliente')),
-      );
+      AppSnackbar.warning(context, 'Por favor, ingrese el nombre del cliente');
       return;
     }
 
     if (state.items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, agregue al menos un artículo')),
-      );
+      AppSnackbar.warning(context, 'Por favor, agregue al menos un artículo');
       return;
     }
 
@@ -103,9 +98,7 @@ class _CreateQuotationPageState extends ConsumerState<CreateQuotationPage> {
         );
 
     if (result != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cotización creada exitosamente')),
-      );
+      AppSnackbar.success(context, 'Cotización creada exitosamente');
       context.go('/quotations');
     }
   }

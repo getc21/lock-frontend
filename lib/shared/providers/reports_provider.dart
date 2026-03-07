@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
+import '../services/secure_http_client.dart';
 
 class ReportsProvider {
   static String get baseUrl => ApiConfig.baseUrl;
@@ -25,6 +26,7 @@ class ReportsProvider {
         Uri.parse('$baseUrl/financial/analysis/inventory-rotation?storeId=$storeId&startDate=$startDate&endDate=$endDate&period=$period'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -54,6 +56,7 @@ class ReportsProvider {
         Uri.parse('$baseUrl/financial/analysis/profitability?storeId=$storeId&startDate=$startDate&endDate=$endDate'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -84,6 +87,7 @@ class ReportsProvider {
         Uri.parse('$baseUrl/financial/analysis/sales-trends?storeId=$storeId&startDate=$startDate&endDate=$endDate&period=$period'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -115,6 +119,7 @@ class ReportsProvider {
         Uri.parse('$baseUrl/financial/analysis/periods-comparison?storeId=$storeId&currentStartDate=$currentStartDate&currentEndDate=$currentEndDate&previousStartDate=$previousStartDate&previousEndDate=$previousEndDate'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {

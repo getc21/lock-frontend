@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
+import '../services/secure_http_client.dart';
 
 class OrderProvider {
   static String get baseUrl => ApiConfig.baseUrl;
@@ -36,6 +37,7 @@ class OrderProvider {
           if (discountId != null) 'discountId': discountId,
         }),
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 201) {
@@ -58,6 +60,8 @@ class OrderProvider {
     String? status,
     String? startDate,
     String? endDate,
+    int? page,
+    int? limit,
   }) async {
     try {
       final Map<String, String> queryParams = <String, String>{};
@@ -66,6 +70,8 @@ class OrderProvider {
       if (status != null) queryParams['status'] = status;
       if (startDate != null) queryParams['startDate'] = startDate;
       if (endDate != null) queryParams['endDate'] = endDate;
+      if (page != null) queryParams['page'] = page.toString();
+      if (limit != null) queryParams['limit'] = limit.toString();
 
       final Uri uri = Uri.parse('$baseUrl/orders').replace(queryParameters: queryParams);
       
@@ -76,6 +82,7 @@ class OrderProvider {
       }
       
       final http.Response response = await http.get(uri, headers: _headers);
+      await SecureHttpClient.checkResponse(response);
       
       if (kDebugMode) {
 
@@ -90,7 +97,11 @@ class OrderProvider {
 
         }
         if (orders is List) {
-          return <String, dynamic>{'success': true, 'data': orders};
+          return <String, dynamic>{
+            'success': true,
+            'data': orders,
+            'pagination': data['pagination'],
+          };
         } else {
           return <String, dynamic>{'success': false, 'message': 'Formato de respuesta inválido'};
         }
@@ -112,6 +123,7 @@ class OrderProvider {
         Uri.parse('$baseUrl/orders/$id'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -138,6 +150,7 @@ class OrderProvider {
         headers: _headers,
         body: jsonEncode(<String, String>{'status': status}),
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -170,6 +183,7 @@ class OrderProvider {
       final Uri uri = Uri.parse('$baseUrl/orders/reports/sales')
           .replace(queryParameters: queryParams);
       final http.Response response = await http.get(uri, headers: _headers);
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -192,6 +206,7 @@ class OrderProvider {
         Uri.parse('$baseUrl/orders/$id'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 204) {
         return <String, dynamic>{'success': true};

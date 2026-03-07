@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
+import '../services/secure_http_client.dart';
 
 class CustomerProvider {
   static String get baseUrl => ApiConfig.baseUrl;
@@ -14,18 +15,21 @@ class CustomerProvider {
   };
 
   // Obtener todos los clientes
-  Future<Map<String, dynamic>> getCustomers({String? storeId}) async {
+  Future<Map<String, dynamic>> getCustomers({String? storeId, int? page, int? limit}) async {
     try {
       final uri = Uri.parse('$baseUrl/customers');
       final queryParams = <String, String>{};
       
       if (storeId != null) {
         queryParams['storeId'] = storeId;
-      }      
+      }
+      if (page != null) queryParams['page'] = page.toString();
+      if (limit != null) queryParams['limit'] = limit.toString();    
       final response = await http.get(
         uri.replace(queryParameters: queryParams),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       
       final data = jsonDecode(response.body);
       if (response.statusCode == 200) {
@@ -38,7 +42,11 @@ class CustomerProvider {
               final customers = dataSection['customers'];
               
               if (customers is List) {
-                return {'success': true, 'data': customers};
+                return {
+                  'success': true,
+                  'data': customers,
+                  'pagination': data['pagination'],
+                };
               } else {
                 return {'success': false, 'message': 'customers no es una lista'};
               }
@@ -74,6 +82,7 @@ class CustomerProvider {
         Uri.parse('$baseUrl/customers/$id'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -111,6 +120,7 @@ class CustomerProvider {
           if (notes != null) 'notes': notes,
         }),
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 201) {
@@ -148,6 +158,7 @@ class CustomerProvider {
         headers: _headers,
         body: jsonEncode(body),
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -170,6 +181,7 @@ class CustomerProvider {
         Uri.parse('$baseUrl/customers/$id'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 204) {
         return {'success': true};

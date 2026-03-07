@@ -1,0 +1,26 @@
+# SynergyApp — Panel de administración (privado)
+# Solo la landing page y login son públicos
+
+User-agent: *
+Allow: /
+Allow: /login
+Disallow: /dashboard
+Disallow: /orders
+Disallow: /products
+Disallow: /customers
+Disallow: /categories
+Disallow: /suppliers
+Disallow: /locations
+Disallow: /users
+Disallow: /brands
+Disallow: /stores
+Disallow: /reports
+Disallow: /expenses
+Disallow: /returns
+Disallow: /quotations
+Disallow: /cash-register
+Disallow: /cash-movements
+Disallow: /receipts
+Disallow: /settings
+
+Sitemap: https://app.naturalmarkets.net/sitemap.xml

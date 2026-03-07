@@ -5,6 +5,7 @@ import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/location_detail_notifier.dart';
 import '../../shared/providers/riverpod/location_detail_selectors.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class LocationDetailPage extends ConsumerStatefulWidget {
   final String locationId;
@@ -154,9 +155,7 @@ class _LocationDetailContentState extends ConsumerState<_LocationDetailContent> 
                 const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Ubicación actualizada'), backgroundColor: Colors.green),
-                    );
+                    AppSnackbar.success(context, 'Ubicación actualizada');
                   },
                   child: const Text('Guardar Cambios'),
                 ),

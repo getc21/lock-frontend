@@ -16,8 +16,13 @@ import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/providers/riverpod/supplier_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/providers/riverpod/auth_notifier.dart';
+import '../../core/utils/app_snackbar.dart';
 import '../../shared/services/pdf_service.dart';
 import '../../shared/services/web_image_compression_service.dart';
+import '../../shared/services/input_validator.dart';
+import '../../shared/services/debouncer.dart';
+import '../../shared/widgets/pagination_bar.dart';
+import '../../core/utils/responsive.dart';
 
 class ProductsPage extends ConsumerStatefulWidget {
   const ProductsPage({super.key});
@@ -28,10 +33,9 @@ class ProductsPage extends ConsumerStatefulWidget {
 
 class _ProductsPageState extends ConsumerState<ProductsPage> {
   final _searchController = TextEditingController();
+  final _debouncer = Debouncer();
   String _searchQuery = '';
   bool _hasInitialized = false;
-  int _currentPage = 0;
-  static const int _itemsPerPage = 25;
   bool _filterLowStock = false;
   bool _filterExpiringSoon = false;
 
@@ -40,6 +44,13 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     super.initState();
     // Cargar datos en primer acceso
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _debouncer.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -116,9 +127,12 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                     prefixIcon: Icon(Icons.search),
                   ),
                   onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                      _currentPage = 0; // Reset to first page
+                    _debouncer.run(() {
+                      if (mounted) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      }
                     });
                   },
                 ),
@@ -140,7 +154,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                 onPressed: () {
                   setState(() {
                     _filterLowStock = !_filterLowStock;
-                    _currentPage = 0;
                   });
                 },
                 style: IconButton.styleFrom(
@@ -155,7 +168,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                 onPressed: () {
                   setState(() {
                     _filterExpiringSoon = !_filterExpiringSoon;
-                    _currentPage = 0;
                   });
                 },
                 style: IconButton.styleFrom(
@@ -177,10 +189,11 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       if (kDebugMode) debugPrint('   - isLoading: ${productState.isLoading}');
       if (kDebugMode) debugPrint('   - products length: ${productState.products.length}');
               
+              final r = Responsive(context);
               if (productState.isLoading) {
                 return Card(
                   child: SizedBox(
-                    height: 600,
+                    height: r.tableHeight(),
                     child: Center(
                       child: LoadingIndicator(
                         message: 'Cargando productos...',
@@ -192,7 +205,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
               if (productState.products.isEmpty) {
                 return SizedBox(
-                  height: 600,
+                  height: r.tableHeight(),
                   child: Card(
                     child: Center(
                       child: Padding(
@@ -225,7 +238,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
               return Card(
                 child: SizedBox(
-                  height: 600,
+                  height: r.tableHeight(),
                   child: Column(
                     children: [
                       Expanded(
@@ -249,8 +262,20 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                           ),
                         ),
                       ),
-                      // Pagination Controls
-                      _buildProductPagination(productState.products),
+                      // Pagination Controls (server-driven)
+                      PaginationBar(
+                        currentPage: productState.currentPage,
+                        totalPages: productState.totalPages,
+                        totalItems: productState.totalItems,
+                        visibleItems: productState.products.length,
+                        itemLabel: 'productos',
+                        onPageChanged: (newPage) {
+                          ref.read(productProvider.notifier).loadProducts(
+                            page: newPage,
+                            forceRefresh: true,
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -267,104 +292,31 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     return '${currencyNotifier.symbol}${(value as double).toStringAsFixed(2)}';
   }
 
-  Widget _buildProductPagination(List<dynamic> products) {
-    // Calcular páginas basado en búsqueda y filtros
-    final filteredProducts = products
-        .where((p) {
-          // Filtro de búsqueda
-          final name = p['name']?.toString() ?? '';
-          final description = p['description']?.toString() ?? '';
-          final matchesSearch = _searchQuery.isEmpty || 
-                         name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                         description.toLowerCase().contains(_searchQuery.toLowerCase());
-          
-          // Filtro de stock bajo
-          final stock = (p['stock'] as int?) ?? 0;
-          final matchesLowStock = !_filterLowStock || stock <= 3;
-          
-          // Filtro de caducidad próxima
-          final expiryDate = p['expiryDate'];
-          bool matchesExpiringSoon = true;
-          if (_filterExpiringSoon && expiryDate != null) {
-            try {
-              final expDate = DateTime.parse(expiryDate);
-              final now = DateTime.now();
-              final difference = expDate.difference(now).inDays;
-              matchesExpiringSoon = difference < 60;
-            } catch (e) {
-              matchesExpiringSoon = false;
-            }
-          }
-          
-          return matchesSearch && matchesLowStock && matchesExpiringSoon;
-        })
-        .toList();
-    
-    final totalPages = (filteredProducts.length / _itemsPerPage).ceil().clamp(1, double.infinity).toInt();
-    
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.spacing16,
-        vertical: AppSizes.spacing12,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Total: ${filteredProducts.length} productos',
-            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-          ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: _currentPage > 0
-                    ? () => setState(() => _currentPage--)
-                    : null,
-              ),
-        Text(
-          'Página ${_currentPage + 1} de $totalPages',
-          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-        ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: _currentPage < totalPages - 1
-                    ? () => setState(() => _currentPage++)
-                    : null,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // _buildProductPagination removed — using PaginationBar widget instead
 
   List<DataRow2> _buildProductRows(List<dynamic> products, bool canSeePurchasePrice) {
       if (kDebugMode) debugPrint(' ProductsPage: _buildProductRows called');
       if (kDebugMode) debugPrint('   - Total products: ${products.length}');
       if (kDebugMode) debugPrint('   - Search query: "$_searchQuery"');
     
+    // Client-side filtering (search + stock + expiry) on server-paginated data
     final filteredProducts = products
         .where((p) {
-          // Filtro de búsqueda
           final name = p['name']?.toString() ?? '';
           final description = p['description']?.toString() ?? '';
           final matchesSearch = _searchQuery.isEmpty || 
                          name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
                          description.toLowerCase().contains(_searchQuery.toLowerCase());
           
-          // Filtro de stock bajo
           final stock = (p['stock'] as int?) ?? 0;
           final matchesLowStock = !_filterLowStock || stock <= 3;
           
-          // Filtro de caducidad próxima
           final expiryDate = p['expiryDate'];
           bool matchesExpiringSoon = true;
           if (_filterExpiringSoon && expiryDate != null) {
             try {
               final expDate = DateTime.parse(expiryDate);
-              final now = DateTime.now();
-              final difference = expDate.difference(now).inDays;
+              final difference = expDate.difference(DateTime.now()).inDays;
               matchesExpiringSoon = difference < 60;
             } catch (e) {
               matchesExpiringSoon = false;
@@ -376,15 +328,8 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         .toList();
 
       if (kDebugMode) debugPrint('   - Filtered products: ${filteredProducts.length}');
-    
-    // Paginación
-    final startIndex = _currentPage * _itemsPerPage;
-    final endIndex = (startIndex + _itemsPerPage).clamp(0, filteredProducts.length);
-    final paginatedProducts = startIndex < filteredProducts.length 
-        ? filteredProducts.sublist(startIndex, endIndex)
-        : [];
 
-    return paginatedProducts
+    return filteredProducts
         .where((product) {
           // Filter out deleted/incomplete products
           final name = product['name']?.toString() ?? '';
@@ -554,78 +499,448 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     return 'Sin categoría';
   }
 
-  /// Show product preview with full details (lazy-loaded)
+  /// Show product preview with full details (modern design)
   void _showProductPreview(Map<String, dynamic> product) {
+    final stock = (product['stock'] as int?) ?? 0;
+    final isOutOfStock = stock <= 3;
+    final isLowStock = stock > 3 && stock < 10;
+    final stockColor = isOutOfStock
+        ? AppColors.error
+        : isLowStock
+            ? AppColors.warning
+            : AppColors.success;
+    final stockLabel = isOutOfStock
+        ? 'Stock Crítico'
+        : isLowStock
+            ? 'Stock Bajo'
+            : 'En Stock';
+
+    final authState = ref.read(authProvider);
+    final userRole = authState.currentUser?['role'] ?? '';
+    final canSeePurchasePrice = userRole == 'admin' || userRole == 'manager';
+
+    final purchasePrice = (product['purchasePrice'] as num?) ?? 0;
+    final salePrice = (product['salePrice'] as num?) ?? 0;
+    final margin = purchasePrice > 0
+        ? ((salePrice - purchasePrice) / purchasePrice * 100).toStringAsFixed(1)
+        : '—';
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(product['name'] ?? 'Producto'),
-        content: SizedBox(
-          width: 400,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (product['foto'] != null)
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        product['foto'],
-                        height: 240,
-                        width: 240,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => 
-                          Container(
-                            height: 240,
-                            width: 240,
-                            color: AppColors.gray100,
-                            child: const Icon(Icons.inventory_2_outlined, size: 64),
-                          ),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        clipBehavior: Clip.antiAlias,
+        insetPadding: Responsive(ctx).dialogInsetPadding,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: Responsive(ctx).dialogWidth(preferred: 480),
+            maxHeight: Responsive(ctx).dialogMaxHeight(preferred: 700),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Hero Image Section ──
+              Stack(
+                children: [
+                  // Image or placeholder
+                  SizedBox(
+                    width: double.infinity,
+                    height: 220,
+                    child: product['foto'] != null
+                        ? Image.network(
+                            product['foto'],
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _previewImagePlaceholder(),
+                          )
+                        : _previewImagePlaceholder(),
+                  ),
+                  // Gradient overlay
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.55),
+                          ],
+                          stops: const [0.4, 1.0],
+                        ),
                       ),
                     ),
                   ),
-                const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: () => _showMultiStoreStockDialog(product),
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: Text(
-                      'Stock: ${product['stock']}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).primaryColor,
-                        decoration: TextDecoration.underline,
+                  // Close button
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Material(
+                      color: Colors.black38,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => Navigator.pop(ctx),
+                        child: const Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Icon(Icons.close, color: Colors.white, size: 20),
+                        ),
                       ),
                     ),
+                  ),
+                  // Stock badge
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showMultiStoreStockDialog(product);
+                      },
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: stockColor.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isOutOfStock
+                                    ? Icons.error_outline
+                                    : isLowStock
+                                        ? Icons.warning_amber_rounded
+                                        : Icons.check_circle_outline,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$stockLabel · $stock uds',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Product name over image
+                  Positioned(
+                    bottom: 12,
+                    left: 16,
+                    right: 16,
+                    child: Text(
+                      product['name'] ?? 'Producto',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              // ── Body ──
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Price cards
+                      Row(
+                        children: [
+                          if (canSeePurchasePrice)
+                            Expanded(
+                              child: _previewPriceCard(
+                                label: 'Compra',
+                                value: _formatCurrency(purchasePrice),
+                                icon: Icons.shopping_bag_outlined,
+                                color: AppColors.info,
+                              ),
+                            ),
+                          if (canSeePurchasePrice) const SizedBox(width: 10),
+                          Expanded(
+                            child: _previewPriceCard(
+                              label: 'Venta',
+                              value: _formatCurrency(salePrice),
+                              icon: Icons.sell_outlined,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          if (canSeePurchasePrice) ...[
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _previewPriceCard(
+                                label: 'Margen',
+                                value: '$margin%',
+                                icon: Icons.trending_up,
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Info rows
+                      _previewInfoRow(
+                        Icons.category_outlined,
+                        'Categoría',
+                        _getCategoryName(product['categoryId']),
+                      ),
+                      if (product['supplierId'] is Map)
+                        _previewInfoRow(
+                          Icons.local_shipping_outlined,
+                          'Proveedor',
+                          product['supplierId']['name']?.toString() ?? 'Sin proveedor',
+                        ),
+                      if (product['locationId'] is Map)
+                        _previewInfoRow(
+                          Icons.location_on_outlined,
+                          'Ubicación',
+                          product['locationId']['name']?.toString() ?? 'Sin ubicación',
+                        ),
+                      if (product['weight'] != null && product['weight'] != 0)
+                        _previewInfoRow(
+                          Icons.scale_outlined,
+                          'Peso',
+                          '${product['weight']} kg',
+                        ),
+                      _previewInfoRow(
+                        Icons.event_outlined,
+                        'Caducidad',
+                        product['expiryDate'] != null
+                            ? DateFormat('dd MMM yyyy').format(DateTime.parse(product['expiryDate']))
+                            : 'No definida',
+                        valueColor: _getExpirationColor(product['expiryDate']),
+                      ),
+
+                      // Description
+                      if (product['description'] != null &&
+                          (product['description'] as String).isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.gray50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.gray200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.description_outlined, size: 14, color: AppColors.gray500),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Descripción',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.gray500,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                product['description'] as String,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.gray700,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text('Precio Compra: ${_formatCurrency((product['purchasePrice'] as num))}'),
-                Text('Precio Venta: ${_formatCurrency((product['salePrice'] as num))}'),
-                if (product['description'] != null && (product['description'] as String).isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Descripción:', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text(product['description'] as String),
-                      ],
+              ),
+
+              // ── Quick Actions ──
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.gray50,
+                  border: Border(top: BorderSide(color: AppColors.gray200)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _previewAction(
+                      icon: Icons.qr_code_2,
+                      label: 'QR',
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _generateQrLabels(product);
+                      },
                     ),
-                  ),
-              ],
-            ),
+                    _previewAction(
+                      icon: Icons.add_shopping_cart,
+                      label: 'Stock',
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showAdjustStockDialog(product);
+                      },
+                    ),
+                    _previewAction(
+                      icon: Icons.edit_outlined,
+                      label: 'Editar',
+                      color: AppColors.primary,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showEditProductDialog(product);
+                      },
+                    ),
+                    _previewAction(
+                      icon: Icons.delete_outline,
+                      label: 'Eliminar',
+                      color: AppColors.error,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _confirmDeleteProduct(product);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
+      ),
+    );
+  }
+
+  Widget _previewImagePlaceholder() {
+    return Container(
+      color: AppColors.gray100,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.inventory_2_outlined, size: 56, color: AppColors.gray400),
+            const SizedBox(height: 8),
+            Text('Sin imagen', style: TextStyle(color: AppColors.gray400, fontSize: 13)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _previewPriceCard({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(fontSize: 10, color: color.withValues(alpha: 0.7), fontWeight: FontWeight.w500),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _previewInfoRow(IconData icon, String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: AppColors.primary),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '$label:',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.gray500,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? AppColors.gray800,
+              ),
+              textAlign: TextAlign.end,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _previewAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
+    final c = color ?? AppColors.gray600;
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: c),
+            const SizedBox(height: 3),
+            Text(label, style: TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w500)),
+          ],
+        ),
       ),
     );
   }
@@ -829,9 +1144,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       } catch (e) {
         if (kDebugMode) debugPrint(' Error picking image: $e');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error al seleccionar imagen')),
-          );
+          AppSnackbar.error(context, 'Error al seleccionar imagen');
         }
       }
     }
@@ -842,7 +1155,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         builder: (context, setState) => AlertDialog(
           title: Text(isEditing ? 'Editar Producto' : 'Nuevo Producto'),
           content: SizedBox(
-            width: 600,
+            width: Responsive(context).dialogWidth(preferred: 600),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1107,51 +1420,41 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             ElevatedButton(
               onPressed: isLoading ? null : () async {
                 if (nameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El nombre es requerido')),
-                  );
+                  AppSnackbar.warning(context, 'El nombre es requerido');
+                  return;
+                }
+                // Injection protection
+                if (InputValidator.containsHtmlOrScript(nameController.text) ||
+                    InputValidator.containsHtmlOrScript(descriptionController.text)) {
+                  AppSnackbar.warning(context, 'Entrada no válida detectada');
                   return;
                 }
                 if (selectedCategoryId == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Seleccione una categoría')),
-                  );
+                  AppSnackbar.warning(context, 'Seleccione una categoría');
                   return;
                 }
                 if (selectedSupplierId == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Seleccione un proveedor')),
-                  );
+                  AppSnackbar.warning(context, 'Seleccione un proveedor');
                   return;
                 }
                 if (selectedLocationId == null || selectedLocationId!.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Seleccione una ubicación')),
-                  );
+                  AppSnackbar.warning(context, 'Seleccione una ubicación');
                   return;
                 }
                 if (purchasePriceController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El precio de compra es requerido')),
-                  );
+                  AppSnackbar.warning(context, 'El precio de compra es requerido');
                   return;
                 }
                 if (salePriceController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El precio de venta es requerido')),
-                  );
+                  AppSnackbar.warning(context, 'El precio de venta es requerido');
                   return;
                 }
                 if (!isEditing && stockController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El stock inicial es requerido')),
-                  );
+                  AppSnackbar.warning(context, 'El stock inicial es requerido');
                   return;
                 }
                 if (selectedExpiryDate == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Seleccione la fecha de caducidad')),
-                  );
+                  AppSnackbar.warning(context, 'Seleccione la fecha de caducidad');
                   return;
                 }
 
@@ -1160,17 +1463,13 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                 final salePrice = double.tryParse(salePriceController.text.trim());
                 
                 if (purchasePrice == null || salePrice == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Los precios deben ser números válidos')),
-                  );
+                  AppSnackbar.warning(context, 'Los precios deben ser números válidos');
                   setState(() => isLoading = false);
                   return;
                 }
 
                 if (salePrice <= purchasePrice) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El precio de venta debe ser mayor al precio de compra')),
-                  );
+                  AppSnackbar.warning(context, 'El precio de venta debe ser mayor al precio de compra');
                   setState(() => isLoading = false);
                   return;
                 }
@@ -1179,10 +1478,10 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                 if (isEditing) {
                   success = await ref.read(productProvider.notifier).updateProduct(
                     id: product['_id'],
-                    name: nameController.text.trim(),
+                    name: InputValidator.sanitize(nameController.text.trim()),
                     description: descriptionController.text.trim().isEmpty 
                         ? null 
-                        : descriptionController.text.trim(),
+                        : InputValidator.sanitize(descriptionController.text.trim()),
                     categoryId: selectedCategoryId,
                     locationId: selectedLocationId,
                     purchasePrice: purchasePrice,
@@ -1203,19 +1502,17 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                       setState(() => isLoading = false);
                       return;
                     }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No hay tienda seleccionada')),
-                    );
+                    AppSnackbar.warning(context, 'No hay tienda seleccionada');
                     setState(() => isLoading = false);
                     return;
                   }
 
                   success = await ref.read(productProvider.notifier).createProduct(
                     storeId: currentStore['_id'],
-                    name: nameController.text.trim(),
+                    name: InputValidator.sanitize(nameController.text.trim()),
                     description: descriptionController.text.trim().isEmpty 
                         ? null 
-                        : descriptionController.text.trim(),
+                        : InputValidator.sanitize(descriptionController.text.trim()),
                     categoryId: selectedCategoryId!,
                     supplierId: selectedSupplierId!,
                     locationId: selectedLocationId!,
@@ -1257,12 +1554,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                     debugPrint('❌ Product creation failed');
                     debugPrint('   errorMessage: $errorMessage');
                   }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(errorMessage.isNotEmpty ? errorMessage : 'Error al crear el producto'),
-                      duration: const Duration(seconds: 5),
-                    ),
-                  );
+                  AppSnackbar.error(context, errorMessage.isNotEmpty ? errorMessage : 'Error al crear el producto');
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -1300,7 +1592,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         builder: (context, setState) => AlertDialog(
           title: Text('Ajustar Stock - $productName'),
           content: SizedBox(
-            width: 400,
+            width: Responsive(context).dialogWidth(preferred: 400),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1377,9 +1669,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                 final adjustment = int.tryParse(adjustmentController.text.trim());
                 
                 if (adjustment == null || adjustment <= 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Ingresa una cantidad válida')),
-                  );
+                  AppSnackbar.warning(context, 'Ingresa una cantidad válida');
                   return;
                 }
 
@@ -1388,9 +1678,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                     : currentStock - adjustment;
 
                 if (newStock < 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El stock no puede ser negativo')),
-                  );
+                  AppSnackbar.warning(context, 'El stock no puede ser negativo');
                   return;
                 }
 
@@ -1430,23 +1718,12 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
   Future<void> _generateQrLabels(Map<String, dynamic> product) async {
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Generando PDF con QRs...'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      AppSnackbar.info(context, 'Generando PDF con QRs...');
 
       await PdfService.generateProductQrLabels(product: product);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PDF con 10 QRs descargado correctamente'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      AppSnackbar.success(context, 'PDF con 10 QRs descargado correctamente');
     } catch (e) {
       String errorMessage = 'Error al generar PDF';
       
@@ -1458,13 +1735,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       }
       
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          duration: const Duration(seconds: 4),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackbar.error(context, errorMessage);
     }
   }
 

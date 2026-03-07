@@ -8,22 +8,34 @@ class CustomerState {
   final List<Map<String, dynamic>> customers;
   final bool isLoading;
   final String errorMessage;
+  final int currentPage;
+  final int totalPages;
+  final int totalItems;
 
   CustomerState({
     this.customers = const [],
     this.isLoading = false,
     this.errorMessage = '',
+    this.currentPage = 1,
+    this.totalPages = 1,
+    this.totalItems = 0,
   });
 
   CustomerState copyWith({
     List<Map<String, dynamic>>? customers,
     bool? isLoading,
     String? errorMessage,
+    int? currentPage,
+    int? totalPages,
+    int? totalItems,
   }) {
     return CustomerState(
       customers: customers ?? this.customers,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage ?? this.errorMessage,
+      currentPage: currentPage ?? this.currentPage,
+      totalPages: totalPages ?? this.totalPages,
+      totalItems: totalItems ?? this.totalItems,
     );
   }
 }
@@ -43,7 +55,7 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
     _customerProvider = customer_api.CustomerProvider(authState.token);
   }
 
-  Future<void> loadCustomers({String? storeId, bool forceRefresh = false}) async {
+  Future<void> loadCustomers({String? storeId, bool forceRefresh = false, int page = 1, int limit = 50}) async {
     _initCustomerProvider();
     state = state.copyWith(isLoading: true, errorMessage: '');
 
@@ -68,6 +80,8 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
 
       final result = await _customerProvider.getCustomers(
         storeId: effectiveStoreId,
+        page: page,
+        limit: limit,
       );
 
       if (result['success']) {
@@ -77,7 +91,13 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
           customers,
           ttl: const Duration(minutes: 10),
         );
-        state = state.copyWith(customers: customers);
+        final pag = result['pagination'] as Map<String, dynamic>?;
+        state = state.copyWith(
+          customers: customers,
+          currentPage: pag?['page'] as int? ?? page,
+          totalPages: pag?['pages'] as int? ?? 1,
+          totalItems: pag?['total'] as int? ?? customers.length,
+        );
       } else {
         state = state.copyWith(
           errorMessage: result['message'] ?? 'Error cargando clientes',

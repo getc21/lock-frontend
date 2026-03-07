@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../auth_provider.dart' as auth_api;
+import '../../services/secure_http_client.dart';
 
 // Estado de autenticación
 class AuthState {
@@ -40,21 +42,44 @@ class AuthState {
   String get userRoleDisplay {
     final role = currentUser?['role'];
     switch (role) {
+      case 'superadmin':
+        return 'Super Administrador';
       case 'admin':
         return 'Administrador';
       case 'manager':
         return 'Gerente';
-      case 'employee':
-        return 'Empleado';
+      case 'cashier':
+        return 'Cajero';
       default:
         return 'Usuario';
     }
   }
 
+  bool get isSuperAdmin => currentUser?['role'] == 'superadmin';
   bool get isAdmin => currentUser?['role'] == 'admin';
   bool get isManager => currentUser?['role'] == 'manager';
-  bool get isEmployee => currentUser?['role'] == 'employee';
+  bool get isCashier => currentUser?['role'] == 'cashier';
+  // Alias para compatibilidad
+  bool get isEmployee => isCashier;
   String? get userRole => currentUser?['role'];
+
+  // Información de marca del usuario
+  Map<String, dynamic>? get userBrand {
+    final brand = currentUser?['brand'];
+    if (brand is Map<String, dynamic>) return brand;
+    return null;
+  }
+  String? get brandId {
+    // brandId puede ser un string directo o un objeto poblado
+    final brand = currentUser?['brand'];
+    if (brand is String) return brand;
+    if (brand is Map) return brand['_id']?.toString() ?? brand['id']?.toString();
+    // Fallback a brandId directo
+    return currentUser?['brandId']?.toString();
+  }
+  String? get brandName => userBrand?['name'];
+  String? get brandSlug => userBrand?['slug'];
+  String? get brandLogo => userBrand?['logo'];
 
   AuthState copyWith({
     Map<String, dynamic>? currentUser,
@@ -76,6 +101,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final auth_api.AuthProvider _authProvider = auth_api.AuthProvider();
 
   AuthNotifier() : super(AuthState()) {
+    // Registrar callback de sesión expirada en el HTTP client centralizado
+    SecureHttpClient.setSessionExpiredCallback(() async {
+      await logout();
+    });
+    // Registrar callback de refresh token
+    SecureHttpClient.setRefreshTokenCallback(() async {
+      return await _tryRefreshToken();
+    });
     _loadSavedSession();
   }
 
@@ -144,9 +177,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final result = await _authProvider.getProfile();
       if (!result['success']) {
         await logout();
+      } else {
+        // Actualizar datos del usuario con la respuesta más reciente
+        final userData = result['data'];
+        if (userData != null) {
+          state = state.copyWith(currentUser: userData);
+          await _saveUserData(userData);
+        }
       }
     } catch (e) {
-      // Token verification failed, but don't interrupt user experience
+      // Error de conectividad — no cerrar sesión, reintentar después
     }
   }
 
@@ -205,9 +245,43 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  // Try to refresh the access token using the refresh token
+  Future<bool> _tryRefreshToken() async {
+    try {
+      final result = await _authProvider.refreshAccessToken();
+      if (result['success'] == true) {
+        final data = result['data'];
+        if (data != null && data['token'] != null) {
+          state = state.copyWith(token: data['token']);
+          // Update user data if available
+          if (data['user'] != null) {
+            state = state.copyWith(currentUser: data['user']);
+          }
+          if (kDebugMode) {
+            debugPrint('🔄 AuthNotifier: Token refreshed successfully');
+          }
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ AuthNotifier: Refresh token failed: $e');
+      }
+      return false;
+    }
+  }
+
   // Logout
   Future<void> logout() async {
     state = state.copyWith(isLoading: true);
+
+    // Server-side logout (invalidate refresh token)
+    try {
+      await _authProvider.serverLogout();
+    } catch (e) {
+      // Server logout failed, continue with local cleanup
+    }
 
     try {
       await _authProvider.logout();
@@ -251,7 +325,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         password: password,
         firstName: firstName,
         lastName: lastName,
-        role: role ?? 'employee',
+        role: role ?? 'cashier',
         stores: storesToAssign ?? [],
       );
 

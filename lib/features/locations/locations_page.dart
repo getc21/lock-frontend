@@ -8,6 +8,9 @@ import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/location_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/providers/riverpod/product_notifier.dart';
+import '../../shared/services/debouncer.dart';
+import '../../core/utils/responsive.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class LocationsPage extends ConsumerStatefulWidget {
   const LocationsPage({super.key});
@@ -19,6 +22,7 @@ class LocationsPage extends ConsumerStatefulWidget {
 class _LocationsPageState extends ConsumerState<LocationsPage> {
   bool _hasInitialized = false;
   final _searchController = TextEditingController();
+  final _debouncer = Debouncer();
   String _searchQuery = '';
 
   @override
@@ -34,6 +38,7 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -65,8 +70,8 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
                     prefixIcon: Icon(Icons.search),
                   ),
                   onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
+                    _debouncer.run(() {
+                      if (mounted) setState(() => _searchQuery = value);
                     });
                   },
                 ),
@@ -211,7 +216,7 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
       builder: (context) => AlertDialog(
         title: Text(isEditing ? 'Editar Ubicación' : 'Nueva Ubicación'),
         content: SizedBox(
-          width: 400,
+          width: Responsive(context).dialogWidth(preferred: 400),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -248,12 +253,7 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
                   ? null
                   : () async {
                       if (nameController.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('El nombre es requerido'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                        AppSnackbar.warning(context, 'El nombre es requerido');
                         return;
                       }
 
@@ -309,12 +309,7 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
     final isDeleting = ValueNotifier<bool>(false);
 
     if (locationId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ID de ubicación no válido'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackbar.warning(context, 'ID de ubicación no válido');
       return;
     }
 

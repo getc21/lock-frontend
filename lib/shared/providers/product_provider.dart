@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import 'package:http_parser/http_parser.dart';
 import '../config/api_config.dart';
+import '../services/secure_http_client.dart';
 
 class ProductProvider {
   static String get baseUrl => ApiConfig.baseUrl;
@@ -28,6 +29,8 @@ class ProductProvider {
     String? supplierId,
     String? locationId,
     bool? lowStock,
+    int? page,
+    int? limit,
   }) async {
     try {
       final queryParams = <String, String>{};
@@ -36,6 +39,8 @@ class ProductProvider {
       if (supplierId != null) queryParams['supplierId'] = supplierId;
       if (locationId != null) queryParams['locationId'] = locationId;
       if (lowStock != null) queryParams['lowStock'] = lowStock.toString();
+      if (page != null) queryParams['page'] = page.toString();
+      if (limit != null) queryParams['limit'] = limit.toString();
 
       final uri = Uri.parse('$baseUrl/products')
           .replace(queryParameters: queryParams.isEmpty ? null : queryParams);
@@ -47,6 +52,7 @@ class ProductProvider {
       }
       
       final response = await http.get(uri, headers: _headers);
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (kDebugMode) {
@@ -65,7 +71,11 @@ class ProductProvider {
 
         }
         if (products is List) {
-          return {'success': true, 'data': products};
+          return {
+            'success': true,
+            'data': products,
+            'pagination': data['pagination'],
+          };
         } else {
           return {'success': false, 'message': 'Formato de respuesta inválido'};
         }
@@ -93,6 +103,7 @@ class ProductProvider {
         Uri.parse('$baseUrl/products/$id'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -291,6 +302,7 @@ class ProductProvider {
         Uri.parse('$baseUrl/products/$id'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 204) {
         return {'success': true};
@@ -334,6 +346,7 @@ class ProductProvider {
         const Duration(seconds: 30),
         onTimeout: () => throw TimeoutException('Request timeout after 30s'),
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (kDebugMode) {
         print('🔍 Status: ${response.statusCode}');
@@ -401,6 +414,7 @@ class ProductProvider {
         Uri.parse('$baseUrl/products/search/$query'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -423,6 +437,7 @@ class ProductProvider {
         Uri.parse('$baseUrl/products/$productId/stocks'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {

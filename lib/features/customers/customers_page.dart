@@ -8,6 +8,11 @@ import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/customer_notifier.dart';
 import '../../shared/providers/riverpod/order_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart';
+import '../../shared/services/input_validator.dart';
+import '../../shared/services/debouncer.dart';
+import '../../shared/widgets/pagination_bar.dart';
+import '../../core/utils/responsive.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class CustomersPage extends ConsumerStatefulWidget {
   const CustomersPage({super.key});
@@ -18,6 +23,7 @@ class CustomersPage extends ConsumerStatefulWidget {
 
 class _CustomersPageState extends ConsumerState<CustomersPage> {
   final _searchController = TextEditingController();
+  final _debouncer = Debouncer();
   String _searchQuery = '';
   bool _hasInitialized = false;
 
@@ -51,6 +57,13 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
   }
 
   @override
+  void dispose() {
+    _debouncer.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final customerState = ref.watch(customerProvider);
     
@@ -80,7 +93,9 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                       prefixIcon: Icon(Icons.search),
                     ),
                     onChanged: (value) {
-                      setState(() => _searchQuery = value);
+                      _debouncer.run(() {
+                        if (mounted) setState(() => _searchQuery = value);
+                      });
                     },
                   ),
                 ),
@@ -142,18 +157,37 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                 padding: const EdgeInsets.all(AppSizes.spacing16),
                 child: SizedBox(
                   height: 600,
-                  child: DataTable2(
-                    columnSpacing: 12,
-                    horizontalMargin: 12,
-                    minWidth: 1000,
-                    columns: const [
-                      DataColumn2(label: Text('Cliente'), size: ColumnSize.L),
-                      DataColumn2(label: Text('Email'), size: ColumnSize.L),
-                      DataColumn2(label: Text('Teléfono'), size: ColumnSize.M),
-                      DataColumn2(label: Text('Puntos'), size: ColumnSize.S),
-                      DataColumn2(label: Text('Acciones'), size: ColumnSize.M),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: DataTable2(
+                          columnSpacing: 12,
+                          horizontalMargin: 12,
+                          minWidth: 1000,
+                          columns: const [
+                            DataColumn2(label: Text('Cliente'), size: ColumnSize.L),
+                            DataColumn2(label: Text('Email'), size: ColumnSize.L),
+                            DataColumn2(label: Text('Teléfono'), size: ColumnSize.M),
+                            DataColumn2(label: Text('Puntos'), size: ColumnSize.S),
+                            DataColumn2(label: Text('Acciones'), size: ColumnSize.M),
+                          ],
+                          rows: _buildCustomerRows(customerState.customers),
+                        ),
+                      ),
+                      PaginationBar(
+                        currentPage: customerState.currentPage,
+                        totalPages: customerState.totalPages,
+                        totalItems: customerState.totalItems,
+                        visibleItems: customerState.customers.length,
+                        itemLabel: 'clientes',
+                        onPageChanged: (newPage) {
+                          ref.read(customerProvider.notifier).loadCustomers(
+                            page: newPage,
+                            forceRefresh: true,
+                          );
+                        },
+                      ),
                     ],
-                    rows: _buildCustomerRows(customerState.customers),
                   ),
                 ),
               ),
@@ -333,7 +367,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       builder: (dialogContext) => AlertDialog(
         title: Text(isEditing ? 'Editar Cliente: ${customer['name']}' : 'Nuevo Cliente'),
         content: SizedBox(
-          width: 500,
+          width: Responsive(context).dialogWidth(preferred: 500),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -410,14 +444,15 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
               onPressed: loading
                   ? null
                   : () async {
-                      final name = nameController.text.trim();
+                      final name = InputValidator.sanitize(nameController.text.trim());
                       if (name.isEmpty) {
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                          const SnackBar(
-                            content: Text('El nombre es requerido'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                        AppSnackbar.warning(dialogContext, 'El nombre es requerido');
+                        return;
+                      }
+                      // Injection protection
+                      final allFields = [nameController.text, emailController.text, phoneController.text, addressController.text, notesController.text];
+                      if (allFields.any((f) => InputValidator.containsHtmlOrScript(f))) {
+                        AppSnackbar.warning(dialogContext, 'Entrada no válida detectada');
                         return;
                       }
 
@@ -434,17 +469,17 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                                 id: customer['_id'],
                                 name: name,
                                 email: emailController.text.trim().isNotEmpty
-                                    ? emailController.text.trim()
+                                    ? InputValidator.sanitize(emailController.text.trim())
                                     : null,
                                 phone: phoneController.text.trim().isNotEmpty
-                                    ? phoneController.text.trim()
+                                    ? InputValidator.sanitize(phoneController.text.trim())
                                     : null,
                                 address:
                                     addressController.text.trim().isNotEmpty
-                                        ? addressController.text.trim()
+                                        ? InputValidator.sanitize(addressController.text.trim())
                                         : null,
                                 notes: notesController.text.trim().isNotEmpty
-                                    ? notesController.text.trim()
+                                    ? InputValidator.sanitize(notesController.text.trim())
                                     : null,
                               );
                         } else {
@@ -453,17 +488,17 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                               .createCustomer(
                                 name: name,
                                 email: emailController.text.trim().isNotEmpty
-                                    ? emailController.text.trim()
+                                    ? InputValidator.sanitize(emailController.text.trim())
                                     : null,
                                 phone: phoneController.text.trim().isNotEmpty
-                                    ? phoneController.text.trim()
+                                    ? InputValidator.sanitize(phoneController.text.trim())
                                     : null,
                                 address:
                                     addressController.text.trim().isNotEmpty
-                                        ? addressController.text.trim()
+                                        ? InputValidator.sanitize(addressController.text.trim())
                                         : null,
                                 notes: notesController.text.trim().isNotEmpty
-                                    ? notesController.text.trim()
+                                    ? InputValidator.sanitize(notesController.text.trim())
                                     : null,
                               );
                         }
@@ -522,8 +557,8 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         title: null,
         contentPadding: EdgeInsets.zero,
         content: SizedBox(
-          width: 600,
-          height: 700,
+          width: Responsive(context).dialogWidth(preferred: 600),
+          height: Responsive(context).dialogMaxHeight(preferred: 700),
           child: Consumer(
             builder: (ctx, ref, child) {
               // Obtener órdenes cargadas
@@ -861,12 +896,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                     Navigator.of(dialogContext).pop();
                     
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('$customerName eliminado correctamente'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
+                      AppSnackbar.success(context, '$customerName eliminado correctamente');
                     }
                   }
                 } finally {

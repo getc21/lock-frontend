@@ -1,13 +1,15 @@
 {
-    "name": "bellezapp_web",
-    "short_name": "bellezapp_web",
+    "name": "SynergyApp — Administración de Inventario",
+    "short_name": "SynergyApp",
     "start_url": ".",
+    "scope": "/",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#F9FAFB",
+    "theme_color": "#4F46E5",
+    "description": "Panel de administración de inventario, ventas y punto de venta multi-tienda.",
+    "orientation": "any",
     "prefer_related_applications": false,
+    "categories": ["business", "productivity"],
     "icons": [
         {
             "src": "icons/Icon-192.png",

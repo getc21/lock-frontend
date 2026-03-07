@@ -6,11 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+import '../../core/utils/app_snackbar.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/providers/riverpod/product_notifier.dart';
 import '../../shared/providers/riverpod/order_notifier.dart';
 import '../../shared/providers/riverpod/customer_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart' show storeProvider;
+import '../../shared/providers/riverpod/auth_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
@@ -74,9 +76,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Future<void> _refreshData() async {
     await _loadDashboardData();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Datos actualizados')),
-      );
+      AppSnackbar.success(context, 'Datos actualizados');
     }
   }
 
@@ -103,6 +103,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   String _formatCurrency(num value) {
     final currencyNotifier = ref.read(currencyProvider.notifier);
     return '${currencyNotifier.symbol}${(value as double).toStringAsFixed(2)}';
+  }
+
+  String _getRoleLabel(String role) {
+    switch (role) {
+      case 'admin': return 'Administrador';
+      case 'manager': return 'Gerente';
+      case 'cashier': return 'Cajero';
+      default: return role;
+    }
   }
 
   String _formatDate(DateTime date) {
@@ -149,6 +158,166 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         child: LoadingIndicator(
           message: 'Cargando datos del dashboard...',
           color: Theme.of(context).primaryColor,
+        ),
+      );
+    }
+
+    // ── Sin tienda asignada ──
+    final authState = ref.watch(authProvider);
+    final userRole = authState.currentUser?['role'] ?? '';
+    final isAdminOrAbove = userRole == 'superadmin' || userRole == 'admin';
+    final userStores = authState.currentUser?['stores'] as List?;
+    final hasAssignedStore = userStores != null && userStores.isNotEmpty;
+
+    if (!isAdminOrAbove && !hasAssignedStore) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(48),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Logo SynergyApp
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(Icons.hub_rounded, color: Colors.white, size: 36),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'SynergyApp',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                // Warning icon
+                Container(
+                  width: 110,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.25), width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.store_outlined,
+                    size: 52,
+                    color: AppColors.warning,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                const Text(
+                  'Sin tienda asignada',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Solicita a tu administrador que te asigne una tienda\npara poder acceder al sistema.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                // User info card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.gray200),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.person_outline, size: 16, color: AppColors.gray500),
+                          const SizedBox(width: 8),
+                          Text(
+                            authState.userFullName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.info.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _getRoleLabel(userRole),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.info,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Action buttons
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () => _loadDashboardData(),
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text('Reintentar'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        await ref.read(authProvider.notifier).logout();
+                        if (context.mounted) context.go('/login');
+                      },
+                      icon: const Icon(Icons.logout, size: 18),
+                      label: const Text('Cerrar Sesión'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }

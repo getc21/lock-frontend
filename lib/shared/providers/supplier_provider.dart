@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
+import '../services/secure_http_client.dart';
 
 class SupplierProvider {
   Future<String?> _getToken() async {
@@ -30,6 +31,7 @@ class SupplierProvider {
         Uri.parse('${ApiConfig.baseUrl}/suppliers'),
         headers: await _getHeaders(),
       );
+      await SecureHttpClient.checkResponse(response);
 
 
 
@@ -91,6 +93,7 @@ class SupplierProvider {
         Uri.parse('${ApiConfig.baseUrl}/suppliers/$id'),
         headers: await _getHeaders(),
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -253,6 +256,7 @@ class SupplierProvider {
           headers: await _getHeaders(),
           body: json.encode(body),
         );
+        await SecureHttpClient.checkResponse(response);
 
 
 
@@ -279,6 +283,7 @@ class SupplierProvider {
         Uri.parse('${ApiConfig.baseUrl}/suppliers/$id'),
         headers: await _getHeaders(),
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 204 || response.statusCode == 200) {
         return {'success': true, 'message': 'Proveedor eliminado exitosamente'};

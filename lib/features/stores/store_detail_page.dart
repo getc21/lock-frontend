@@ -5,6 +5,7 @@ import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/store_detail_notifier.dart';
 import '../../shared/providers/riverpod/store_detail_selectors.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class StoreDetailPage extends ConsumerStatefulWidget {
   final String storeId;
@@ -149,9 +150,7 @@ class _StoreDetailContentState extends ConsumerState<_StoreDetailContent> {
                 const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tienda actualizada'), backgroundColor: Colors.green),
-                    );
+                    AppSnackbar.success(context, 'Tienda actualizada');
                   },
                   child: const Text('Guardar Cambios'),
                 ),

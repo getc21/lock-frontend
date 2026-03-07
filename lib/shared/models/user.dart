@@ -13,6 +13,8 @@ class User {
   final String? phone;
   final Map<String, dynamic>? permissions;
   final List<Map<String, dynamic>>? stores;
+  final String? brandId;
+  final Map<String, dynamic>? brand;
 
   User({
     this.id,
@@ -29,14 +31,19 @@ class User {
     this.phone,
     this.permissions,
     this.stores,
+    this.brandId,
+    this.brand,
   });
 
   // Getters de conveniencia
   String get fullName => '$firstName $lastName';
   String get initials => '${firstName.isNotEmpty ? firstName[0] : ''}${lastName.isNotEmpty ? lastName[0] : ''}';
+  bool get isSuperAdmin => role == UserRole.superadmin;
   bool get isAdmin => role == UserRole.admin;
   bool get isManager => role == UserRole.manager;
-  bool get isEmployee => role == UserRole.employee;
+  bool get isCashier => role == UserRole.cashier;
+  // Alias para compatibilidad
+  bool get isEmployee => isCashier;
 
   // Conversión a Map para la base de datos
   Map<String, dynamic> toMap() {
@@ -55,6 +62,8 @@ class User {
       'phone': phone,
       'permissions': permissions,
       'stores': stores,
+      'brandId': brandId,
+      'brand': brand,
     };
   }
 
@@ -69,7 +78,7 @@ class User {
       passwordHash: map['passwordHash'] ?? map['password_hash'] ?? '',
       role: UserRole.values.firstWhere(
         (UserRole role) => role.name == map['role'],
-        orElse: () => UserRole.employee,
+        orElse: () => UserRole.cashier,
       ),
       isActive: map['isActive'] ?? map['is_active'] == 1 || map['is_active'] == true,
       createdAt: DateTime.tryParse(map['createdAt'] ?? map['created_at'] ?? '') ?? DateTime.now(),
@@ -84,12 +93,14 @@ class User {
       stores: map['stores'] != null 
           ? List<Map<String, dynamic>>.from(map['stores'] as List)
           : null,
+      brandId: map['brandId']?.toString(),
+      brand: map['brand'] is Map<String, dynamic> ? map['brand'] : null,
     );
   }
 
   // Métodos para verificar permisos
   bool hasPermission(String permission) {
-    if (isAdmin) return true; // Admin tiene todos los permisos
+    if (isSuperAdmin || isAdmin) return true; // SuperAdmin y Admin tienen todos los permisos
     if (permissions == null) return false;
     return permissions![permission] == true;
   }
@@ -119,6 +130,8 @@ class User {
     String? phone,
     Map<String, dynamic>? permissions,
     List<Map<String, dynamic>>? stores,
+    String? brandId,
+    Map<String, dynamic>? brand,
   }) {
     return User(
       id: id ?? this.id,
@@ -135,6 +148,8 @@ class User {
       phone: phone ?? this.phone,
       permissions: permissions ?? this.permissions,
       stores: stores ?? this.stores,
+      brandId: brandId ?? this.brandId,
+      brand: brand ?? this.brand,
     );
   }
 
@@ -160,9 +175,10 @@ class User {
 }
 
 enum UserRole {
+  superadmin('Super Administrador'),
   admin('Administrador'),
   manager('Gerente'),
-  employee('Empleado');
+  cashier('Cajero');
 
   const UserRole(this.displayName);
   final String displayName;
@@ -170,6 +186,19 @@ enum UserRole {
   // Permisos por defecto según el rol
   Map<String, bool> get defaultPermissions {
     switch (this) {
+      case UserRole.superadmin:
+        return <String, bool>{
+          'manage_users': true,
+          'manage_products': true,
+          'manage_orders': true,
+          'manage_customers': true,
+          'manage_discounts': true,
+          'view_reports': true,
+          'manage_inventory': true,
+          'manage_cash': true,
+          'manage_settings': true,
+          'manage_brands': true,
+        };
       case UserRole.admin:
         return <String, bool>{
           'manage_users': true,
@@ -194,7 +223,7 @@ enum UserRole {
           'manage_cash': true,
           'manage_settings': false,
         };
-      case UserRole.employee:
+      case UserRole.cashier:
         return <String, bool>{
           'manage_users': false,
           'manage_products': false,
@@ -211,11 +240,13 @@ enum UserRole {
 
   String get description {
     switch (this) {
+      case UserRole.superadmin:
+        return 'Acceso completo a la plataforma';
       case UserRole.admin:
         return 'Acceso completo al sistema';
       case UserRole.manager:
         return 'Gestión de operaciones y reportes';
-      case UserRole.employee:
+      case UserRole.cashier:
         return 'Operaciones básicas de venta';
     }
   }

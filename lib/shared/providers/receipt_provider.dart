@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/api_config.dart';
+import '../services/secure_http_client.dart';
 
 class ReceiptProvider {
   final String _token;
@@ -19,6 +20,7 @@ class ReceiptProvider {
         Uri.parse('$_baseUrl/audit/receipts/stats?storeId=$storeId'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -54,6 +56,7 @@ class ReceiptProvider {
         Uri.parse('$_baseUrl/audit/receipts/$receiptNumber/$storeId'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -97,6 +100,7 @@ class ReceiptProvider {
         ),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

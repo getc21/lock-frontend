@@ -165,9 +165,8 @@ class WebImageCompressionService {
     
     reader.addEventListener('load', ((JSObject event) {
       try {
-        final List<int> bytes = List<int>.from(
-          (reader.result as JSUint8Array).toDart,
-        );
+        final JSArrayBuffer arrayBuffer = reader.result as JSArrayBuffer;
+        final Uint8List bytes = arrayBuffer.toDart.asUint8List();
         completer.complete(base64Encode(bytes));
       } catch (e) {
         completer.completeError(e);

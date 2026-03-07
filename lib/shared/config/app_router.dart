@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:web/web.dart' as web;
 import '../../features/auth/login_page.dart';
 import '../../features/dashboard/dashboard_page.dart';
 import '../../features/orders/orders_page.dart';
@@ -24,6 +25,8 @@ import '../../features/quotations/pages/quotation_detail_page.dart';
 import '../../features/cash_register/pages/cash_register_page.dart';
 import '../../features/cash_register/pages/cash_movements_page.dart';
 import '../../features/receipts/receipts_page.dart';
+import '../../features/brands/brands_page.dart';
+import '../../features/landing/landing_page.dart';
 import '../../shared/providers/riverpod/auth_notifier.dart';
 import 'route_transitions.dart';
 
@@ -35,6 +38,34 @@ import 'route_transitions.dart';
 /// - Transiciones suaves con animaciones personalizadas
 /// - Gestión centralizada de rutas y argumentos
 class AppRouter {
+  /// Map of route paths to page titles for SEO and browser tab display
+  static const _routeTitles = <String, String>{
+    '/': 'SynergyApp',
+    '/login': 'Iniciar Sesión — SynergyApp',
+    '/dashboard': 'Dashboard — SynergyApp',
+    '/orders': 'Órdenes — SynergyApp',
+    '/orders/create': 'Nueva Orden — SynergyApp',
+    '/returns': 'Devoluciones — SynergyApp',
+    '/products': 'Productos — SynergyApp',
+    '/customers': 'Clientes — SynergyApp',
+    '/reports': 'Reportes — SynergyApp',
+    '/expenses': 'Gastos — SynergyApp',
+    '/expenses/report': 'Reporte de Gastos — SynergyApp',
+    '/expenses/new': 'Nuevo Gasto — SynergyApp',
+    '/categories': 'Categorías — SynergyApp',
+    '/locations': 'Ubicaciones — SynergyApp',
+    '/suppliers': 'Proveedores — SynergyApp',
+    '/users': 'Usuarios — SynergyApp',
+    '/brands': 'Marcas — SynergyApp',
+    '/stores': 'Tiendas — SynergyApp',
+    '/settings/theme': 'Configuración de Tema — SynergyApp',
+    '/quotations': 'Cotizaciones — SynergyApp',
+    '/quotations/create': 'Nueva Cotización — SynergyApp',
+    '/cash-register': 'Caja Registradora — SynergyApp',
+    '/cash-movements': 'Movimientos de Caja — SynergyApp',
+    '/receipts': 'Comprobantes — SynergyApp',
+  };
+
   static final GoRouter router = GoRouter(
     redirect: _redirectLogic,
     routes: _buildRoutes(),
@@ -45,15 +76,34 @@ class AppRouter {
   /// Lógica de redirección basada en estado de autenticación
   static String? _redirectLogic(BuildContext context, GoRouterState state) {
     final authState = _getAuthState(context);
+    final loc = state.matchedLocation;
 
-    // Usuario no autenticado: redirigir a login
-    if (!authState.isLoggedIn && state.matchedLocation != '/login') {
-      return '/login';
+    // Rutas públicas (no requieren autenticación)
+    const publicRoutes = ['/', '/login'];
+
+    // Usuario no autenticado: permitir rutas públicas, redirigir el resto a landing
+    if (!authState.isLoggedIn && !publicRoutes.contains(loc)) {
+      return '/';
     }
 
-    // Usuario autenticado en login: ir a dashboard
-    if (authState.isLoggedIn && state.matchedLocation == '/login') {
+    // Usuario autenticado en login o landing: ir a dashboard o brands (superadmin)
+    if (authState.isLoggedIn && (loc == '/login' || loc == '/')) {
+      if (authState.isSuperAdmin) {
+        return '/brands';
+      }
       return '/dashboard';
+    }
+
+    // Bloquear navegación si el usuario no tiene tienda asignada (no admin/superadmin)
+    if (authState.isLoggedIn && loc != '/dashboard' && loc != '/login' && loc != '/') {
+      final role = authState.currentUser?['role'] ?? '';
+      final isAdminOrAbove = role == 'superadmin' || role == 'admin';
+      if (!isAdminOrAbove) {
+        final userStores = authState.currentUser?['stores'] as List?;
+        if (userStores == null || userStores.isEmpty) {
+          return '/dashboard';
+        }
+      }
     }
 
     return null;
@@ -256,6 +306,17 @@ class AppRouter {
         ),
       ),
 
+      // Ruta de marcas (SuperAdmin)
+      GoRoute(
+        path: '/brands',
+        name: 'brands',
+        pageBuilder: (context, state) => _buildPage(
+          child: const BrandsPage(),
+          state: state,
+          transitionType: RouteTransitionType.fade,
+        ),
+      ),
+
       // Ruta de tiendas
       GoRoute(
         path: '/stores',
@@ -345,10 +406,15 @@ class AppRouter {
         ),
       ),
 
-      // Ruta fallback (404 -> dashboard)
+      // Ruta principal / Landing Page
       GoRoute(
         path: '/',
-        redirect: (context, state) => '/dashboard',
+        name: 'landing',
+        pageBuilder: (context, state) => _buildPage(
+          child: const LandingPage(),
+          state: state,
+          transitionType: RouteTransitionType.fade,
+        ),
       ),
     ];
   }
@@ -362,6 +428,11 @@ class AppRouter {
     required GoRouterState state,
     RouteTransitionType transitionType = RouteTransitionType.fade,
   }) {
+    // Update browser tab title for SEO and UX
+    final path = state.matchedLocation;
+    final title = _routeTitles[path] ?? 'SynergyApp';
+    web.document.title = title;
+
     return CustomTransitionPage(
       key: state.pageKey,
       child: child,

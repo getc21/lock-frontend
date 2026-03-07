@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
+import '../services/secure_http_client.dart';
 
 class LocationProvider {
   static String get baseUrl => ApiConfig.baseUrl;
@@ -25,6 +26,7 @@ class LocationProvider {
         Uri.parse(url),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       final data = jsonDecode(response.body);
 
@@ -63,6 +65,7 @@ class LocationProvider {
         Uri.parse('$baseUrl/locations/$id'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       final data = jsonDecode(response.body);
 
@@ -95,6 +98,7 @@ class LocationProvider {
           if (description != null) 'description': description,
         }),
       );
+      await SecureHttpClient.checkResponse(response);
 
       final data = jsonDecode(response.body);
 
@@ -127,6 +131,7 @@ class LocationProvider {
         headers: _headers,
         body: jsonEncode(body),
       );
+      await SecureHttpClient.checkResponse(response);
 
       final data = jsonDecode(response.body);
 
@@ -150,6 +155,7 @@ class LocationProvider {
         Uri.parse('$baseUrl/locations/$id'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         return {'success': true, 'message': 'Ubicación eliminada exitosamente'};

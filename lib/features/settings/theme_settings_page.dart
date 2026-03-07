@@ -5,6 +5,7 @@ import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/providers/riverpod/theme_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class ThemeSettingsPage extends ConsumerWidget {
   const ThemeSettingsPage({super.key});
@@ -198,15 +199,7 @@ class ThemeSettingsPage extends ConsumerWidget {
                       onChanged: (currencyId) {
                         if (currencyId != null) {
                           currencyNotifier.changeCurrency(currencyId);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Moneda cambiada a ${currencyNotifier.currentCurrency.name}',
-                              ),
-                              backgroundColor: Colors.green,
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
+                          AppSnackbar.success(context, 'Moneda cambiada a ${currencyNotifier.currentCurrency.name}');
                         }
                       },
                     ),
@@ -416,12 +409,7 @@ class ThemeSettingsPage extends ConsumerWidget {
               await notifier.resetTheme();
               if (context.mounted) {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Tema restablecido a la configuración por defecto'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                AppSnackbar.success(context, 'Tema restablecido a la configuración por defecto');
                 // Navegar al dashboard
                 Navigator.of(context).pushNamedAndRemoveUntil('/dashboard', (_) => false);
               }

@@ -8,6 +8,8 @@ import '../providers/riverpod/store_notifier.dart';
 import '../providers/riverpod/theme_notifier.dart';
 import '../providers/riverpod/currency_notifier.dart';
 import '../providers/riverpod/product_notifier.dart';
+import '../../core/utils/responsive.dart';
+import '../../core/utils/app_snackbar.dart';
 
 // Provider para el estado de colapso del sidebar
 final dashboardCollapseProvider = StateProvider<bool>((ref) => false);
@@ -92,15 +94,22 @@ class DashboardLayout extends ConsumerWidget {
     final currencyState = ref.watch(currencyProvider);
     final currencyNotifier = ref.read(currencyProvider.notifier);
 
+    final r = Responsive(context);
     if (!themeState.isInitialized) {
       return Container(
-        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+        constraints: BoxConstraints(
+          maxWidth: r.dialogWidth(preferred: 600),
+          maxHeight: r.dialogMaxHeight(preferred: 800),
+        ),
         child: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Container(
-      constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+      constraints: BoxConstraints(
+        maxWidth: r.dialogWidth(preferred: 600),
+        maxHeight: r.dialogMaxHeight(preferred: 800),
+      ),
       child: Column(
         children: [
           // Header
@@ -276,14 +285,9 @@ class DashboardLayout extends ConsumerWidget {
                             onChanged: (currencyId) {
                               if (currencyId != null) {
                                 currencyNotifier.changeCurrency(currencyId);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Moneda cambiada a ${currencyNotifier.currentCurrency.name}',
-                                    ),
-                                    backgroundColor: Colors.green,
-                                    duration: const Duration(seconds: 2),
-                                  ),
+                                AppSnackbar.success(
+                                  context,
+                                  'Moneda cambiada a ${currencyNotifier.currentCurrency.name}',
                                 );
                               }
                             },
@@ -336,9 +340,13 @@ class DashboardLayout extends ConsumerWidget {
     return Scaffold(
       body: Row(
         children: [
-          _buildSidebar(context, ref, isSidebarCollapsed),
-          // Main Content
+          // Sidebar navigation — isolated focus group for Tab key
+          FocusTraversalGroup(
+            child: _buildSidebar(context, ref, isSidebarCollapsed),
+          ),
+          // Main Content — isolated focus group
           Expanded(
+            child: FocusTraversalGroup(
             child: Column(
               children: [
                 // Top Bar
@@ -359,7 +367,7 @@ class DashboardLayout extends ConsumerWidget {
                       ),
                     ),
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(AppSizes.spacing24),
+                      padding: Responsive(context).contentPadding,
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
                           maxWidth: AppSizes.maxContentWidth,
@@ -370,7 +378,8 @@ class DashboardLayout extends ConsumerWidget {
                   ),
                 ),
               ],
-            ),
+            ), // close FocusTraversalGroup Column
+          ),
           ),
         ],
       ),
@@ -384,12 +393,16 @@ class DashboardLayout extends ConsumerWidget {
   ) {
     final authState = ref.watch(authProvider);
     final userRole = authState.currentUser?['role'] ?? '';
+    final isSuperAdmin = userRole == 'superadmin';
     final isAdmin = userRole == 'admin';
     final isManager = userRole == 'manager';
 
     return _SidebarWidget(
+      isSuperAdmin: isSuperAdmin,
       isAdmin: isAdmin,
       isManager: isManager,
+      brandName: authState.brandName,
+      brandLogo: authState.brandLogo,
       currentRoute: currentRoute,
       isSidebarCollapsed: isSidebarCollapsed,
       onToggle: () {
@@ -402,9 +415,14 @@ class DashboardLayout extends ConsumerWidget {
   Widget _buildTopBar(BuildContext context, WidgetRef ref) {
     final storeState = ref.watch(storeProvider);
     final authState = ref.watch(authProvider);
-    final isAdmin = authState.currentUser?['role'] == 'admin';
+    final role = authState.currentUser?['role'] ?? '';
+    final isSuperAdmin = role == 'superadmin';
+    final isAdmin = role == 'admin';
 
-    return Container(
+    return Semantics(
+      label: 'Barra superior — $title',
+      explicitChildNodes: true,
+      child: Container(
       height: AppSizes.appBarHeight,
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -421,19 +439,78 @@ class DashboardLayout extends ConsumerWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-              overflow: TextOverflow.ellipsis,
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                // Mostrar nombre de marca para admin
+                if (!isSuperAdmin && authState.brandName != null) ...[
+                  const SizedBox(width: AppSizes.spacing12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacing8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                    ),
+                    child: Text(
+                      authState.brandName!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                  ),
+                ],
+                // Badge de plataforma para superadmin
+                if (isSuperAdmin) ...[
+                  const SizedBox(width: AppSizes.spacing12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacing8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                      border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.shield, size: 12, color: Colors.red),
+                        SizedBox(width: 4),
+                        Text(
+                          'PLATAFORMA',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(width: AppSizes.spacing24),
 
-          // ⭐ SELECTOR DE TIENDA - SOLO PARA ADMINISTRADORES
+          // ⭐ SELECTOR DE TIENDA - SOLO PARA ADMINISTRADORES DE MARCA
           if (isAdmin)
             Tooltip(
               message: storeState.stores.isEmpty
@@ -503,7 +580,7 @@ class DashboardLayout extends ConsumerWidget {
                 ),
               ),
             )
-          else if (!isAdmin && storeState.currentStore != null)
+          else if (!isSuperAdmin && !isAdmin && storeState.currentStore != null)
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSizes.spacing12,
@@ -543,20 +620,38 @@ class DashboardLayout extends ConsumerWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Nombre del usuario
-              Text(
-                authState.userFullName,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
+              // Columna con nombre y rol
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    authState.userFullName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    authState.userRoleDisplay,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isSuperAdmin
+                          ? Colors.red
+                          : Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: AppSizes.spacing12),
 
               // Avatar con iniciales
               CircleAvatar(
-                backgroundColor: Theme.of(context).primaryColor,
+                backgroundColor: isSuperAdmin
+                    ? Colors.red
+                    : Theme.of(context).primaryColor,
                 radius: 16,
                 child: Text(
                   authState.userInitials,
@@ -586,6 +681,7 @@ class DashboardLayout extends ConsumerWidget {
           ),
         ],
       ),
+    ), // close Semantics
     );
   }
 
@@ -774,14 +870,9 @@ class DashboardLayout extends ConsumerWidget {
               await notifier.resetTheme();
               if (context.mounted) {
                 Navigator.pop(dialogContext);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Tema restablecido a la configuración por defecto',
-                    ),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 2),
-                  ),
+                AppSnackbar.success(
+                  context,
+                  'Tema restablecido a la configuración por defecto',
                 );
                 Navigator.pop(context);
               }
@@ -803,15 +894,21 @@ class DashboardLayout extends ConsumerWidget {
 // ============================================================================
 
 class _SidebarWidget extends StatelessWidget {
+  final bool isSuperAdmin;
   final bool isAdmin;
   final bool isManager;
+  final String? brandName;
+  final String? brandLogo;
   final String currentRoute;
   final bool isSidebarCollapsed;
   final VoidCallback onToggle;
 
   const _SidebarWidget({
+    required this.isSuperAdmin,
     required this.isAdmin,
     required this.isManager,
+    this.brandName,
+    this.brandLogo,
     required this.currentRoute,
     required this.isSidebarCollapsed,
     required this.onToggle,
@@ -819,7 +916,10 @@ class _SidebarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
+    return Semantics(
+      label: 'Menú de navegación principal',
+      explicitChildNodes: true,
+      child: AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       width: isSidebarCollapsed
@@ -836,7 +936,7 @@ class _SidebarWidget extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // Logo
+            // Logo / Brand Header
             Container(
               height: AppSizes.appBarHeight,
               padding: EdgeInsets.symmetric(
@@ -849,57 +949,16 @@ class _SidebarWidget extends StatelessWidget {
               ),
               child: isSidebarCollapsed
                   ? Center(
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(
-                            AppSizes.radiusMedium,
-                          ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(
-                            AppSizes.radiusMedium,
-                          ),
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
+                      child: _buildSidebarLogo(context),
                     )
                   : SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(
-                                AppSizes.radiusMedium,
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                AppSizes.radiusMedium,
-                              ),
-                              child: Image.asset(
-                                'assets/images/logo.png',
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
+                          _buildSidebarLogo(context),
                           const SizedBox(width: AppSizes.spacing12),
-                          SizedBox(
-                            width: 100,
-                            child: Image.asset(
-                              'assets/images/NOMBRE.png',
-                              height: 24,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
+                          _buildSidebarBrandName(context),
                         ],
                       ),
                     ),
@@ -909,6 +968,40 @@ class _SidebarWidget extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 0),
                 children: [
+                  // ⭐ SUPERADMIN: Navegación de plataforma
+                  if (isSuperAdmin) ...[
+                    _buildNavItem(
+                      context: context,
+                      icon: Icons.business_outlined,
+                      label: 'Marcas',
+                      route: '/brands',
+                      isSidebarCollapsed: isSidebarCollapsed,
+                    ),
+                    _buildNavItem(
+                      context: context,
+                      icon: Icons.store_outlined,
+                      label: 'Tiendas',
+                      route: '/stores',
+                      isSidebarCollapsed: isSidebarCollapsed,
+                    ),
+                    _buildNavItem(
+                      context: context,
+                      icon: Icons.person_outline,
+                      label: 'Usuarios',
+                      route: '/users',
+                      isSidebarCollapsed: isSidebarCollapsed,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+                      child: Divider(
+                        height: 1,
+                        indent: isSidebarCollapsed ? 0 : AppSizes.spacing16,
+                        endIndent: isSidebarCollapsed ? 0 : AppSizes.spacing16,
+                      ),
+                    ),
+                  ],
+                  // Navegación regular (oculta para superadmin)
+                  if (!isSuperAdmin) ...[
                   _buildNavItem(
                     context: context,
                     icon: Icons.dashboard_outlined,
@@ -1029,6 +1122,7 @@ class _SidebarWidget extends StatelessWidget {
                       route: '/reports',
                       isSidebarCollapsed: isSidebarCollapsed,
                     ),
+                  ], // end if (!isSuperAdmin)
                 ],
               ),
             ),
@@ -1048,6 +1142,7 @@ class _SidebarWidget extends StatelessWidget {
           ],
         ),
       ),
+    ), // close Semantics
     );
   }
 
@@ -1060,7 +1155,12 @@ class _SidebarWidget extends StatelessWidget {
   }) {
     final isSelected = currentRoute == route;
 
-    return Container(
+    return Semantics(
+      label: label,
+      button: true,
+      selected: isSelected,
+      hint: isSelected ? 'Página actual' : 'Ir a $label',
+      child: Container(
       margin: EdgeInsets.symmetric(
         horizontal: isSidebarCollapsed ? 0 : AppSizes.spacing8,
         vertical: AppSizes.spacing4,
@@ -1128,6 +1228,105 @@ class _SidebarWidget extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    ), // close Semantics
+    );
+  }
+
+  /// Construye el logo del sidebar (marca o default)
+  Widget _buildSidebarLogo(BuildContext context) {
+    // SuperAdmin: icono de SynergyApp
+    if (isSuperAdmin) {
+      return Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+          ),
+        ),
+        child: const Icon(Icons.hub, color: Colors.white, size: 22),
+      );
+    }
+
+    // Si hay logo de marca (URL remota), mostrarlo
+    if (brandLogo != null && brandLogo!.isNotEmpty) {
+      return Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+          child: Image.network(
+            brandLogo!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Image.asset(
+              'assets/images/logo.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Fallback: logo local
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        child: Image.asset(
+          'assets/images/logo.png',
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
+  /// Construye el nombre de marca en el sidebar (expandido)
+  Widget _buildSidebarBrandName(BuildContext context) {
+    // SuperAdmin: "SynergyApp"
+    if (isSuperAdmin) {
+      return const Text(
+        'SynergyApp',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF6366F1),
+          letterSpacing: -0.5,
+        ),
+      );
+    }
+
+    // Si hay nombre de marca, mostrarlo como texto
+    if (brandName != null && brandName!.isNotEmpty) {
+      return Flexible(
+        child: Text(
+          brandName!,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).primaryColor,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
+
+    // Fallback: imagen NOMBRE.png
+    return SizedBox(
+      width: 100,
+      child: Image.asset(
+        'assets/images/NOMBRE.png',
+        height: 24,
+        fit: BoxFit.contain,
       ),
     );
   }

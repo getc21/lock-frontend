@@ -11,6 +11,7 @@ import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/providers/riverpod/order_form_notifier.dart';
 import '../../shared/widgets/dashboard_layout.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class CreateOrderPage extends ConsumerStatefulWidget {
   final bool isQuotation;
@@ -703,12 +704,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
       
       formNotifier.addToCart(cartItem);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${product['name']} añadido al carrito'),
-          duration: const Duration(seconds: 1),
-        ),
-      );
+      AppSnackbar.success(context, '${product['name']} añadido al carrito');
     }
   }
 
@@ -723,12 +719,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
       final formNotifier = ref.read(orderFormProvider.notifier);
       formNotifier.updateQuantity(item['_id'] as String, currentQuantity + 1);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No hay más unidades disponibles de ${item['name']}'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      AppSnackbar.warning(context, 'No hay más unidades disponibles de ${item['name']}');
     }
   }
 
@@ -869,12 +860,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
     final cartItems = formState.cartItems;
     
     if (cartItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Agrega productos antes de crear la cotización'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      AppSnackbar.warning(context, 'Agrega productos antes de crear la cotización');
       return;
     }
 
@@ -916,13 +902,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
 
       if (success) {
         // Mostrar mensaje de éxito
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Cotización creada exitosamente!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        AppSnackbar.success(context, '¡Cotización creada exitosamente!');
 
         // Recargar las cotizaciones para mostrar la nueva
         await ref.read(quotationListProvider(currentStoreId).notifier).refreshQuotations();
@@ -932,23 +912,13 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
           context.go('/quotations');
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo crear la cotización'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackbar.error(context, 'No se pudo crear la cotización');
       }
     } catch (e) {
       // Verificar que el widget todavía está montado antes de mostrar error
       if (!mounted) return;
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No se pudo crear la cotización: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackbar.error(context, 'No se pudo crear la cotización: $e');
     } finally {
       formNotifier.setIsCreatingOrder(false);
     }
@@ -959,12 +929,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
     final cartItems = formState.cartItems;
     
     if (cartItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Agrega productos antes de crear la orden'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      AppSnackbar.warning(context, 'Agrega productos antes de crear la orden');
       return;
     }
 
@@ -1072,23 +1037,13 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
           context.go('/orders');
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo crear la orden'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackbar.error(context, 'No se pudo crear la orden');
       }
     } catch (e) {
       // Verificar que el widget todavía está montado antes de mostrar error
       if (!mounted) return;
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No se pudo crear la orden: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackbar.error(context, 'No se pudo crear la orden: $e');
     } finally {
       formNotifier.setIsCreatingOrder(false);
     }

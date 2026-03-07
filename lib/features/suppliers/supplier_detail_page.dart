@@ -5,6 +5,7 @@ import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/supplier_detail_notifier.dart';
 import '../../shared/providers/riverpod/supplier_detail_selectors.dart';
+import '../../core/utils/app_snackbar.dart';
 
 /// Página de detalle de un proveedor específico
 /// Utiliza supplierDetailProvider (.family) para lazy loading
@@ -246,12 +247,7 @@ class _SupplierDetailContentState extends ConsumerState<_SupplierDetailContent> 
                 ElevatedButton(
                   onPressed: () {
                     // Guardar cambios
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Proveedor actualizado'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
+                    AppSnackbar.success(context, 'Proveedor actualizado');
                   },
                   child: const Text('Guardar Cambios'),
                 ),

@@ -63,7 +63,7 @@ class BellezAppWeb extends ConsumerWidget {
     }
     
     return MaterialApp.router(
-      title: 'naturalMARKET',
+      title: 'SynergyApp',
       debugShowCheckedModeBanner: false,
       theme: currentTheme,
       locale: const Locale('es', 'ES'),

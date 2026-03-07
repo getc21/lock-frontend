@@ -28,7 +28,10 @@ class LoadingIndicator extends ConsumerWidget {
     final displayColor = color ?? currentTheme.primaryColor;
     final textColor = ThemeUtils.getSecondaryTextColor(isDarkMode);
 
-    return Column(
+    return Semantics(
+      label: message ?? 'Cargando',
+      liveRegion: true,
+      child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
@@ -49,6 +52,7 @@ class LoadingIndicator extends ConsumerWidget {
           ),
         ],
       ],
+    ), // close Semantics
     );
   }
 }

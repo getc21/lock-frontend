@@ -4,6 +4,7 @@ import 'package:bellezapp_web/shared/models/quotation.dart';
 import 'package:bellezapp_web/shared/providers/riverpod/quotation_detail_notifier.dart';
 import 'package:bellezapp_web/shared/providers/riverpod/quotation_list_notifier.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/responsive.dart';
 
 void showQuotationDetailDialog(
   BuildContext context,
@@ -34,11 +35,12 @@ class QuotationDetailDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final quotationDetailState = ref.watch(quotationDetailProvider(quotationId));
 
+    final r = Responsive(context);
     return Dialog(
       child: Container(
-        width: 900,
+        width: r.dialogWidth(preferred: 900),
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
+          maxHeight: r.dialogMaxHeight(preferred: 800),
         ),
         child: Column(
           children: [

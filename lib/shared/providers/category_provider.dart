@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
+import '../services/secure_http_client.dart';
 
 class CategoryProvider {
   static String get baseUrl => ApiConfig.baseUrl;
@@ -32,6 +33,7 @@ class CategoryProvider {
         Uri.parse('$baseUrl/categories'),
         headers: headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       final data = jsonDecode(response.body);
 
@@ -76,6 +78,7 @@ class CategoryProvider {
         Uri.parse('$baseUrl/categories/$id'),
         headers: headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       final data = jsonDecode(response.body);
 
@@ -158,6 +161,7 @@ class CategoryProvider {
             if (description != null && description.isNotEmpty) 'description': description,
           }),
         );
+        await SecureHttpClient.checkResponse(response);
 
 
 
@@ -247,6 +251,7 @@ class CategoryProvider {
           headers: headers,
           body: json.encode(body),
         );
+        await SecureHttpClient.checkResponse(response);
 
 
 
@@ -280,6 +285,7 @@ class CategoryProvider {
         Uri.parse('$baseUrl/categories/$id'),
         headers: headers,
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         return {'success': true, 'message': 'Categoría eliminada exitosamente'};

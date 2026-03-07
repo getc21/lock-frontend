@@ -7,6 +7,10 @@ import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/providers/riverpod/auth_notifier.dart';
+import '../../shared/services/input_validator.dart';
+import '../../shared/services/debouncer.dart';
+import '../../core/utils/responsive.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class StoresPage extends ConsumerStatefulWidget {
   const StoresPage({super.key});
@@ -17,6 +21,7 @@ class StoresPage extends ConsumerStatefulWidget {
 
 class _StoresPageState extends ConsumerState<StoresPage> {
   final _searchController = TextEditingController();
+  final _debouncer = Debouncer();
   String _searchQuery = '';
   bool _hasInitialized = false;
 
@@ -36,6 +41,7 @@ class _StoresPageState extends ConsumerState<StoresPage> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -43,10 +49,11 @@ class _StoresPageState extends ConsumerState<StoresPage> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final isAdmin = authState.currentUser?['role'] == 'admin';
+    final role = authState.currentUser?['role'] ?? '';
+    final canManageStores = role == 'admin' || role == 'superadmin';
     
-    // Si no es admin, mostrar página de acceso denegado
-    if (!isAdmin) {
+    // Si no es admin o superadmin, mostrar página de acceso denegado
+    if (!canManageStores) {
       return DashboardLayout(
         title: 'Tiendas',
         currentRoute: '/stores',
@@ -77,6 +84,12 @@ class _StoresPageState extends ConsumerState<StoresPage> {
     
     final storeState = ref.watch(storeProvider);
     
+    // Verificar límite de tiendas para admin de marca
+    final brand = authState.userBrand;
+    final maxStores = brand?['maxStores'] as int? ?? 999;
+    final currentStoreCount = storeState.stores.length;
+    final hasReachedLimit = role == 'admin' && currentStoreCount >= maxStores;
+
     return DashboardLayout(
       title: 'Tiendas',
       currentRoute: '/stores',
@@ -95,19 +108,31 @@ class _StoresPageState extends ConsumerState<StoresPage> {
                       prefixIcon: Icon(Icons.search),
                     ),
                     onChanged: (value) {
-                      setState(() => _searchQuery = value);
+                      _debouncer.run(() {
+                        if (mounted) setState(() => _searchQuery = value);
+                      });
                     },
                   ),
                 ),
                 const SizedBox(width: AppSizes.spacing16),
-                ElevatedButton.icon(
-                  onPressed: () => _showStoreDialog(context, null),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Nueva Tienda'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor,
+                if (hasReachedLimit)
+                  Tooltip(
+                    message: 'Límite de $maxStores tienda(s) alcanzado',
+                    child: ElevatedButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.block),
+                      label: Text('Límite ($currentStoreCount/$maxStores)'),
+                    ),
+                  )
+                else
+                  ElevatedButton.icon(
+                    onPressed: () => _showStoreDialog(context, null),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nueva Tienda'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                    ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: AppSizes.spacing24),
@@ -141,14 +166,21 @@ class _StoresPageState extends ConsumerState<StoresPage> {
                           style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: AppSizes.spacing8),
-                        ElevatedButton.icon(
-                          onPressed: () => _showStoreDialog(context, null),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Crear Primera Tienda'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).primaryColor,
+                        if (!hasReachedLimit)
+                          ElevatedButton.icon(
+                            onPressed: () => _showStoreDialog(context, null),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Crear Primera Tienda'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                            ),
+                          )
+                        else
+                          Text(
+                            'Límite de tiendas alcanzado ($maxStores). Contacta al administrador de la plataforma.',
+                            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                            textAlign: TextAlign.center,
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -312,12 +344,7 @@ class _StoresPageState extends ConsumerState<StoresPage> {
   void _switchStore(Map<String, dynamic> store) {
     ref.read(storeProvider.notifier).selectStore(store);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Cambió a tienda: ${store['name']}'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      AppSnackbar.info(context, 'Cambió a tienda: ${store['name']}');
     }
   }
 
@@ -351,7 +378,7 @@ class _StoresPageState extends ConsumerState<StoresPage> {
             ],
           ),
           content: SizedBox(
-            width: 500,
+            width: Responsive(context).dialogWidth(preferred: 500),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -414,11 +441,13 @@ class _StoresPageState extends ConsumerState<StoresPage> {
                   ? null
                   : () async {
                       if (nameController.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('El nombre de la tienda es obligatorio'),
-                          ),
-                        );
+                        AppSnackbar.warning(context, 'El nombre de la tienda es obligatorio');
+                        return;
+                      }
+                      // Injection protection
+                      final allFields = [nameController.text, addressController.text, phoneController.text, emailController.text];
+                      if (allFields.any((f) => InputValidator.containsHtmlOrScript(f))) {
+                        AppSnackbar.warning(context, 'Entrada no válida detectada');
                         return;
                       }
 
@@ -428,29 +457,29 @@ class _StoresPageState extends ConsumerState<StoresPage> {
                       if (isEdit) {
                         success = await ref.read(storeProvider.notifier).updateStore(
                           id: store['_id'],
-                          name: nameController.text.trim(),
+                          name: InputValidator.sanitize(nameController.text.trim()),
                           address: addressController.text.trim().isEmpty 
                               ? null 
-                              : addressController.text.trim(),
+                              : InputValidator.sanitize(addressController.text.trim()),
                           phone: phoneController.text.trim().isEmpty 
                               ? null 
-                              : phoneController.text.trim(),
+                              : InputValidator.sanitize(phoneController.text.trim()),
                           email: emailController.text.trim().isEmpty 
                               ? null 
-                              : emailController.text.trim(),
+                              : InputValidator.sanitize(emailController.text.trim()),
                         );
                       } else {
                         success = await ref.read(storeProvider.notifier).createStore(
-                          name: nameController.text.trim(),
+                          name: InputValidator.sanitize(nameController.text.trim()),
                           address: addressController.text.trim().isEmpty 
                               ? null 
-                              : addressController.text.trim(),
+                              : InputValidator.sanitize(addressController.text.trim()),
                           phone: phoneController.text.trim().isEmpty 
                               ? null 
-                              : phoneController.text.trim(),
+                              : InputValidator.sanitize(phoneController.text.trim()),
                           email: emailController.text.trim().isEmpty 
                               ? null 
-                              : emailController.text.trim(),
+                              : InputValidator.sanitize(emailController.text.trim()),
                         );
                       }
 
@@ -458,16 +487,9 @@ class _StoresPageState extends ConsumerState<StoresPage> {
 
                       if (success && dialogContext.mounted) {
                         Navigator.pop(dialogContext);
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              isEdit 
+                        AppSnackbar.success(dialogContext, isEdit 
                                 ? 'Tienda actualizada exitosamente' 
-                                : 'Tienda creada exitosamente',
-                            ),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
+                                : 'Tienda creada exitosamente');
                       }
                     },
               style: ElevatedButton.styleFrom(
@@ -553,12 +575,7 @@ class _StoresPageState extends ConsumerState<StoresPage> {
               Navigator.pop(dialogContext);
               final success = await ref.read(storeProvider.notifier).deleteStore(store['_id']);
               if (success && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Tienda eliminada exitosamente'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+                AppSnackbar.success(context, 'Tienda eliminada exitosamente');
               }
             },
             style: ElevatedButton.styleFrom(

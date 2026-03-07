@@ -6,6 +6,7 @@ import '../../../shared/providers/riverpod/order_notifier.dart';
 import '../../../shared/providers/riverpod/product_notifier.dart';
 import '../models/return_models.dart';
 import '../services/returns_service.dart';
+import '../../../core/utils/app_snackbar.dart';
 
 class CreateReturnPage extends ConsumerStatefulWidget {
   final String orderId;
@@ -112,12 +113,7 @@ class _CreateReturnPageState extends ConsumerState<CreateReturnPage> {
     final selectedItems = _getSelectedItems();
     
     if (selectedItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selecciona al menos un artículo para devolver'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackbar.warning(context, 'Selecciona al menos un artículo para devolver');
       return;
     }
 
@@ -148,12 +144,7 @@ class _CreateReturnPageState extends ConsumerState<CreateReturnPage> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Solicitud de devolución creada exitosamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackbar.success(context, 'Solicitud de devolución creada exitosamente');
         
         // Actualizar estado local INMEDIATAMENTE
         ref.read(orderProvider.notifier).updateOrderAfterReturn(
@@ -178,12 +169,7 @@ class _CreateReturnPageState extends ConsumerState<CreateReturnPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackbar.error(context, 'Error: ${e.toString()}');
       }
     }
   }

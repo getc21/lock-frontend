@@ -11,6 +11,9 @@ import '../../shared/providers/riverpod/order_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/services/pdf_service.dart';
+import '../../shared/widgets/pagination_bar.dart';
+import '../../core/utils/responsive.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class OrdersPage extends ConsumerStatefulWidget {
   const OrdersPage({super.key});
@@ -22,8 +25,6 @@ class OrdersPage extends ConsumerStatefulWidget {
 class _OrdersPageState extends ConsumerState<OrdersPage> {
   String _paymentFilter = 'Todos';
   late final ScrollController _scrollController;
-  int _currentPage = 0;
-  static const int _itemsPerPage = 25;
 
   @override
   void initState() {
@@ -73,14 +74,6 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     final filteredOrders = orderState.orders
         .where((o) => o['type'] != 'quotation' && (o['isQuotation'] != true) && (_paymentFilter == 'Todos' || o['paymentMethod'] == _paymentFilter))
         .toList();
-    
-    // Paginación
-    final totalPages = (filteredOrders.length / _itemsPerPage).ceil().clamp(1, double.infinity).toInt();
-    final startIndex = _currentPage * _itemsPerPage;
-    final endIndex = (startIndex + _itemsPerPage).clamp(0, filteredOrders.length);
-    final paginatedOrders = startIndex < filteredOrders.length 
-        ? filteredOrders.sublist(startIndex, endIndex)
-        : [];
 
     return DashboardLayout(
       title: 'Ventas',
@@ -103,7 +96,6 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                 onChanged: (value) {
                   setState(() {
                     _paymentFilter = value!;
-                    _currentPage = 0; // Reset to first page
                   });
                 },
               ),
@@ -188,7 +180,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
           else
             Card(
               child: SizedBox(
-                height: 600,
+                height: Responsive(context).tableHeight(),
                 child: Column(
                   children: [
                     Expanded(
@@ -210,45 +202,23 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                             DataColumn2(label: Text('Fecha'), size: ColumnSize.M),
                             DataColumn2(label: Text('Acciones'), size: ColumnSize.M),
                           ],
-                          rows: _buildOrderRows(paginatedOrders),
+                          rows: _buildOrderRows(filteredOrders),
                         ),
                       ),
                     ),
-                    // Pagination Controls
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSizes.spacing16,
-                        vertical: AppSizes.spacing12,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total: ${filteredOrders.length} órdenes',
-                            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.chevron_left),
-                                onPressed: _currentPage > 0
-                                    ? () => setState(() => _currentPage--)
-                                    : null,
-                              ),
-                              Text(
-                                'Página ${_currentPage + 1} de $totalPages',
-                                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.chevron_right),
-                                onPressed: _currentPage < totalPages - 1
-                                    ? () => setState(() => _currentPage++)
-                                    : null,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    // Pagination Controls (server-driven)
+                    PaginationBar(
+                      currentPage: orderState.currentPage,
+                      totalPages: orderState.totalPages,
+                      totalItems: orderState.totalItems,
+                      visibleItems: filteredOrders.length,
+                      itemLabel: 'órdenes',
+                      onPageChanged: (newPage) {
+                        ref.read(orderProvider.notifier).loadOrders(
+                          page: newPage,
+                          forceRefresh: true,
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -361,7 +331,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
           borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
         ),
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 650),
+          constraints: BoxConstraints(maxWidth: Responsive(context).dialogWidth(preferred: 650)),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
             color: AppColors.white,
@@ -661,23 +631,12 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
 
   Future<void> _generateAndPrintPDF(Map<String, dynamic> order) async {
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Generando PDF...'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      AppSnackbar.info(context, 'Generando PDF...');
 
       await PdfService.generateOrderPdf(order: order);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF generado exitosamente'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        AppSnackbar.success(context, 'PDF generado exitosamente');
       }
     } catch (e) {
       String errorMessage = 'Error al generar PDF';
@@ -694,13 +653,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
       }
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            duration: const Duration(seconds: 4),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackbar.error(context, errorMessage);
       }
     }
   }

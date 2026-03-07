@@ -5,6 +5,7 @@ import 'package:bellezapp_web/shared/models/quotation.dart';
 import 'package:bellezapp_web/shared/providers/riverpod/quotation_detail_notifier.dart';
 import 'package:bellezapp_web/shared/widgets/dashboard_layout.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/app_snackbar.dart';
 
 class QuotationDetailPage extends ConsumerWidget {
   final String quotationId;
@@ -329,11 +330,7 @@ class QuotationDetailPage extends ConsumerWidget {
                   .convertToOrder();
               if (context.mounted) {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Cotización convertida a pedido'),
-                  ),
-                );
+                AppSnackbar.success(context, 'Cotización convertida a pedido');
                 context.go('/quotations');
               }
             },

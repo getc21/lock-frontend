@@ -5,6 +5,7 @@ import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/report_detail_notifier.dart';
 import '../../shared/providers/riverpod/report_detail_selectors.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class ReportDetailPage extends ConsumerStatefulWidget {
   final String reportId;
@@ -133,9 +134,7 @@ class _ReportDetailContentState extends ConsumerState<_ReportDetailContent> {
                 const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Reporte actualizado'), backgroundColor: Colors.green),
-                    );
+                    AppSnackbar.success(context, 'Reporte actualizado');
                   },
                   child: const Text('Guardar Cambios'),
                 ),

@@ -6,6 +6,7 @@ import '../../core/constants/app_sizes.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/providers/riverpod/expense_notifier.dart';
 import '../../shared/providers/riverpod/store_notifier.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class ExpenseFormPage extends ConsumerStatefulWidget {
   const ExpenseFormPage({super.key});
@@ -48,9 +49,7 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
 
     if (_amountController.text.isEmpty || store == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Por favor completa los campos requeridos')),
-        );
+        AppSnackbar.warning(context, 'Por favor completa los campos requeridos');
       }
       return;
     }
@@ -66,12 +65,7 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
           );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gasto registrado exitosamente'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        AppSnackbar.success(context, 'Gasto registrado exitosamente');
       }
 
       // Pequeño delay para que se vea el SnackBar antes de navegar
@@ -92,12 +86,7 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        AppSnackbar.error(context, 'Error: $e');
       }
     }
   }
@@ -141,24 +130,14 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
                   );
 
                   if (pageState.mounted) {
-                    ScaffoldMessenger.of(pageState.context).showSnackBar(
-                      SnackBar(
-                        content: Text('Categoría "${nameController.text}" creada ✅'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
+                    AppSnackbar.success(pageState.context, 'Categoría "${nameController.text}" creada ✅');
                     
                     // Recargar categorías en el estado
                     pageState.setState(() {});
                   }
                 } catch (e) {
                   if (pageState.mounted) {
-                    ScaffoldMessenger.of(pageState.context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: $e'),
-                        backgroundColor: AppColors.error,
-                      ),
-                    );
+                    AppSnackbar.error(pageState.context, 'Error: $e');
                   }
                 }
               }

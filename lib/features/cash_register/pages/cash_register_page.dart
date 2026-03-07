@@ -6,6 +6,7 @@ import 'package:bellezapp_web/shared/providers/riverpod/cash_movements_notifier.
 import 'package:bellezapp_web/shared/providers/riverpod/store_notifier.dart';
 import 'package:bellezapp_web/shared/widgets/dashboard_layout.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/app_snackbar.dart';
 
 class CashRegisterPage extends ConsumerStatefulWidget {
   const CashRegisterPage({super.key});
@@ -431,7 +432,7 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
             onPressed: () {
               final amount = double.tryParse(_openingAmountController.text) ?? 0;
               if (amount <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese un monto válido')));
+                AppSnackbar.warning(context, 'Ingrese un monto válido');
                 return;
               }
               ref.read(cashRegisterProvider(storeId ?? 'default').notifier).openCash(amount);
@@ -473,7 +474,7 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
             onPressed: () {
               final amount = double.tryParse(_closingAmountController.text) ?? 0;
               if (amount < 0) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese un monto válido')));
+                AppSnackbar.warning(context, 'Ingrese un monto válido');
                 return;
               }
               ref.read(cashRegisterProvider(storeId ?? 'default').notifier).closeCash(amount);
@@ -524,12 +525,12 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
               final description = _incomeDescriptionController.text;
               
               if (amount <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese un monto válido')));
+                AppSnackbar.warning(context, 'Ingrese un monto válido');
                 return;
               }
               
               if (description.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese una descripción')));
+                AppSnackbar.warning(context, 'Ingrese una descripción');
                 return;
               }
 
@@ -538,7 +539,7 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
               final cashRegisterId = cashRegisterState.currentCashRegister?.id;
 
               if (cashRegisterId == null) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: No hay caja abierta')));
+                AppSnackbar.error(context, 'Error: No hay caja abierta');
                 return;
               }
 
@@ -613,12 +614,12 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
               final description = _incomeDescriptionController.text;
               
               if (amount <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese un monto válido')));
+                AppSnackbar.warning(context, 'Ingrese un monto válido');
                 return;
               }
               
               if (description.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese una descripción')));
+                AppSnackbar.warning(context, 'Ingrese una descripción');
                 return;
               }
 
@@ -627,7 +628,7 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
               final cashRegisterId = cashRegisterState.currentCashRegister?.id;
 
               if (cashRegisterId == null) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: No hay caja abierta')));
+                AppSnackbar.error(context, 'Error: No hay caja abierta');
                 return;
               }
 

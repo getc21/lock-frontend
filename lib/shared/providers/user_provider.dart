@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
+import '../services/secure_http_client.dart';
 
 class UserProvider {
   Future<String?> _getToken() async {
@@ -24,6 +25,7 @@ class UserProvider {
         Uri.parse('${ApiConfig.baseUrl}/users'),
         headers: await _getHeaders(),
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (kDebugMode) {
 
@@ -85,6 +87,7 @@ class UserProvider {
         Uri.parse('${ApiConfig.baseUrl}/users/$id'),
         headers: await _getHeaders(),
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -133,6 +136,7 @@ class UserProvider {
         headers: headers,
         body: json.encode(body),
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (kDebugMode) {
 
@@ -197,6 +201,7 @@ class UserProvider {
         headers: await _getHeaders(),
         body: json.encode(body),
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (kDebugMode) {
 
@@ -223,6 +228,7 @@ class UserProvider {
         Uri.parse('${ApiConfig.baseUrl}/users/$id'),
         headers: await _getHeaders(),
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (response.statusCode == 200) {
         return {'success': true, 'message': 'Usuario eliminado exitosamente'};
@@ -251,6 +257,7 @@ class UserProvider {
         headers: await _getHeaders(),
         body: json.encode(body),
       );
+      await SecureHttpClient.checkResponse(response);
 
       if (kDebugMode) {
 

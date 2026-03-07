@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/app_snackbar.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/widgets/loading_indicator.dart';
 import '../../shared/providers/riverpod/category_detail_notifier.dart';
@@ -185,9 +186,7 @@ class _CategoryDetailContentState extends ConsumerState<_CategoryDetailContent> 
                 const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Categoría actualizada'), backgroundColor: Colors.green),
-                    );
+                    AppSnackbar.success(context, 'Categoría actualizada');
                   },
                   child: const Text('Guardar Cambios'),
                 ),

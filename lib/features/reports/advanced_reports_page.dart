@@ -9,6 +9,7 @@ import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/widgets/dashboard_layout.dart';
 import '../../shared/services/pdf_service.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class AdvancedReportsPage extends ConsumerStatefulWidget {
   const AdvancedReportsPage({super.key});
@@ -520,13 +521,11 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: isError ? Colors.red : Colors.green,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      if (isError) {
+        AppSnackbar.error(context, message);
+      } else {
+        AppSnackbar.success(context, message);
+      }
     }
   }
 

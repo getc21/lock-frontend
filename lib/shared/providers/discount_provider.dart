@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
+import '../services/secure_http_client.dart';
 
 class DiscountProvider {
   static String get baseUrl => ApiConfig.baseUrl;
@@ -26,6 +27,7 @@ class DiscountProvider {
       final uri = Uri.parse('$baseUrl/discounts').replace(queryParameters: queryParams);
 
       final response = await http.get(uri, headers: _headers);
+      await SecureHttpClient.checkResponse(response);
 
       final data = jsonDecode(response.body);
 
@@ -55,6 +57,7 @@ class DiscountProvider {
         Uri.parse('$baseUrl/discounts/$id'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -101,6 +104,7 @@ class DiscountProvider {
           if (storeId != null) 'storeId': storeId, // ⭐ INCLUIR STOREID EN EL BODY
         }),
       );
+      await SecureHttpClient.checkResponse(response);
       
       final data = jsonDecode(response.body);
 
@@ -147,6 +151,7 @@ class DiscountProvider {
         headers: _headers,
         body: jsonEncode(body),
       );
+      await SecureHttpClient.checkResponse(response);
       
 
       final data = jsonDecode(response.body);
@@ -171,6 +176,7 @@ class DiscountProvider {
         Uri.parse('$baseUrl/discounts/$id'),
         headers: _headers,
       );
+      await SecureHttpClient.checkResponse(response);
       // Manejar tanto código 200 como 204 para compatibilidad
       if (response.statusCode == 200 || response.statusCode == 204) {
         // Intentar parsear respuesta JSON si hay contenido

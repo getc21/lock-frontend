@@ -10,22 +10,34 @@ class ProductState {
   final List<Map<String, dynamic>> products;
   final bool isLoading;
   final String errorMessage;
+  final int currentPage;
+  final int totalPages;
+  final int totalItems;
 
   ProductState({
     this.products = const [],
     this.isLoading = false,
     this.errorMessage = '',
+    this.currentPage = 1,
+    this.totalPages = 1,
+    this.totalItems = 0,
   });
 
   ProductState copyWith({
     List<Map<String, dynamic>>? products,
     bool? isLoading,
     String? errorMessage,
+    int? currentPage,
+    int? totalPages,
+    int? totalItems,
   }) {
     return ProductState(
       products: products ?? this.products,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage ?? this.errorMessage,
+      currentPage: currentPage ?? this.currentPage,
+      totalPages: totalPages ?? this.totalPages,
+      totalItems: totalItems ?? this.totalItems,
     );
   }
 }
@@ -56,6 +68,8 @@ class ProductNotifier extends StateNotifier<ProductState> {
     String? locationId,
     bool? lowStock,
     bool forceRefresh = false,
+    int page = 1,
+    int limit = 50,
   }) async {
     _initProductProvider();
 
@@ -99,12 +113,21 @@ class ProductNotifier extends StateNotifier<ProductState> {
         supplierId: supplierId,
         locationId: locationId,
         lowStock: lowStock,
+        page: page,
+        limit: limit,
       );
 
       if (result['success']) {
         final products = List<Map<String, dynamic>>.from(result['data']);
         _cache.set(cacheKey, products, ttl: const Duration(minutes: 10));
-        state = state.copyWith(products: products, isLoading: false);
+        final pag = result['pagination'] as Map<String, dynamic>?;
+        state = state.copyWith(
+          products: products,
+          isLoading: false,
+          currentPage: pag?['page'] as int? ?? page,
+          totalPages: pag?['pages'] as int? ?? 1,
+          totalItems: pag?['total'] as int? ?? products.length,
+        );
       } else {
         state = state.copyWith(
           errorMessage: result['message'] ?? 'Error cargando productos',
