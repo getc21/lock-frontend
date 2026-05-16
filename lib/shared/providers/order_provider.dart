@@ -22,6 +22,8 @@ class OrderProvider {
     required String paymentMethod,
     String? cashRegisterId,
     String? discountId,
+    String? discountType,
+    double discountValue = 0.0,
   }) async {
     try {
       final http.Response response = await http.post(
@@ -34,6 +36,8 @@ class OrderProvider {
           'paymentMethod': paymentMethod,
           if (cashRegisterId != null) 'cashRegisterId': cashRegisterId,
           if (discountId != null) 'discountId': discountId,
+          if (discountType != null) 'discountType': discountType,
+          if (discountType != null) 'discountValue': discountValue,
         }),
       );
       final data = jsonDecode(response.body);

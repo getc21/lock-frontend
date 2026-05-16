@@ -16,6 +16,7 @@ import '../../shared/providers/riverpod/store_notifier.dart';
 import '../../shared/providers/riverpod/supplier_notifier.dart';
 import '../../shared/providers/riverpod/currency_notifier.dart';
 import '../../shared/providers/riverpod/auth_notifier.dart';
+import 'package:barcode_widget/barcode_widget.dart';
 import '../../shared/services/pdf_service.dart';
 import '../../shared/services/web_image_compression_service.dart';
 
@@ -104,7 +105,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       currentRoute: '/products',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
@@ -166,8 +166,9 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           ),
           const SizedBox(height: AppSizes.spacing24),
           
-          Consumer(
-            builder: (context, ref, child) {
+          Expanded(
+            child: Consumer(
+              builder: (context, ref, child) {
               final productState = ref.watch(productProvider);
               final authState = ref.watch(authProvider);
               final userRole = authState.currentUser?['role'] ?? '';
@@ -179,44 +180,38 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               
               if (productState.isLoading) {
                 return Card(
-                  child: SizedBox(
-                    height: 600,
-                    child: Center(
-                      child: LoadingIndicator(
-                        message: 'Cargando productos...',
-                      ),
+                  child: Center(
+                    child: LoadingIndicator(
+                      message: 'Cargando productos...',
                     ),
                   ),
                 );
               }
 
               if (productState.products.isEmpty) {
-                return SizedBox(
-                  height: 600,
-                  child: Card(
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSizes.spacing24),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.textSecondary),
-                            const SizedBox(height: AppSizes.spacing16),
-                            const Text(
-                              'No hay productos disponibles',
-                              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                return Card(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSizes.spacing24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.textSecondary),
+                          const SizedBox(height: AppSizes.spacing16),
+                          const Text(
+                            'No hay productos disponibles',
+                            style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: AppSizes.spacing8),
+                          ElevatedButton.icon(
+                            onPressed: () => _showAddProductDialog(),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Agregar Primer Producto'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
                             ),
-                            const SizedBox(height: AppSizes.spacing8),
-                            ElevatedButton.icon(
-                              onPressed: () => _showAddProductDialog(),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Agregar Primer Producto'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).primaryColor,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -224,38 +219,36 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               }
 
               return Card(
-                child: SizedBox(
-                  height: 600,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSizes.spacing16),
-                          child: DataTable2(
-                            columnSpacing: 12,
-                            horizontalMargin: 12,
-                            minWidth: canSeePurchasePrice ? 1100 : 1000,
-                            columns: [
-                              const DataColumn2(label: Text('Producto'), size: ColumnSize.L),
-                              const DataColumn2(label: Text('Categoría'), size: ColumnSize.M),
-                              const DataColumn2(label: Text('Stock'), size: ColumnSize.S),
-                              if (canSeePurchasePrice)
-                                const DataColumn2(label: Text('Precio Compra'), size: ColumnSize.S),
-                              const DataColumn2(label: Text('Precio Venta'), size: ColumnSize.S),
-                              const DataColumn2(label: Text('F. Caducidad'), size: ColumnSize.M),
-                              const DataColumn2(label: Text('Acciones'), size: ColumnSize.M),
-                            ],
-                            rows: _buildProductRows(productState.products, canSeePurchasePrice),
-                          ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.spacing16),
+                        child: DataTable2(
+                          columnSpacing: 12,
+                          horizontalMargin: 12,
+                          minWidth: canSeePurchasePrice ? 1100 : 1000,
+                          columns: [
+                            const DataColumn2(label: Text('Producto'), size: ColumnSize.L),
+                            const DataColumn2(label: Text('Categoría'), size: ColumnSize.M),
+                            const DataColumn2(label: Text('Stock'), size: ColumnSize.S),
+                            if (canSeePurchasePrice)
+                              const DataColumn2(label: Text('Precio Compra'), size: ColumnSize.S),
+                            const DataColumn2(label: Text('Precio Venta'), size: ColumnSize.S),
+                            const DataColumn2(label: Text('F. Caducidad'), size: ColumnSize.M),
+                            const DataColumn2(label: Text('Acciones'), size: ColumnSize.M),
+                          ],
+                          rows: _buildProductRows(productState.products, canSeePurchasePrice),
                         ),
                       ),
-                      // Pagination Controls
-                      _buildProductPagination(productState.products),
-                    ],
-                  ),
+                    ),
+                    // Pagination Controls
+                    _buildProductPagination(productState.products),
+                  ],
                 ),
               );
             },
+            ),
           ),
         ],
       ),
@@ -506,7 +499,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   ? DateFormat('dd/MM/yyyy').format(DateTime.parse(product['expiryDate']))
                   : 'N/A',
               style: TextStyle(
-                color: _getExpirationColor(product['expiryDate']),
+                color: _getExpirationColor(product['expiryDate']?.toString()),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1052,7 +1045,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                     onTap: () async {
                       final date = await showDatePicker(
                         context: context,
-                        initialDate: selectedExpiryDate ?? DateTime.now().add(const Duration(days: 365)),
+                        initialDate: selectedExpiryDate ?? DateTime.now().add(const Duration(days: 30)),
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 3650)),
                       );
@@ -1428,44 +1421,76 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     );
   }
 
-  Future<void> _generateQrLabels(Map<String, dynamic> product) async {
-    try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Generando PDF con QRs...'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+  void _generateQrLabels(Map<String, dynamic> product) {
+    final productId = product['_id']?.toString() ?? 'N/A';
+    final productName = product['name']?.toString() ?? 'Producto';
 
-      await PdfService.generateProductQrLabels(product: product);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PDF con 10 QRs descargado correctamente'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('QR - $productName'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 200,
+              height: 200,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.white,
+              ),
+              child: BarcodeWidget(
+                barcode: Barcode.qrCode(),
+                data: productId,
+                width: 184,
+                height: 184,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              productId,
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+            ),
+          ],
         ),
-      );
-    } catch (e) {
-      String errorMessage = 'Error al generar PDF';
-      
-      final errorStr = e.toString().toLowerCase();
-      if (errorStr.contains('path') || errorStr.contains('storage')) {
-        errorMessage = 'No se pudo acceder al almacenamiento. Verifica los permisos.';
-      } else if (errorStr.contains('permission')) {
-        errorMessage = 'Permiso denegado. Habilita permisos de almacenamiento.';
-      }
-      
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          duration: const Duration(seconds: 4),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cerrar'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.download),
+            label: const Text('Descargar PNG'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                await PdfService.downloadProductQrImage(product: product);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('QR descargado correctamente'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error al descargar QR: $e')),
+                  );
+                }
+              }
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   void _showMultiStoreStockDialog(Map<String, dynamic> product) {

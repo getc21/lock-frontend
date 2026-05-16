@@ -47,7 +47,9 @@ class CashRegisterApi {
           await apiService.post('/cash/register/open', body: body);
       
       if (response['status'] == 'success' && response['data'] != null) {
-        return CashRegister.fromMap(response['data'] as Map<String, dynamic>);
+        final data = response['data'] as Map<String, dynamic>;
+        final cashData = data['cashRegister'] as Map<String, dynamic>? ?? data;
+        return CashRegister.fromMap(cashData);
       }
       throw Exception('No se pudo abrir la caja');
     } catch (e) {
@@ -70,7 +72,9 @@ class CashRegisterApi {
       );
       
       if (response['status'] == 'success' && response['data'] != null) {
-        return CashRegister.fromMap(response['data'] as Map<String, dynamic>);
+        final data = response['data'] as Map<String, dynamic>;
+        final cashData = data['cashRegister'] as Map<String, dynamic>? ?? data;
+        return CashRegister.fromMap(cashData);
       }
       throw Exception('No se pudo cerrar la caja');
     } catch (e) {
@@ -80,6 +84,7 @@ class CashRegisterApi {
 
   Future<List<CashMovement>> getCashMovements({
     String? cashRegisterId,
+    String? storeId,
     DateTime? startDate,
     DateTime? endDate,
   }) async {
@@ -87,6 +92,7 @@ class CashRegisterApi {
       final params = <String, dynamic>{};
       
       if (cashRegisterId != null) params['cashRegisterId'] = cashRegisterId;
+      if (storeId != null) params['storeId'] = storeId;
       if (startDate != null) {
         params['startDate'] = startDate.toIso8601String();
       }

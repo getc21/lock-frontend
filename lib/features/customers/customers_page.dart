@@ -67,7 +67,6 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       currentRoute: '/customers',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           if (!customerState.isLoading) ...[
             Row(
@@ -98,8 +97,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
             const SizedBox(height: AppSizes.spacing24),
           ],
           if (customerState.isLoading)
-            SizedBox(
-              height: 600,
+            Expanded(
               child: Card(
                 child: Center(
                   child: LoadingIndicator(
@@ -109,8 +107,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
               ),
             )
           else if (customerState.customers.isEmpty)
-            SizedBox(
-              height: 600,
+            Expanded(
               child: Card(
                 child: Center(
                   child: Padding(
@@ -137,11 +134,10 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
               ),
             )
           else
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.spacing16),
-                child: SizedBox(
-                  height: 600,
+            Expanded(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing16),
                   child: DataTable2(
                     columnSpacing: 12,
                     horizontalMargin: 12,

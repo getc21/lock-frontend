@@ -18,11 +18,18 @@ class UserProvider {
     };
   }
 
-  Future<Map<String, dynamic>> getUsers() async {
+  Future<Map<String, dynamic>> getUsers({bool forceRefresh = false}) async {
     try {
+      final uri = forceRefresh
+          ? Uri.parse('${ApiConfig.baseUrl}/users').replace(
+              queryParameters: {'_t': DateTime.now().millisecondsSinceEpoch.toString()},
+            )
+          : Uri.parse('${ApiConfig.baseUrl}/users');
+      final headers = await _getHeaders();
+      if (forceRefresh) headers['Cache-Control'] = 'no-cache';
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/users'),
-        headers: await _getHeaders(),
+        uri,
+        headers: headers,
       );
 
       if (kDebugMode) {
@@ -242,8 +249,7 @@ class UserProvider {
       };
 
       if (kDebugMode) {
-
-
+        debugPrint('[UserProvider] HTTP POST assign-store → userId=$userId storeId=$storeId');
       }
 
       final response = await http.post(
@@ -253,11 +259,10 @@ class UserProvider {
       );
 
       if (kDebugMode) {
-
-
+        debugPrint('[UserProvider] HTTP POST assign-store ← status=${response.statusCode}');
       }
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 304) {
         return {'success': true, 'message': 'Tienda asignada exitosamente'};
       } else {
         String errorMessage = 'Error al asignar tienda';

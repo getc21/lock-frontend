@@ -87,7 +87,6 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
       currentRoute: '/orders',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           // Filters
           Row(
@@ -121,139 +120,135 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
           const SizedBox(height: AppSizes.spacing24),
           
           // Orders Table
-          if (orderState.isLoading)
-            Card(
-              child: SizedBox(
-                height: 600,
-                child: Center(
-                  child: LoadingIndicator(
-                    message: 'Cargando órdenes...',
-                  ),
-                ),
-              ),
-            )
-          else if (orderState.orders.isEmpty)
-            Card(
-              child: SizedBox(
-                height: 600,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSizes.spacing24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.receipt_long_outlined, size: 64, color: AppColors.textSecondary),
-                        const SizedBox(height: AppSizes.spacing16),
-                        const Text(
-                          'No hay órdenes disponibles',
-                          style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
-                        ),
-                        const SizedBox(height: AppSizes.spacing8),
-                        ElevatedButton.icon(
-                          onPressed: () => context.go('/orders/create'),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Crear Primera Venta'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).primaryColor,
-                          ),
-                        ),
-                      ],
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                if (orderState.isLoading) {
+                  return Card(
+                    child: Center(
+                      child: LoadingIndicator(
+                        message: 'Cargando órdenes...',
+                      ),
                     ),
-                  ),
-                ),
-              ),
-            )
-          else if (filteredOrders.isEmpty)
-            Card(
-              child: SizedBox(
-                height: 600,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSizes.spacing24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.filter_list_outlined, size: 64, color: AppColors.textSecondary),
-                        const SizedBox(height: AppSizes.spacing16),
-                        const Text(
-                          'No hay órdenes con este filtro',
-                          style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            )
-          else
-            Card(
-              child: SizedBox(
-                height: 600,
-                child: Column(
-                  children: [
-                    Expanded(
+                  );
+                }
+                if (orderState.orders.isEmpty) {
+                  return Card(
+                    child: Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(AppSizes.spacing16),
-                        child: DataTable2(
-                          columnSpacing: 12,
-                          horizontalMargin: 12,
-                          minWidth: 1000,
-                          scrollController: _scrollController,
-                          isHorizontalScrollBarVisible: true,
-                          isVerticalScrollBarVisible: true,
-                          columns: const [
-                            DataColumn2(label: Text('ID'), size: ColumnSize.S),
-                            DataColumn2(label: Text('Cliente'), size: ColumnSize.L),
-                            DataColumn2(label: Text('Items'), size: ColumnSize.S),
-                            DataColumn2(label: Text('Total'), size: ColumnSize.S),
-                            DataColumn2(label: Text('Pago'), size: ColumnSize.M),
-                            DataColumn2(label: Text('Fecha'), size: ColumnSize.M),
-                            DataColumn2(label: Text('Acciones'), size: ColumnSize.M),
+                        padding: const EdgeInsets.all(AppSizes.spacing24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.receipt_long_outlined, size: 64, color: AppColors.textSecondary),
+                            const SizedBox(height: AppSizes.spacing16),
+                            const Text(
+                              'No hay órdenes disponibles',
+                              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: AppSizes.spacing8),
+                            ElevatedButton.icon(
+                              onPressed: () => context.go('/orders/create'),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Crear Primera Venta'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).primaryColor,
+                              ),
+                            ),
                           ],
-                          rows: _buildOrderRows(paginatedOrders),
                         ),
                       ),
                     ),
-                    // Pagination Controls
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSizes.spacing16,
-                        vertical: AppSizes.spacing12,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total: ${filteredOrders.length} órdenes',
-                            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.chevron_left),
-                                onPressed: _currentPage > 0
-                                    ? () => setState(() => _currentPage--)
-                                    : null,
-                              ),
-                              Text(
-                                'Página ${_currentPage + 1} de $totalPages',
-                                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.chevron_right),
-                                onPressed: _currentPage < totalPages - 1
-                                    ? () => setState(() => _currentPage++)
-                                    : null,
-                              ),
-                            ],
-                          ),
-                        ],
+                  );
+                }
+                if (filteredOrders.isEmpty) {
+                  return Card(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.spacing24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.filter_list_outlined, size: 64, color: AppColors.textSecondary),
+                            const SizedBox(height: AppSizes.spacing16),
+                            const Text(
+                              'No hay órdenes con este filtro',
+                              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  );
+                }
+                return Card(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSizes.spacing16),
+                          child: DataTable2(
+                            columnSpacing: 12,
+                            horizontalMargin: 12,
+                            minWidth: 1000,
+                            scrollController: _scrollController,
+                            isHorizontalScrollBarVisible: true,
+                            isVerticalScrollBarVisible: true,
+                            columns: const [
+                              DataColumn2(label: Text('ID'), size: ColumnSize.S),
+                              DataColumn2(label: Text('Cliente'), size: ColumnSize.L),
+                              DataColumn2(label: Text('Items'), size: ColumnSize.S),
+                              DataColumn2(label: Text('Total'), size: ColumnSize.S),
+                              DataColumn2(label: Text('Pago'), size: ColumnSize.M),
+                              DataColumn2(label: Text('Fecha'), size: ColumnSize.M),
+                              DataColumn2(label: Text('Acciones'), size: ColumnSize.M),
+                            ],
+                            rows: _buildOrderRows(paginatedOrders),
+                          ),
+                        ),
+                      ),
+                      // Pagination Controls
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.spacing16,
+                          vertical: AppSizes.spacing12,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total: ${filteredOrders.length} órdenes',
+                              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.chevron_left),
+                                  onPressed: _currentPage > 0
+                                      ? () => setState(() => _currentPage--)
+                                      : null,
+                                ),
+                                Text(
+                                  'Página ${_currentPage + 1} de $totalPages',
+                                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.chevron_right),
+                                  onPressed: _currentPage < totalPages - 1
+                                      ? () => setState(() => _currentPage++)
+                                      : null,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
+          ),
         ],
       ),
     );

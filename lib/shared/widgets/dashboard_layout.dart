@@ -358,14 +358,9 @@ class DashboardLayout extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    child: SingleChildScrollView(
+                    child: Padding(
                       padding: const EdgeInsets.all(AppSizes.spacing24),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: AppSizes.maxContentWidth,
-                        ),
-                        child: child,
-                      ),
+                      child: child,
                     ),
                   ),
                 ),
@@ -995,13 +990,6 @@ class _SidebarWidget extends StatelessWidget {
                   ),
                   _buildNavItem(
                     context: context,
-                    icon: Icons.trending_down_outlined,
-                    label: 'Gastos',
-                    route: '/expenses/report',
-                    isSidebarCollapsed: isSidebarCollapsed,
-                  ),
-                  _buildNavItem(
-                    context: context,
                     icon: Icons.description_outlined,
                     label: 'Cotizaciones',
                     route: '/quotations',
@@ -1012,13 +1000,6 @@ class _SidebarWidget extends StatelessWidget {
                     icon: Icons.account_balance_wallet_outlined,
                     label: 'Caja',
                     route: '/cash-register',
-                    isSidebarCollapsed: isSidebarCollapsed,
-                  ),
-                  _buildNavItem(
-                    context: context,
-                    icon: Icons.receipt_outlined,
-                    label: 'Comprobantes',
-                    route: '/receipts',
                     isSidebarCollapsed: isSidebarCollapsed,
                   ),
                   if (isAdmin)

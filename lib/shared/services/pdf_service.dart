@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:printing/printing.dart';
 import 'dart:io' as io;
 import 'dart:js_interop';
 import 'dart:typed_data';
@@ -731,6 +732,56 @@ class PdfService {
     );
 
     return await _savePdf(pdf, 'Orden_$shortId');
+  }
+
+  static Future<void> downloadProductQrImage({
+    required Map<String, dynamic> product,
+  }) async {
+    final productId = product['_id']?.toString() ?? 'N/A';
+    final productName = product['name']?.toString() ?? 'Producto';
+    const double size = 220.0;
+
+    final pdf = pw.Document();
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat(size, size + 24, marginAll: 0),
+        build: (pw.Context ctx) => pw.Container(
+          color: PdfColors.white,
+          child: pw.Column(
+            mainAxisAlignment: pw.MainAxisAlignment.center,
+            children: [
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(8),
+                child: pw.BarcodeWidget(
+                  barcode: pw.Barcode.qrCode(),
+                  data: productId,
+                  width: size - 16,
+                  height: size - 16,
+                ),
+              ),
+              pw.Text(
+                productName,
+                style: const pw.TextStyle(fontSize: 8),
+                textAlign: pw.TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final pdfBytes = await pdf.save();
+    final raster = await Printing.raster(pdfBytes, dpi: 300).first;
+    final pngBytes = await raster.toPng();
+
+    if (kIsWeb) {
+      _downloadFileWeb('QR_${productName.replaceAll(' ', '_')}.png', pngBytes);
+    } else {
+      final dir = await getTemporaryDirectory();
+      final file = io.File('${dir.path}/QR_${productName.replaceAll(' ', '_')}.png');
+      await file.writeAsBytes(pngBytes);
+      await OpenFilex.open(file.path);
+    }
   }
 
   static Future<String> generateProductQrLabels({

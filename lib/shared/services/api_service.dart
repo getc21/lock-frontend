@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:bellezapp_web/shared/config/api_config.dart';
 
 class ApiService {
   final String? token;
-  static const String baseUrl = 'https://api.naturalmarkets.net';
+  static String get baseUrl => ApiConfig.baseUrl;
 
   ApiService({this.token});
 

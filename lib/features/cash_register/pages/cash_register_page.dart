@@ -29,6 +29,12 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
     _incomeAmountController = TextEditingController();
     _incomeDescriptionController = TextEditingController();
     _outcomeAmountController = TextEditingController();
+    // Refrescar movimientos cada vez que se entra a la página
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final storeState = ref.read(storeProvider);
+      final storeId = storeState.currentStore?['_id'] ?? storeState.currentStore?['id'] ?? 'default';
+      ref.read(cashRegisterProvider(storeId).notifier).refreshCashRegister();
+    });
   }
 
   @override

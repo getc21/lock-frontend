@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../user_provider.dart' as user_api;
 import '../../services/cache_service.dart';
@@ -29,6 +30,7 @@ class UserState {
 class UserNotifier extends StateNotifier<UserState> {
   final Ref ref;
   final CacheService _cache = CacheService();
+  bool _isAssigning = false;
 
   UserNotifier(this.ref) : super(UserState());
 
@@ -56,7 +58,7 @@ class UserNotifier extends StateNotifier<UserState> {
         }
       }
 
-      final result = await _userProvider.getUsers();
+      final result = await _userProvider.getUsers(forceRefresh: forceRefresh);
 
       if (result['success']) {
         final users = List<Map<String, dynamic>>.from(result['data'] ?? []);
@@ -217,6 +219,12 @@ class UserNotifier extends StateNotifier<UserState> {
   }
 
   Future<bool> assignStoreToUser(String userId, String storeId) async {
+    debugPrint('[UserNotifier] assignStoreToUser called — _isAssigning=$_isAssigning userId=$userId storeId=$storeId');
+    if (_isAssigning) {
+      debugPrint('[UserNotifier] BLOCKED — already in progress');
+      return false;
+    }
+    _isAssigning = true;
     _initUserProvider();
     state = state.copyWith(isLoading: true, errorMessage: '');
 
@@ -241,6 +249,8 @@ class UserNotifier extends StateNotifier<UserState> {
         errorMessage: 'Error de conexión: $e',
       );
       return false;
+    } finally {
+      _isAssigning = false;
     }
   }
 

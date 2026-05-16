@@ -15,6 +15,8 @@ class CashMovementsPage extends ConsumerStatefulWidget {
 }
 
 class _CashMovementsPageState extends ConsumerState<CashMovementsPage> {
+  String? _activeFilter; // null = todo
+
   @override
   Widget build(BuildContext context) {
     final storeState = ref.watch(storeProvider);
@@ -65,7 +67,66 @@ class _CashMovementsPageState extends ConsumerState<CashMovementsPage> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          // Filtros
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _FilterChip(
+                  label: 'Todo',
+                  selected: _activeFilter == null,
+                  onTap: () {
+                    setState(() => _activeFilter = null);
+                    ref.read(cashMovementsProvider((
+                      cashRegisterState.currentCashRegister?.id,
+                      cashRegisterState.currentCashRegister?.openingTime,
+                    )).notifier).setTypeFilter(null);
+                  },
+                ),
+                const SizedBox(width: 8),
+                _FilterChip(
+                  label: 'Ventas',
+                  selected: _activeFilter == 'ventas',
+                  color: Colors.blue,
+                  onTap: () {
+                    setState(() => _activeFilter = 'ventas');
+                    ref.read(cashMovementsProvider((
+                      cashRegisterState.currentCashRegister?.id,
+                      cashRegisterState.currentCashRegister?.openingTime,
+                    )).notifier).setTypeFilter('ventas');
+                  },
+                ),
+                const SizedBox(width: 8),
+                _FilterChip(
+                  label: 'Entradas',
+                  selected: _activeFilter == 'entradas',
+                  color: Colors.green,
+                  onTap: () {
+                    setState(() => _activeFilter = 'entradas');
+                    ref.read(cashMovementsProvider((
+                      cashRegisterState.currentCashRegister?.id,
+                      cashRegisterState.currentCashRegister?.openingTime,
+                    )).notifier).setTypeFilter('entradas');
+                  },
+                ),
+                const SizedBox(width: 8),
+                _FilterChip(
+                  label: 'Salidas',
+                  selected: _activeFilter == 'salidas',
+                  color: Colors.red,
+                  onTap: () {
+                    setState(() => _activeFilter = 'salidas');
+                    ref.read(cashMovementsProvider((
+                      cashRegisterState.currentCashRegister?.id,
+                      cashRegisterState.currentCashRegister?.openingTime,
+                    )).notifier).setTypeFilter('salidas');
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
           // Content
           if (movementsState.isLoading)
             const Center(child: CircularProgressIndicator())
@@ -202,6 +263,45 @@ class _CashMovementsPageState extends ConsumerState<CashMovementsPage> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final Color? color;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final activeColor = color ?? Colors.grey.shade700;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? activeColor : Colors.transparent,
+          border: Border.all(color: selected ? activeColor : Colors.grey.shade400),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: selected ? Colors.white : Colors.grey.shade700,
+          ),
+        ),
+      ),
     );
   }
 }

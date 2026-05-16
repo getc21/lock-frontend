@@ -191,6 +191,8 @@ class OrderNotifier extends StateNotifier<OrderState> {
     required String paymentMethod,
     String? cashRegisterId,
     String? discountId,
+    String? discountType,
+    double discountValue = 0.0,
   }) async {
     _initOrderProvider();
     state = state.copyWith(isLoading: true, errorMessage: '');
@@ -203,6 +205,8 @@ class OrderNotifier extends StateNotifier<OrderState> {
         paymentMethod: paymentMethod,
         cashRegisterId: cashRegisterId,
         discountId: discountId,
+        discountType: discountType,
+        discountValue: discountValue,
       );
 
       if (result['success']) {

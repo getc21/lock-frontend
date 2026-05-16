@@ -87,8 +87,7 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
             ],
           ),
           const SizedBox(height: AppSizes.spacing16),
-          SizedBox(
-            height: 600,
+          Expanded(
             child: Card(
               child: Padding(
                 padding: const EdgeInsets.all(AppSizes.spacing16),

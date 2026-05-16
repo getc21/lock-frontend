@@ -9,6 +9,9 @@ class OrderFormState {
   final bool hasSearchText;
   final bool isCreatingOrder;
   final String searchQuery;
+  // Descuento: 'percent' | 'fixed' | null
+  final String? discountType;
+  final double discountValue;
 
   OrderFormState({
     this.filteredProducts = const [],
@@ -18,27 +21,35 @@ class OrderFormState {
     this.hasSearchText = false,
     this.isCreatingOrder = false,
     this.searchQuery = '',
+    this.discountType,
+    this.discountValue = 0.0,
   });
 
   OrderFormState copyWith({
     List<Map<String, dynamic>>? filteredProducts,
     List<Map<String, dynamic>>? cartItems,
-    Map<String, dynamic>? selectedCustomer,
+    Object? selectedCustomer = _sentinel,
     String? paymentMethod,
     bool? hasSearchText,
     bool? isCreatingOrder,
     String? searchQuery,
+    Object? discountType = _sentinel,
+    double? discountValue,
   }) {
     return OrderFormState(
       filteredProducts: filteredProducts ?? this.filteredProducts,
       cartItems: cartItems ?? this.cartItems,
-      selectedCustomer: selectedCustomer ?? this.selectedCustomer,
+      selectedCustomer: selectedCustomer == _sentinel ? this.selectedCustomer : selectedCustomer as Map<String, dynamic>?,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       hasSearchText: hasSearchText ?? this.hasSearchText,
       isCreatingOrder: isCreatingOrder ?? this.isCreatingOrder,
       searchQuery: searchQuery ?? this.searchQuery,
+      discountType: discountType == _sentinel ? this.discountType : discountType as String?,
+      discountValue: discountValue ?? this.discountValue,
     );
   }
+
+  static const Object _sentinel = Object();
 
   /// Validar si se puede crear la orden
   bool get canSubmit {
@@ -47,8 +58,8 @@ class OrderFormState {
         cartItems.every((item) => ((item['quantity'] as num?)?.toInt() ?? 0) > 0);
   }
 
-  /// Obtener el total de la orden
-  double get total {
+  /// Subtotal antes de descuento
+  double get subtotal {
     return cartItems.fold<double>(
       0.0,
       (sum, item) {
@@ -58,6 +69,19 @@ class OrderFormState {
       },
     );
   }
+
+  /// Monto del descuento calculado
+  double get discountAmount {
+    if (discountType == null || discountValue <= 0) return 0.0;
+    if (discountType == 'percent') {
+      return subtotal * (discountValue.clamp(0, 100) / 100);
+    } else {
+      return discountValue.clamp(0, subtotal);
+    }
+  }
+
+  /// Total final después del descuento
+  double get total => (subtotal - discountAmount).clamp(0, double.infinity);
 }
 
 /// Notifier para manejar el estado del formulario de órdenes
@@ -127,6 +151,11 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     state = state.copyWith(paymentMethod: method);
   }
 
+  /// Establecer descuento
+  void setDiscount({String? type, double value = 0.0}) {
+    state = state.copyWith(discountType: type, discountValue: value);
+  }
+
   /// Actualizar búsqueda
   void setSearchQuery(String query) {
     state = state.copyWith(
@@ -147,6 +176,8 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       selectedCustomer: null,
       paymentMethod: 'efectivo',
       searchQuery: '',
+      discountType: null,
+      discountValue: 0.0,
     );
   }
 }

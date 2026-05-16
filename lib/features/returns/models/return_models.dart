@@ -115,8 +115,8 @@ class ReturnItem {
     return ReturnItem(
       productId: productId,
       productName: json['productName']?.toString(),
-      originalQuantity: json['originalQuantity'] ?? 0,
-      returnQuantity: json['returnQuantity'] ?? 0,
+      originalQuantity: int.tryParse(json['originalQuantity']?.toString() ?? '') ?? 0,
+      returnQuantity: int.tryParse(json['returnQuantity']?.toString() ?? '') ?? 0,
       unitPrice: (json['unitPrice'] ?? 0).toDouble(),
       returnReason: json['returnReason']?.toString() ?? '',
     );

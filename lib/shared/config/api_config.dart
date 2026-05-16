@@ -9,12 +9,12 @@ class ApiConfig {
   
   // Detecta automáticamente si estamos en emulador, web o dispositivo físico
   static String get baseUrl {
-    // Para Web, usar URL de producción
+    // Para Web, usar localhost en desarrollo
     if (kIsWeb) {
-      return 'https://api.naturalmarkets.net';
+      return 'http://localhost:$_port/api';
     }
     
-    // Para dispositivos móviles (en desarrollo usa IP local, en producción usa URL remota)
+    // Para dispositivos móviles usar IP local
     return 'http://$_localIP:$_port/api';
   }
   

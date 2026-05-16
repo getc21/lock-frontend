@@ -127,6 +127,7 @@ class CashRegisterNotifier extends StateNotifier<CashRegisterState> {
     try {
       final movements = await cashRegisterApi.getCashMovements(
         cashRegisterId: state.currentCashRegister!.id,
+        storeId: storeId,
         startDate: state.currentCashRegister!.openingTime,
         endDate: DateTime.now(),
       );

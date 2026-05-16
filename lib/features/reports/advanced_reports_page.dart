@@ -227,7 +227,11 @@ class _AdvancedReportsPageState extends ConsumerState<AdvancedReportsPage> {
               ),
             )
           else
-            _buildTabContent(reportsState),
+            Expanded(
+              child: SingleChildScrollView(
+                child: _buildTabContent(reportsState),
+              ),
+            ),
         ],
       ),
     );

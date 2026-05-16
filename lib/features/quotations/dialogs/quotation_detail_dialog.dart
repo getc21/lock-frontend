@@ -4,6 +4,7 @@ import 'package:bellezapp_web/shared/models/quotation.dart';
 import 'package:bellezapp_web/shared/providers/riverpod/quotation_detail_notifier.dart';
 import 'package:bellezapp_web/shared/providers/riverpod/quotation_list_notifier.dart';
 import 'package:intl/intl.dart';
+import '../services/quotation_pdf_service.dart';
 
 void showQuotationDetailDialog(
   BuildContext context,
@@ -121,7 +122,6 @@ class QuotationDetailDialog extends ConsumerWidget {
                         'Cotización #${(quotation.id ?? 'N/A').substring(0, quotation.id != null ? 8 : 3).toUpperCase()}',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      _buildStatusBadge(context, quotation.status),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -232,60 +232,33 @@ class QuotationDetailDialog extends ConsumerWidget {
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).primaryColor,
+                ),
                 child: const Text('Cerrar'),
               ),
               const SizedBox(width: 8),
-              if (quotation.status == 'pending')
-                ElevatedButton.icon(
-                  onPressed: () => _showConvertDialog(context, ref, quotation.id ?? 'unknown'),
-                  icon: const Icon(Icons.check_circle),
-                  label: const Text('Convertir a pedido'),
+              OutlinedButton.icon(
+                onPressed: () => QuotationPdfService.exportToPdf(quotation),
+                icon: Icon(Icons.picture_as_pdf_outlined, color: Theme.of(context).primaryColor),
+                label: Text('Exportar PDF', style: TextStyle(color: Theme.of(context).primaryColor)),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Theme.of(context).primaryColor),
                 ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: () => _showConvertDialog(context, ref, quotation.id ?? 'unknown'),
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Convertir a venta'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+              ),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(BuildContext context, String status) {
-    Color color;
-    String label;
-
-    switch (status) {
-      case 'pending':
-        color = Colors.orange;
-        label = 'Pendiente';
-        break;
-      case 'converted':
-        color = Colors.green;
-        label = 'Convertido';
-        break;
-      case 'expired':
-        color = Colors.red;
-        label = 'Expirado';
-        break;
-      case 'cancelled':
-        color = Colors.grey;
-        label = 'Cancelado';
-        break;
-      default:
-        color = Colors.blue;
-        label = status;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.bold,
-        ),
       ),
     );
   }
@@ -354,20 +327,31 @@ class QuotationDetailDialog extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () async {
-              // Cerrar ambos diálogos primero (antes de async operations)
+              // Guardar messenger antes de cerrar los diálogos
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(dialogContext);
               Navigator.pop(context);
-              
-              await ref
+
+              final success = await ref
                   .read(quotationDetailProvider(quotationId).notifier)
                   .convertToOrder();
-              
-              // Recargar la lista de cotizaciones si tenemos storeId
+
               if (storeId != null) {
                 await ref
                     .read(quotationListProvider(storeId).notifier)
                     .refreshQuotations();
               }
+
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    success
+                        ? '¡Cotización convertida a venta exitosamente!'
+                        : 'No se pudo convertir la cotización. Verifica el stock disponible.',
+                  ),
+                  backgroundColor: success ? Colors.green : Colors.red,
+                ),
+              );
             },
             child: const Text('Convertir'),
           ),

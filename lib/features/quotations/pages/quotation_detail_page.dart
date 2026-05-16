@@ -35,13 +35,11 @@ class QuotationDetailPage extends ConsumerWidget {
               ),
               Row(
                 children: [
-                  if (quotationDetailState.quotation != null &&
-                      quotationDetailState.quotation!.status == 'pending')
-                    IconButton(
-                      icon: const Icon(Icons.check_circle),
-                      tooltip: 'Convertir a pedido',
-                      onPressed: () => _showConvertDialog(context, ref, quotationId),
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.check_circle),
+                    tooltip: 'Convertir a pedido',
+                    onPressed: () => _showConvertDialog(context, ref, quotationId),
+                  ),
                   IconButton(
                     icon: const Icon(Icons.refresh),
                     onPressed: () {

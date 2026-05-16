@@ -28,6 +28,7 @@ class ProductProvider {
     String? supplierId,
     String? locationId,
     bool? lowStock,
+    bool forceRefresh = false,
   }) async {
     try {
       final queryParams = <String, String>{};
@@ -36,17 +37,17 @@ class ProductProvider {
       if (supplierId != null) queryParams['supplierId'] = supplierId;
       if (locationId != null) queryParams['locationId'] = locationId;
       if (lowStock != null) queryParams['lowStock'] = lowStock.toString();
+      if (forceRefresh) queryParams['_t'] = DateTime.now().millisecondsSinceEpoch.toString();
 
       final uri = Uri.parse('$baseUrl/products')
           .replace(queryParameters: queryParams.isEmpty ? null : queryParams);
       
-      if (kDebugMode) {
+      final headers = Map<String, String>.from(_headers);
+      if (forceRefresh) headers['Cache-Control'] = 'no-cache';
 
+      if (kDebugMode) {}
 
-
-      }
-      
-      final response = await http.get(uri, headers: _headers);
+      final response = await http.get(uri, headers: headers);
       final data = jsonDecode(response.body);
 
       if (kDebugMode) {

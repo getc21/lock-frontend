@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bellezapp_web/shared/models/quotation.dart';
+import 'package:bellezapp_web/features/quotations/services/quotation_pdf_service.dart';
 import 'package:intl/intl.dart';
 
 class QuotationCardWidget extends StatelessWidget {
@@ -74,24 +75,7 @@ class QuotationCardWidget extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor().withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _getStatusLabel(),
-                      style: TextStyle(
-                        color: _getStatusColor(),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
+                  
                 ],
               ),
               const SizedBox(height: 12),
@@ -150,6 +134,12 @@ class QuotationCardWidget extends StatelessWidget {
                   ),
                   Row(
                     children: [
+                      IconButton(
+                        icon: const Icon(Icons.picture_as_pdf_outlined),
+                        color: Colors.blueGrey,
+                        tooltip: 'Exportar PDF',
+                        onPressed: () => QuotationPdfService.exportToPdf(quotation),
+                      ),
                       IconButton(
                         icon: const Icon(Icons.delete_outline),
                         color: Colors.red,

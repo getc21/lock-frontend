@@ -14,8 +14,6 @@ import '../../features/suppliers/suppliers_page.dart';
 import '../../features/customers/customers_page.dart';
 import '../../features/stores/stores_page.dart';
 import '../../features/settings/theme_settings_page.dart';
-import '../../features/expenses/expense_report_page.dart';
-import '../../features/expenses/expense_form_page.dart';
 import '../../features/returns/pages/returns_list_page.dart';
 import '../../features/returns/pages/create_return_page.dart';
 import '../../features/quotations/pages/quotations_page.dart';
@@ -23,7 +21,6 @@ import '../../features/quotations/pages/create_quotation_page.dart';
 import '../../features/quotations/pages/quotation_detail_page.dart';
 import '../../features/cash_register/pages/cash_register_page.dart';
 import '../../features/cash_register/pages/cash_movements_page.dart';
-import '../../features/receipts/receipts_page.dart';
 import '../../shared/providers/riverpod/auth_notifier.dart';
 import 'route_transitions.dart';
 
@@ -181,37 +178,6 @@ class AppRouter {
         ),
       ),
 
-      // Rutas de gastos
-      GoRoute(
-        path: '/expenses',
-        name: 'expenses',
-        pageBuilder: (context, state) => _buildPage(
-          child: const ExpenseReportPage(),
-          state: state,
-          transitionType: RouteTransitionType.fade,
-        ),
-        routes: [
-          GoRoute(
-            path: 'report',
-            name: 'expenseReport',
-            pageBuilder: (context, state) => _buildPage(
-              child: const ExpenseReportPage(),
-              state: state,
-              transitionType: RouteTransitionType.fade,
-            ),
-          ),
-          GoRoute(
-            path: 'new',
-            name: 'newExpense',
-            pageBuilder: (context, state) => _buildPage(
-              child: const ExpenseFormPage(),
-              state: state,
-              transitionType: RouteTransitionType.fade,
-            ),
-          ),
-        ],
-      ),
-
       // Ruta de categorías
       GoRoute(
         path: '/categories',
@@ -329,17 +295,6 @@ class AppRouter {
         name: 'cashMovements',
         pageBuilder: (context, state) => _buildPage(
           child: const CashMovementsPage(),
-          state: state,
-          transitionType: RouteTransitionType.fade,
-        ),
-      ),
-
-      // Ruta de comprobantes
-      GoRoute(
-        path: '/receipts',
-        name: 'receipts',
-        pageBuilder: (context, state) => _buildPage(
-          child: const ReceiptsPage(),
           state: state,
           transitionType: RouteTransitionType.fade,
         ),

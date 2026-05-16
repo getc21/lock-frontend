@@ -38,9 +38,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     return DashboardLayout(
       currentRoute: '/users',
       title: 'Usuarios',
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.spacing24),
-        child: Column(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
@@ -86,46 +84,41 @@ class _UsersPageState extends ConsumerState<UsersPage> {
             const SizedBox(height: AppSizes.spacing24),
 
             // Data Table
-            if (userState.isLoading)
-              SizedBox(
-                height: 600,
-                child: Card(
-                  child: Center(
-                    child: LoadingIndicator(
-                      message: 'Cargando usuarios...',
-                    ),
-                  ),
-                ),
-              )
-            else if (userState.users.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(AppSizes.spacing48),
-                  child: Text(
-                    'No hay usuarios registrados',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              )
-            else
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: SizedBox(
-                  height: 600,
-                  child: DataTable2(
+            Expanded(
+              child: userState.isLoading
+                  ? Card(
+                      child: Center(
+                        child: LoadingIndicator(
+                          message: 'Cargando usuarios...',
+                        ),
+                      ),
+                    )
+                  : userState.users.isEmpty
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(AppSizes.spacing48),
+                            child: Text(
+                              'No hay usuarios registrados',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: DataTable2(
                     columnSpacing: AppSizes.spacing12,
                     horizontalMargin: AppSizes.spacing12,
                     minWidth: 900,
@@ -157,7 +150,6 @@ class _UsersPageState extends ConsumerState<UsersPage> {
               ),
           ],
         ),
-      ),
     );
   }
 
@@ -369,6 +361,9 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                 onPressed: loading
                     ? null
                     : () async {
+                        if (isLoading.value) return;
+                        isLoading.value = true;
+
                         final username = usernameController.text.trim();
                         final firstName = firstNameController.text.trim();
                         final lastName = lastNameController.text.trim();
@@ -376,6 +371,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                         final password = passwordController.text.trim();
 
                         if (username.isEmpty || firstName.isEmpty || email.isEmpty) {
+                          isLoading.value = false;
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Username, nombre y email son requeridos')),
@@ -385,16 +381,13 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                         }
 
                         if (user == null && password.isEmpty) {
+                          isLoading.value = false;
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('La contraseña es requerida para nuevos usuarios')),
                             );
                           }
                           return;
-                        }
-
-                        if (context.mounted) {
-                          isLoading.value = true;
                         }
 
                         try {
@@ -474,9 +467,8 @@ class _UsersPageState extends ConsumerState<UsersPage> {
               onPressed: loading
                   ? null
                   : () async {
-                if (context.mounted) {
-                  isLoading.value = true;
-                }
+                if (isLoading.value) return;
+                isLoading.value = true;
 
                 try {
                   final success = await ref.read(userProvider.notifier).deleteUser(userId);
@@ -568,17 +560,21 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                 onPressed: loading
                     ? null
                     : () async {
+                        debugPrint('[UsersPage] Asignar button tapped — isLoading=${isLoading.value} storeId=$selectedStoreId userId=${user.id}');
+                        if (isLoading.value) {
+                          debugPrint('[UsersPage] BLOCKED by isLoading guard');
+                          return;
+                        }
+                        isLoading.value = true;
+
                         if (selectedStoreId.isEmpty) {
+                          isLoading.value = false;
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Debe seleccionar una tienda')),
                             );
                           }
                           return;
-                        }
-
-                        if (context.mounted) {
-                          isLoading.value = true;
                         }
 
                         try {

@@ -53,24 +53,23 @@ class QuotationDetailNotifier extends StateNotifier<QuotationDetailState> {
     }
   }
 
-  Future<void> convertToOrder() async {
-    if (state.quotation == null) return;
+  Future<bool> convertToOrder() async {
+    if (state.quotation == null) return false;
 
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final result = await quotationApi.convertQuotationToOrder(
+      await quotationApi.convertQuotationToOrder(
         state.quotation!.id ?? 'unknown',
       );
-      final updatedQuotation = Quotation.fromMap(result);
-      state = state.copyWith(
-        quotation: updatedQuotation,
-        isLoading: false,
-      );
+      // Recargar la cotización para obtener el estado actualizado (status: 'converted')
+      await loadQuotation();
+      return true;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: 'No se pudo convertir la cotización a pedido',
+        error: 'No se pudo convertir la cotización a pedido: $e',
       );
+      return false;
     }
   }
 

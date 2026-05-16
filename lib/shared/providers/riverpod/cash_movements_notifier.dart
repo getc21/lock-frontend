@@ -37,7 +37,16 @@ class CashMovementsState {
   // Convenience getters
   List<CashMovement> get filteredMovements {
     if (typeFilter == null) return movements;
-    return movements.where((m) => m.type == typeFilter).toList();
+    switch (typeFilter) {
+      case 'ventas':
+        return movements.where((m) => m.type == 'sale' || m.type == 'venta').toList();
+      case 'entradas':
+        return movements.where((m) => m.type == 'income' || m.type == 'entrada').toList();
+      case 'salidas':
+        return movements.where((m) => m.type == 'expense' || m.type == 'salida').toList();
+      default:
+        return movements.where((m) => m.type == typeFilter).toList();
+    }
   }
 
   double get totalIncomeAmount => filteredMovements

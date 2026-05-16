@@ -99,6 +99,7 @@ class ProductNotifier extends StateNotifier<ProductState> {
         supplierId: supplierId,
         locationId: locationId,
         lowStock: lowStock,
+        forceRefresh: forceRefresh,
       );
 
       if (result['success']) {

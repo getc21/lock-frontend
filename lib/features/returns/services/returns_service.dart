@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../models/return_models.dart';
 import '../../../shared/providers/riverpod/auth_notifier.dart';
+import '../../../shared/config/api_config.dart';
 
 // Parámetros inmutables para el provider
 class ReturnFilters {
@@ -50,7 +52,7 @@ class ReturnFilters {
 class ReturnsService {
   final Dio dio;
   // URL del backend en producción
-  final String baseUrl = 'https://api.naturalmarkets.net';
+  String get baseUrl => ApiConfig.baseUrl;
 
   ReturnsService(this.dio);
 
@@ -167,11 +169,26 @@ class ReturnsService {
         };
       }
 
+      Map<String, dynamic> rawData;
+      if (response.data is Map) {
+        rawData = Map<String, dynamic>.from(response.data as Map);
+      } else {
+        rawData = jsonDecode(response.data.toString()) as Map<String, dynamic>;
+      }
+
+      final returnsList = rawData['returns'];
+      final List<ReturnRequest> parsedReturns;
+      if (returnsList is List) {
+        parsedReturns = returnsList
+            .map((r) => ReturnRequest.fromJson(Map<String, dynamic>.from(r as Map)))
+            .toList();
+      } else {
+        parsedReturns = [];
+      }
+
       return {
-        'returns': (response.data['returns'] as List?)
-            ?.map((r) => ReturnRequest.fromJson(r))
-            .toList() ?? [],
-        'summary': response.data['summary'] ?? {},
+        'returns': parsedReturns,
+        'summary': rawData['summary'] ?? {},
       };
     } catch (e) {
       throw Exception('Error al obtener devoluciones: $e');

@@ -78,8 +78,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
           const SizedBox(height: AppSizes.spacing24),
 
           // Tabla de categorías
-          SizedBox(
-            height: 600,
+          Expanded(
             child: Card(
               child: Padding(
                 padding: const EdgeInsets.all(AppSizes.spacing16),

@@ -89,83 +89,70 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                 ],
               ),
               const SizedBox(height: AppSizes.spacing16),
-              if (supplierState.isLoading)
-                SizedBox(
-                  height: 600,
-                  child: Card(
-                    child: Center(
-                      child: LoadingIndicator(
-                        message: 'Cargando proveedores...',
-                      ),
-                    ),
-                  ),
-                )
-              else if (supplierState.errorMessage.isNotEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSizes.spacing48),
-                    child: Column(
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: AppColors.error,
+              Expanded(
+                child: Builder(
+                  builder: (context) {
+                    if (supplierState.isLoading) {
+                      return Card(
+                        child: Center(
+                          child: LoadingIndicator(message: 'Cargando proveedores...'),
                         ),
-                        const SizedBox(height: AppSizes.spacing16),
-                        Text(
-                          'Error: ${supplierState.errorMessage}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: AppColors.error,
+                      );
+                    }
+                    if (supplierState.errorMessage.isNotEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSizes.spacing48),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+                              const SizedBox(height: AppSizes.spacing16),
+                              Text(
+                                'Error: ${supplierState.errorMessage}',
+                                style: const TextStyle(fontSize: 16, color: AppColors.error),
+                              ),
+                              const SizedBox(height: AppSizes.spacing16),
+                              ElevatedButton(
+                                onPressed: () => ref.read(supplierProvider.notifier).loadSuppliers(),
+                                child: const Text('Reintentar'),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: AppSizes.spacing16),
-                        ElevatedButton(
-                          onPressed: () => ref
-                              .read(supplierProvider.notifier)
-                              .loadSuppliers(),
-                          child: const Text('Reintentar'),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else if (supplierState.suppliers.isEmpty)
-                Card(
-                  child: SizedBox(
-                    height: 600,
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSizes.spacing24),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.local_shipping_outlined, size: 64, color: AppColors.textSecondary),
-                            const SizedBox(height: AppSizes.spacing16),
-                            const Text(
-                              'No hay proveedores disponibles',
-                              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                      );
+                    }
+                    if (supplierState.suppliers.isEmpty) {
+                      return Card(
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSizes.spacing24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.local_shipping_outlined, size: 64, color: AppColors.textSecondary),
+                                const SizedBox(height: AppSizes.spacing16),
+                                const Text(
+                                  'No hay proveedores disponibles',
+                                  style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                                ),
+                                const SizedBox(height: AppSizes.spacing8),
+                                ElevatedButton.icon(
+                                  onPressed: () => _showSupplierDialog(context),
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Agregar Primer Proveedor'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: AppSizes.spacing8),
-                            ElevatedButton.icon(
-                              onPressed: () => _showSupplierDialog(context),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Agregar Primer Proveedor'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).primaryColor,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
-                )
-              else
-                Card(
-                  child: SizedBox(
-                    height: 600,
-                    child: DataTable2(
+                      );
+                    }
+                    return Card(
+                      child: DataTable2(
                       columnSpacing: AppSizes.spacing12,
                       horizontalMargin: AppSizes.spacing12,
                       minWidth: 900,
@@ -386,8 +373,10 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                           })
                           .toList(),
                     ),
-                  ),
+                  );
+                  },
                 ),
+              ),
             ],
           ),
         );

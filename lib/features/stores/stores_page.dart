@@ -82,7 +82,6 @@ class _StoresPageState extends ConsumerState<StoresPage> {
       currentRoute: '/stores',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           if (!storeState.isLoading) ...[
             Row(
@@ -114,8 +113,7 @@ class _StoresPageState extends ConsumerState<StoresPage> {
           ],
           
           if (storeState.isLoading)
-            SizedBox(
-              height: 600,
+            Expanded(
               child: Card(
                 child: Center(
                   child: LoadingIndicator(
@@ -125,8 +123,7 @@ class _StoresPageState extends ConsumerState<StoresPage> {
               ),
             )
           else if (storeState.stores.isEmpty)
-            SizedBox(
-              height: 600,
+            Expanded(
               child: Card(
                 child: Center(
                   child: Padding(
@@ -156,11 +153,10 @@ class _StoresPageState extends ConsumerState<StoresPage> {
               ),
             )
           else
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.spacing16),
-                child: SizedBox(
-                  height: 600,
+            Expanded(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing16),
                   child: DataTable2(
                     columnSpacing: 12,
                     horizontalMargin: 12,
