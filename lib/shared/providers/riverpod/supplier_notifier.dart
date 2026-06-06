@@ -201,10 +201,14 @@ class SupplierNotifier extends StateNotifier<SupplierState> {
 
       if (result['success']) {
         _cache.invalidatePattern('suppliers:');
-        await loadSuppliers(forceRefresh: true);
-        state = state.copyWith(isLoading: false);
+        state = state.copyWith(
+          suppliers: state.suppliers.where((s) => s['_id'] != id).toList(),
+          isLoading: false,
+        );
         return true;
       } else {
+        _cache.invalidatePattern('suppliers:');
+        await loadSuppliers(forceRefresh: true);
         state = state.copyWith(
           isLoading: false,
           errorMessage: result['message'] ?? 'Error eliminando proveedor',

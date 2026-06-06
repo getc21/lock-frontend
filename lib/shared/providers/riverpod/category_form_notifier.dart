@@ -62,6 +62,7 @@ class CategoryFormState {
 class CategoryFormNotifier extends StateNotifier<CategoryFormState> {
   final Ref ref;
   late final ImagePicker _imagePicker;
+  bool _isPickingImage = false;
 
   CategoryFormNotifier(
     this.ref, {
@@ -77,6 +78,8 @@ class CategoryFormNotifier extends StateNotifier<CategoryFormState> {
 
   /// Seleccionar imagen de galería con compresión automática
   Future<void> selectImage() async {
+    if (_isPickingImage) return;
+    _isPickingImage = true;
     try {
       final XFile? image = await _imagePicker.pickImage(
         source: ImageSource.gallery,
@@ -102,6 +105,8 @@ class CategoryFormNotifier extends StateNotifier<CategoryFormState> {
       }
     } catch (e) {
       rethrow;
+    } finally {
+      _isPickingImage = false;
     }
   }
 

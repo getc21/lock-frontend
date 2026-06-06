@@ -159,6 +159,9 @@ class _ReturnsListPageState extends ConsumerState<ReturnsListPage> {
                           ElevatedButton.icon(
                             icon: const Icon(Icons.shopping_cart_outlined),
                             label: const Text('Ir a Ordenes'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                            ),
                             onPressed: () => context.go('/orders'),
                           ),
                         ],
@@ -264,93 +267,144 @@ class _ReturnsListPageState extends ConsumerState<ReturnsListPage> {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Titulo + cerrar
-                Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // HEADER
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
                   children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.receipt_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        'Devolucion #${r.orderNumber}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Devolucion #${r.orderNumber}',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              _StatusBadge(r.status),
+                              const SizedBox(width: 8),
+                              _TypeChip(r.type),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close, color: Colors.white),
                       onPressed: () => Navigator.of(ctx).pop(),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                // Info general
-                Row(
-                  children: [
-                    _StatusBadge(r.status),
-                    const SizedBox(width: 8),
-                    _TypeChip(r.type),
-                  ],
+              ),
+
+              // CONTENT
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _InfoRow('Cliente', r.customerName),
+                      _InfoRow('Metodo de reembolso', r.refundMethod.label),
+                      _InfoRow('Razon', r.returnReasonCategory.label),
+                      if (r.returnReasonDetails != null && r.returnReasonDetails!.isNotEmpty)
+                        _InfoRow('Detalle', r.returnReasonDetails!),
+                      if (r.requestedAt != null)
+                        _InfoRow('Fecha', DateFormat('dd/MM/yyyy HH:mm').format(r.requestedAt!)),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Productos devueltos',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Row(
+                        children: [
+                          Expanded(flex: 4, child: Text('Producto', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600))),
+                          Expanded(flex: 1, child: Text('Cant.', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600), textAlign: TextAlign.center)),
+                          Expanded(flex: 2, child: Text('Precio unit.', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
+                          Expanded(flex: 2, child: Text('Subtotal', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
+                        ],
+                      ),
+                      const Divider(height: 8),
+                      ...r.items.map((item) {
+                        final subtotal = item.returnQuantity * item.unitPrice;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Expanded(flex: 4, child: Text(item.productName ?? 'Producto', style: const TextStyle(fontSize: 13))),
+                              Expanded(flex: 1, child: Text('x${item.returnQuantity}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 13))),
+                              Expanded(flex: 2, child: Text('\$${item.unitPrice.toStringAsFixed(2)}', textAlign: TextAlign.right, style: const TextStyle(fontSize: 13))),
+                              Expanded(flex: 2, child: Text('\$${subtotal.toStringAsFixed(2)}', textAlign: TextAlign.right, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
+                            ],
+                          ),
+                        );
+                      }),
+                      const Divider(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          const Text('Total reembolso: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            '\$${r.totalRefundAmount.toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                _InfoRow('Cliente', r.customerName),
-                _InfoRow('Metodo de reembolso', r.refundMethod.label),
-                _InfoRow('Razon', r.returnReasonCategory.label),
-                if (r.returnReasonDetails != null && r.returnReasonDetails!.isNotEmpty)
-                  _InfoRow('Detalle', r.returnReasonDetails!),
-                if (r.requestedAt != null)
-                  _InfoRow('Fecha', DateFormat('dd/MM/yyyy HH:mm').format(r.requestedAt!)),
-                const Divider(height: 24),
-                // Productos
-                const Text(
-                  'Productos devueltos',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+
+              // FOOTER
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
                 ),
-                const SizedBox(height: 8),
-                // Cabecera tabla
-                const Row(
-                  children: [
-                    Expanded(flex: 4, child: Text('Producto', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600))),
-                    Expanded(flex: 1, child: Text('Cant.', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600), textAlign: TextAlign.center)),
-                    Expanded(flex: 2, child: Text('Precio unit.', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
-                    Expanded(flex: 2, child: Text('Subtotal', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
-                  ],
-                ),
-                const Divider(height: 8),
-                // Filas de productos
-                ...r.items.map((item) {
-                  final subtotal = item.returnQuantity * item.unitPrice;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Expanded(flex: 4, child: Text(item.productName ?? 'Producto', style: const TextStyle(fontSize: 13))),
-                        Expanded(flex: 1, child: Text('x${item.returnQuantity}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 13))),
-                        Expanded(flex: 2, child: Text('\$${item.unitPrice.toStringAsFixed(2)}', textAlign: TextAlign.right, style: const TextStyle(fontSize: 13))),
-                        Expanded(flex: 2, child: Text('\$${subtotal.toStringAsFixed(2)}', textAlign: TextAlign.right, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
-                      ],
-                    ),
-                  );
-                }),
-                const Divider(height: 16),
-                // Total
-                Row(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    const Text('Total reembolso: ', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(
-                      '\$${r.totalRefundAmount.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
+                      ),
+                      child: const Text('Cerrar'),
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

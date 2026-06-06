@@ -104,7 +104,9 @@ class QuotationApi {
       final response = await apiService.post('/quotations', body: body);
       
       if (response['status'] == 'success' && response['data'] != null) {
-        return Quotation.fromMap(response['data'] as Map<String, dynamic>);
+        final data = response['data'] as Map<String, dynamic>;
+        final quotationData = data['quotation'] ?? data;
+        return Quotation.fromMap(quotationData as Map<String, dynamic>);
       }
       throw Exception('No se pudo crear la cotización');
     } catch (e) {

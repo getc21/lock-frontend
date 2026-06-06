@@ -240,6 +240,9 @@ class _SupplierDetailContentState extends ConsumerState<_SupplierDetailContent> 
               children: [
                 OutlinedButton(
                   onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).primaryColor,
+                  ),
                   child: const Text('Cancelar'),
                 ),
                 const SizedBox(width: 16),

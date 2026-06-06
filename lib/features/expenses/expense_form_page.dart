@@ -109,63 +109,133 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
 
     return showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Nueva Categoría'),
-        content: TextField(
-          controller: nameController,
-          decoration: InputDecoration(
-            hintText: 'Nombre de la categoría',
-            border: OutlineInputBorder(),
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 400,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // HEADER
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.add_circle_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    const Expanded(
+                      child: Text(
+                        'Nueva Categoría',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // CONTENT
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    hintText: 'Nombre de la categoría',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.label_outline),
+                  ),
+                ),
+              ),
+              // FOOTER
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(dialogContext).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () async {
+                        if (nameController.text.isNotEmpty && store != null) {
+                          // Cerrar diálogo ANTES del async gap
+                          Navigator.pop(dialogContext);
+                          
+                          try {
+                            // Crear categoría en el backend
+                            await ref.read(expenseProvider.notifier).createCategory(
+                              storeId: store['_id'],
+                              name: nameController.text,
+                              description: 'Categoría personalizada',
+                            );
+
+                            if (pageState.mounted) {
+                              ScaffoldMessenger.of(pageState.context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Categoría "${nameController.text}" creada ✅'),
+                                  backgroundColor: AppColors.success,
+                                ),
+                              );
+                              
+                              // Recargar categorías en el estado
+                              pageState.setState(() {});
+                            }
+                          } catch (e) {
+                            if (pageState.mounted) {
+                              ScaffoldMessenger.of(pageState.context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: $e'),
+                                  backgroundColor: AppColors.error,
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                      child: const Text('Crear'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(dialogContext).primaryColor,
-            ),
-            onPressed: () async {
-              if (nameController.text.isNotEmpty && store != null) {
-                // Cerrar diálogo ANTES del async gap
-                Navigator.pop(dialogContext);
-                
-                try {
-                  // Crear categoría en el backend
-                  await ref.read(expenseProvider.notifier).createCategory(
-                    storeId: store['_id'],
-                    name: nameController.text,
-                    description: 'Categoría personalizada',
-                  );
-
-                  if (pageState.mounted) {
-                    ScaffoldMessenger.of(pageState.context).showSnackBar(
-                      SnackBar(
-                        content: Text('Categoría "${nameController.text}" creada ✅'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
-                    
-                    // Recargar categorías en el estado
-                    pageState.setState(() {});
-                  }
-                } catch (e) {
-                  if (pageState.mounted) {
-                    ScaffoldMessenger.of(pageState.context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: $e'),
-                        backgroundColor: AppColors.error,
-                      ),
-                    );
-                  }
-                }
-              }
-            },
-            child: const Text('Crear'),
-          ),
-        ],
       ),
     );
   }
@@ -293,6 +363,9 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
                           onPressed: () {
                             Navigator.pop(context);
                           },
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).primaryColor,
+                          ),
                           child: Text('Cancelar'),
                         ),
                         SizedBox(width: AppSizes.spacing12),

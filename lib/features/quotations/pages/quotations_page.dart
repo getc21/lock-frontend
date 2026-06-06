@@ -8,6 +8,8 @@ import 'package:bellezapp_web/shared/providers/riverpod/store_notifier.dart';
 import 'package:bellezapp_web/shared/widgets/dashboard_layout.dart';
 import 'package:bellezapp_web/shared/models/quotation.dart';
 import 'package:bellezapp_web/features/quotations/services/quotation_pdf_service.dart';
+import 'package:bellezapp_web/core/constants/app_colors.dart';
+import 'package:bellezapp_web/core/constants/app_sizes.dart';
 import '../dialogs/quotation_detail_dialog.dart';
 
 class QuotationsPage extends ConsumerStatefulWidget {
@@ -24,11 +26,16 @@ class _QuotationsPageState extends ConsumerState<QuotationsPage> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       final storeState = ref.read(storeProvider);
       final storeId =
           storeState.currentStore?['_id'] ?? storeState.currentStore?['id'];
-      ref.read(quotationListProvider(storeId).notifier).refreshQuotations();
+      final currentState = ref.read(quotationListProvider(storeId));
+      // Solo recargar si no hay datos aún (primera carga).
+      // Si ya hay datos (p.ej. recién se creó una cotización), no sobreescribir.
+      if (currentState.quotations.isEmpty && !currentState.isLoading) {
+        ref.read(quotationListProvider(storeId).notifier).refreshQuotations();
+      }
     });
   }
 
@@ -229,71 +236,122 @@ class _QuotationsPageState extends ConsumerState<QuotationsPage> {
   ) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar cotización'),
-        content: const Text('¿Está seguro de que desea eliminar esta cotización?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 450,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
           ),
-          TextButton(
-            onPressed: () {
-              ref
-                  .read(quotationListProvider(storeId).notifier)
-                  .deleteQuotation(quotationId);
-              Navigator.pop(context);
-            },
-            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // HEADER
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.warning_rounded,
+                        color: AppColors.error,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    const Expanded(
+                      child: Text(
+                        'Eliminar cotización',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // CONTENT
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '¿Está seguro de que desea eliminar esta cotización?',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSizes.spacing16),
+                    Container(
+                      padding: const EdgeInsets.all(AppSizes.spacing12),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+                      ),
+                      child: const Text(
+                        'Esta acción no se puede deshacer',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // FOOTER
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    ElevatedButton(
+                      onPressed: () {
+                        ref
+                            .read(quotationListProvider(storeId).notifier)
+                            .deleteQuotation(quotationId);
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Eliminar'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  final String status;
-  const _StatusBadge(this.status);
-
-  @override
-  Widget build(BuildContext context) {
-    final Color color;
-    final Color bg;
-    final String label;
-    switch (status) {
-      case 'pending':
-        color = Colors.orange.shade700;
-        bg = Colors.orange.shade50;
-        label = 'Pendiente';
-        break;
-      case 'converted':
-        color = Colors.green.shade700;
-        bg = Colors.green.shade50;
-        label = 'Convertido';
-        break;
-      case 'expired':
-        color = Colors.red.shade700;
-        bg = Colors.red.shade50;
-        label = 'Expirado';
-        break;
-      case 'cancelled':
-        color = Colors.grey.shade700;
-        bg = Colors.grey.shade100;
-        label = 'Cancelado';
-        break;
-      default:
-        color = Colors.blue.shade700;
-        bg = Colors.blue.shade50;
-        label = status;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+        ),
       ),
     );
   }

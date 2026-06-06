@@ -123,8 +123,20 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
 
       if (result['success']) {
         _cache.invalidatePattern('categories:');
-        await loadCategories(forceRefresh: true);
-        state = state.copyWith(isLoading: false);
+        final rawData = result['data'];
+        Map<String, dynamic>? newCategory;
+        if (rawData is Map && rawData.containsKey('category')) {
+          newCategory = Map<String, dynamic>.from(rawData['category'] as Map);
+        }
+        if (newCategory != null) {
+          state = state.copyWith(
+            categories: [...state.categories, newCategory],
+            isLoading: false,
+          );
+        } else {
+          await loadCategories(forceRefresh: true);
+          state = state.copyWith(isLoading: false);
+        }
         return true;
       } else {
         state = state.copyWith(
@@ -163,8 +175,24 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
 
       if (result['success']) {
         _cache.invalidatePattern('categories:');
-        await loadCategories(forceRefresh: true);
-        state = state.copyWith(isLoading: false);
+        final rawData = result['data'];
+        Map<String, dynamic>? updatedCategory;
+        if (rawData is Map && rawData.containsKey('category')) {
+          updatedCategory = Map<String, dynamic>.from(rawData['category'] as Map);
+        }
+        if (updatedCategory != null) {
+          final updatedCategories = state.categories.map((c) {
+            if (c['_id'] == updatedCategory!['_id']) return updatedCategory;
+            return c;
+          }).toList();
+          state = state.copyWith(
+            categories: updatedCategories,
+            isLoading: false,
+          );
+        } else {
+          await loadCategories(forceRefresh: true);
+          state = state.copyWith(isLoading: false);
+        }
         return true;
       } else {
         state = state.copyWith(
@@ -191,10 +219,14 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
 
       if (result['success']) {
         _cache.invalidatePattern('categories:');
-        await loadCategories(forceRefresh: true);
-        state = state.copyWith(isLoading: false);
+        state = state.copyWith(
+          categories: state.categories.where((c) => c['_id'] != id).toList(),
+          isLoading: false,
+        );
         return true;
       } else {
+        _cache.invalidatePattern('categories:');
+        await loadCategories(forceRefresh: true);
         state = state.copyWith(
           isLoading: false,
           errorMessage: result['message'] ?? 'Error eliminando categoría',

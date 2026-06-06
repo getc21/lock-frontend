@@ -39,18 +39,42 @@ class AppRouter {
     debugLogDiagnostics: false,
   );
 
-  /// Lógica de redirección basada en estado de autenticación
+  /// Lógica de redirección basada en estado de autenticación y rol
   static String? _redirectLogic(BuildContext context, GoRouterState state) {
     final authState = _getAuthState(context);
+    final currentRoute = state.matchedLocation;
 
     // Usuario no autenticado: redirigir a login
-    if (!authState.isLoggedIn && state.matchedLocation != '/login') {
+    if (!authState.isLoggedIn && currentRoute != '/login') {
       return '/login';
     }
 
-    // Usuario autenticado en login: ir a dashboard
-    if (authState.isLoggedIn && state.matchedLocation == '/login') {
+    // Usuario autenticado en login: ir a dashboard (o órdenes si es empleado)
+    if (authState.isLoggedIn && currentRoute == '/login') {
+      final userRole = authState.currentUser?['role'] ?? '';
+      // Empleados van a órdenes, admin/manager van a dashboard
+      if (userRole == 'employee') {
+        return '/orders';
+      }
       return '/dashboard';
+    }
+
+    final userRole = authState.currentUser?['role'] ?? '';
+    
+    // Rutas solo para admin/manager
+    final adminOnlyRoutes = ['/dashboard', '/users', '/stores', '/reports'];
+    if (adminOnlyRoutes.any((route) => currentRoute.startsWith(route))) {
+      if (userRole == 'employee') {
+        return '/orders';
+      }
+    }
+
+    // Rutas solo para admin
+    final adminExclusiveRoutes = ['/cash-register', '/cash-movements'];
+    if (adminExclusiveRoutes.any((route) => currentRoute.startsWith(route))) {
+      if (userRole != 'admin') {
+        return '/orders';
+      }
     }
 
     return null;

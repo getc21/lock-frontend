@@ -18,7 +18,7 @@ class CategoriesPage extends ConsumerStatefulWidget {
 class _CategoriesPageState extends ConsumerState<CategoriesPage> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
-  
+
   @override
   void initState() {
     super.initState();
@@ -84,15 +84,18 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                 padding: const EdgeInsets.all(AppSizes.spacing16),
                 child: (() {
                   if (categoryState.isLoading) {
-                    return LoadingIndicator(
-                      message: 'Cargando categorías...',
-                    );
+                    return LoadingIndicator(message: 'Cargando categorías...');
                   }
 
                   // Filtrar categorías
                   final filteredCategories = categoryState.categories
-                      .where((c) => _searchQuery.isEmpty ||
-                          ((c['name'] as String?) ?? '').toLowerCase().contains(_searchQuery.toLowerCase()))
+                      .where(
+                        (c) =>
+                            _searchQuery.isEmpty ||
+                            ((c['name'] as String?) ?? '')
+                                .toLowerCase()
+                                .contains(_searchQuery.toLowerCase()),
+                      )
                       .toList();
 
                   if (categoryState.categories.isEmpty) {
@@ -102,15 +105,23 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.category_outlined, size: 64, color: AppColors.textSecondary),
+                            const Icon(
+                              Icons.category_outlined,
+                              size: 64,
+                              color: AppColors.textSecondary,
+                            ),
                             const SizedBox(height: AppSizes.spacing16),
                             const Text(
                               'No hay categorías disponibles',
-                              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                             const SizedBox(height: AppSizes.spacing8),
                             ElevatedButton.icon(
-                              onPressed: () => _showCategoryDialog(context, ref),
+                              onPressed: () =>
+                                  _showCategoryDialog(context, ref),
                               icon: const Icon(Icons.add),
                               label: const Text('Agregar Primera Categoría'),
                               style: ElevatedButton.styleFrom(
@@ -130,11 +141,18 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.search_off, size: 64, color: AppColors.textSecondary),
+                            const Icon(
+                              Icons.search_off,
+                              size: 64,
+                              color: AppColors.textSecondary,
+                            ),
                             const SizedBox(height: AppSizes.spacing16),
                             const Text(
                               'No se encontraron categorías',
-                              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ],
                         ),
@@ -143,19 +161,22 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                   }
 
                   return GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      childAspectRatio: 0.85,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          childAspectRatio: 0.85,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
                     itemCount: filteredCategories.length,
                     itemBuilder: (context, index) {
                       final category = filteredCategories[index];
                       final categoryName = category['name'] ?? '';
-                      final categoryDescription = category['description'] ?? '-';
-                      final categoryImage = category['foto'] ?? category['image'];
-                      
+                      final categoryDescription =
+                          category['description'] ?? '-';
+                      final categoryImage =
+                          category['foto'] ?? category['image'];
+
                       return Card(
                         elevation: 4,
                         shape: RoundedRectangleBorder(
@@ -164,7 +185,12 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                         child: MouseRegion(
                           cursor: SystemMouseCursors.click,
                           child: InkWell(
-                            onTap: () => _showCategoryProducts(context, ref, category, productState.products),
+                            onTap: () => _showCategoryProducts(
+                              context,
+                              ref,
+                              category,
+                              productState.products,
+                            ),
                             borderRadius: BorderRadius.circular(12),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,37 +203,63 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                                       Container(
                                         width: double.infinity,
                                         decoration: BoxDecoration(
-                                          color: Theme.of(context).primaryColor.withValues(alpha: 0.08),
+                                          color: Theme.of(context).primaryColor
+                                              .withValues(alpha: 0.08),
                                           borderRadius: const BorderRadius.only(
                                             topLeft: Radius.circular(12),
                                             topRight: Radius.circular(12),
                                           ),
                                         ),
-                                        child: categoryImage != null && categoryImage.toString().isNotEmpty
+                                        child:
+                                            categoryImage != null &&
+                                                categoryImage
+                                                    .toString()
+                                                    .isNotEmpty
                                             ? ClipRRect(
-                                                borderRadius: const BorderRadius.only(
-                                                  topLeft: Radius.circular(12),
-                                                  topRight: Radius.circular(12),
-                                                ),
+                                                borderRadius:
+                                                    const BorderRadius.only(
+                                                      topLeft: Radius.circular(
+                                                        12,
+                                                      ),
+                                                      topRight: Radius.circular(
+                                                        12,
+                                                      ),
+                                                    ),
                                                 child: Image.network(
                                                   categoryImage,
                                                   fit: BoxFit.cover,
-                                                  errorBuilder: (context, error, stackTrace) {
-                                                    return Center(
-                                                      child: Icon(
-                                                        Icons.category_outlined,
-                                                        size: 52,
-                                                        color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
-                                                      ),
-                                                    );
-                                                  },
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) {
+                                                        return Center(
+                                                          child: Icon(
+                                                            Icons
+                                                                .category_outlined,
+                                                            size: 52,
+                                                            color:
+                                                                Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .primaryColor
+                                                                    .withValues(
+                                                                      alpha:
+                                                                          0.5,
+                                                                    ),
+                                                          ),
+                                                        );
+                                                      },
                                                 ),
                                               )
                                             : Center(
                                                 child: Icon(
                                                   Icons.category_outlined,
                                                   size: 52,
-                                                  color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
+                                                  color: Theme.of(context)
+                                                      .primaryColor
+                                                      .withValues(alpha: 0.5),
                                                 ),
                                               ),
                                       ),
@@ -218,7 +270,11 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                                         child: Column(
                                           children: [
                                             GestureDetector(
-                                              onTap: () => _showCategoryDialog(context, ref, category: category),
+                                              onTap: () => _showCategoryDialog(
+                                                context,
+                                                ref,
+                                                category: category,
+                                              ),
                                               child: Container(
                                                 width: 36,
                                                 height: 36,
@@ -227,19 +283,33 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                                                   shape: BoxShape.circle,
                                                   boxShadow: [
                                                     BoxShadow(
-                                                      color: Colors.blue.withValues(alpha: 0.4),
+                                                      color: Colors.blue
+                                                          .withValues(
+                                                            alpha: 0.4,
+                                                          ),
                                                       blurRadius: 8,
-                                                      offset: const Offset(0, 2),
+                                                      offset: const Offset(
+                                                        0,
+                                                        2,
+                                                      ),
                                                     ),
                                                   ],
                                                 ),
                                                 alignment: Alignment.center,
-                                                child: const Icon(Icons.edit_outlined, size: 18, color: Colors.white),
+                                                child: const Icon(
+                                                  Icons.edit_outlined,
+                                                  size: 18,
+                                                  color: Colors.white,
+                                                ),
                                               ),
                                             ),
                                             const SizedBox(height: 8),
                                             GestureDetector(
-                                              onTap: () => _confirmDelete(context, ref, category),
+                                              onTap: () => _confirmDelete(
+                                                context,
+                                                ref,
+                                                category,
+                                              ),
                                               child: Container(
                                                 width: 36,
                                                 height: 36,
@@ -248,14 +318,24 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                                                   shape: BoxShape.circle,
                                                   boxShadow: [
                                                     BoxShadow(
-                                                      color: Colors.red.withValues(alpha: 0.4),
+                                                      color: Colors.red
+                                                          .withValues(
+                                                            alpha: 0.4,
+                                                          ),
                                                       blurRadius: 8,
-                                                      offset: const Offset(0, 2),
+                                                      offset: const Offset(
+                                                        0,
+                                                        2,
+                                                      ),
                                                     ),
                                                   ],
                                                 ),
                                                 alignment: Alignment.center,
-                                                child: const Icon(Icons.delete_outline, size: 18, color: Colors.white),
+                                                child: const Icon(
+                                                  Icons.delete_outline,
+                                                  size: 18,
+                                                  color: Colors.white,
+                                                ),
                                               ),
                                             ),
                                           ],
@@ -266,20 +346,31 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                                 ),
                                 // Contenido
                                 Expanded(
-                                  flex: MediaQuery.of(context).size.width < 800 ? 2 : 1,
+                                  flex: MediaQuery.of(context).size.width < 800
+                                      ? 2
+                                      : 1,
                                   child: Padding(
-                                    padding: const EdgeInsets.all(AppSizes.spacing16),
+                                    padding: const EdgeInsets.all(
+                                      AppSizes.spacing16,
+                                    ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               categoryName,
                                               style: TextStyle(
-                                                fontSize: _calculateResponsiveFontSize(context, 15),
+                                                fontSize:
+                                                    _calculateResponsiveFontSize(
+                                                      context,
+                                                      15,
+                                                    ),
                                                 fontWeight: FontWeight.w700,
                                                 color: AppColors.textPrimary,
                                               ),
@@ -290,7 +381,11 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                                             Text(
                                               categoryDescription,
                                               style: TextStyle(
-                                                fontSize: _calculateResponsiveFontSize(context, 12),
+                                                fontSize:
+                                                    _calculateResponsiveFontSize(
+                                                      context,
+                                                      12,
+                                                    ),
                                                 color: AppColors.textSecondary,
                                                 height: 1.4,
                                               ),
@@ -319,9 +414,15 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     );
   }
 
-  void _showCategoryDialog(BuildContext context, WidgetRef ref, {Map<String, dynamic>? category}) {
+  void _showCategoryDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    Map<String, dynamic>? category,
+  }) {
     final nameController = TextEditingController(text: category?['name'] ?? '');
-    final descriptionController = TextEditingController(text: category?['description'] ?? '');
+    final descriptionController = TextEditingController(
+      text: category?['description'] ?? '',
+    );
     final isEditing = category != null;
 
     // Limpiar el formulario solo si es una nueva categoría (antes de abrir el diálogo)
@@ -334,187 +435,293 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
       builder: (context) => Consumer(
         builder: (context, ref, _) {
           final formState = ref.watch(categoryFormProvider(category));
-          final formNotifier = ref.watch(categoryFormProvider(category).notifier);
+          final formNotifier = ref.watch(
+            categoryFormProvider(category).notifier,
+          );
 
-          return AlertDialog(
-            title: Text(isEditing ? 'Editar Categoría' : 'Nueva Categoría'),
-            content: SizedBox(
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
               width: 500,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Vista previa de imagen / Selector
-                    GestureDetector(
-                      onTap: () async {
-                        try {
-                          await formNotifier.selectImage();
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Error al seleccionar imagen')),
-                            );
-                          }
-                        }
-                      },
-                      child: Center(
-                        child: Container(
-                          width: 144,
-                          height: 144,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
-                              width: 2,
-                              style: BorderStyle.solid,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Theme.of(context).scaffoldBackgroundColor,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // HEADER
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            isEditing ? 'Editar Categoría' : 'Nueva Categoría',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
                             ),
                           ),
-                          child: formState.imagePreview.isNotEmpty
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Image.network(
-                                    formState.imagePreview,
-                                    width: 144,
-                                    height: 144,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Column(
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: formState.isLoading ? null : () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // CONTENT
+                  Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Vista previa de imagen / Selector
+                          GestureDetector(
+                            onTap: formState.isLoading ? null : () async {
+                              try {
+                                await formNotifier.selectImage();
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Error al seleccionar imagen'),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            child: Center(
+                              child: Container(
+                                width: 144,
+                                height: 144,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).primaryColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Theme.of(
+                                      context,
+                                    ).primaryColor.withValues(alpha: 0.3),
+                                    width: 2,
+                                    style: BorderStyle.solid,
+                                  ),
+                                ),
+                                child: formState.imagePreview.isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Image.network(
+                                          formState.imagePreview,
+                                          width: 144,
+                                          height: 144,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.add_photo_alternate,
+                                                  size: 40,
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).primaryColor,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                const Text(
+                                                  'Seleccionar imagen',
+                                                  style: TextStyle(fontSize: 12),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(context).primaryColor),
+                                          Icon(
+                                            Icons.add_photo_alternate,
+                                            size: 40,
+                                            color: Theme.of(context).primaryColor,
+                                          ),
                                           const SizedBox(height: 8),
-                                          const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
+                                          const Text(
+                                            'Seleccionar imagen',
+                                            style: TextStyle(fontSize: 12),
+                                          ),
                                         ],
-                                      );
-                                    },
+                                      ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSizes.spacing24),
+                          TextField(
+                            controller: nameController,
+                            enabled: !formState.isLoading,
+                            onChanged: formNotifier.setName,
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre *',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.category_outlined),
+                            ),
+                          ),
+                          const SizedBox(height: AppSizes.spacing16),
+                          TextField(
+                            controller: descriptionController,
+                            enabled: !formState.isLoading,
+                            onChanged: formNotifier.setDescription,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              labelText: 'Descripción',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.description_outlined),
+                            ),
+                          ),
+                          const SizedBox(height: AppSizes.spacing8),
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '* Campos requeridos',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // FOOTER
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: formState.isLoading
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).primaryColor,
+                          ),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: AppSizes.spacing12),
+                        ElevatedButton.icon(
+                          icon: formState.isLoading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
                                   ),
                                 )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(context).primaryColor),
-                                    const SizedBox(height: 8),
-                                    const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
-                                  ],
-                                ),
+                              : Icon(isEditing ? Icons.update_outlined : Icons.add_rounded),
+                          label: Text(isEditing ? 'Actualizar' : 'Crear'),
+                          onPressed: formState.isLoading
+                              ? null
+                              : () async {
+                                  if (nameController.text.trim().isEmpty) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('El nombre es requerido'),
+                                        ),
+                                      );
+                                    }
+                                    return;
+                                  }
+
+                                  if (context.mounted) {
+                                    formNotifier.setLoading(true);
+                                  }
+
+                                  try {
+                                    bool success;
+                                    if (isEditing) {
+                                      success = await ref
+                                          .read(categoryProvider.notifier)
+                                          .updateCategory(
+                                            id: category['_id'],
+                                            name: nameController.text.trim(),
+                                            description:
+                                                descriptionController.text.trim().isEmpty
+                                                ? null
+                                                : descriptionController.text.trim(),
+                                            imageFile: formState.selectedImage,
+                                            imageBytes: formState.imageBytes,
+                                          );
+                                    } else {
+                                      success = await ref
+                                          .read(categoryProvider.notifier)
+                                          .createCategory(
+                                            name: nameController.text.trim(),
+                                            description:
+                                                descriptionController.text.trim().isEmpty
+                                                ? null
+                                                : descriptionController.text.trim(),
+                                            imageFile: formState.selectedImage,
+                                            imageBytes: formState.imageBytes,
+                                          );
+                                    }
+
+                                    if (context.mounted) {
+                                      formNotifier.setLoading(false);
+                                      if (success) {
+                                        Navigator.of(context).pop();
+                                      }
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      formNotifier.setLoading(false);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')),
+                                      );
+                                    }
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: AppSizes.spacing24),
-                    TextField(
-                      controller: nameController,
-                      enabled: !formState.isLoading,
-                      onChanged: formNotifier.setName,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre *',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.category_outlined),
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: descriptionController,
-                      enabled: !formState.isLoading,
-                      onChanged: formNotifier.setDescription,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Descripción',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.description_outlined),
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.spacing8),
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '* Campos requeridos',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: formState.isLoading ? null : () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: formState.isLoading
-                    ? null
-                    : () async {
-                        if (nameController.text.trim().isEmpty) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('El nombre es requerido')),
-                            );
-                          }
-                          return;
-                        }
-
-                        if (context.mounted) {
-                          formNotifier.setLoading(true);
-                        }
-
-                        try {
-                          bool success;
-                          if (isEditing) {
-                            success = await ref.read(categoryProvider.notifier).updateCategory(
-                              id: category['_id'],
-                              name: nameController.text.trim(),
-                              description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
-                              imageFile: formState.selectedImage,
-                              imageBytes: formState.imageBytes,
-                            );
-                          } else {
-                            success = await ref.read(categoryProvider.notifier).createCategory(
-                              name: nameController.text.trim(),
-                              description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
-                              imageFile: formState.selectedImage,
-                              imageBytes: formState.imageBytes,
-                            );
-                          }
-
-                          if (context.mounted) {
-                            formNotifier.setLoading(false);
-                            if (success) {
-                              Navigator.of(context).pop();
-                            }
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            formNotifier.setLoading(false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
-                          }
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-                child: formState.isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : Text(isEditing ? 'Actualizar' : 'Crear'),
-              ),
-            ],
           );
         },
       ),
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, Map<String, dynamic> category) {
+  void _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> category,
+  ) {
     final categoryName = category['name'] ?? 'esta categoría';
     final categoryId = category['_id'];
 
@@ -527,75 +734,224 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
 
     showDialog(
       context: context,
-      builder: (context) => Consumer(
+      builder: (dialogContext) => Consumer(
         builder: (context, ref, _) {
           final formState = ref.watch(categoryFormProvider(null));
           final formNotifier = ref.watch(categoryFormProvider(null).notifier);
 
-          return AlertDialog(
-            title: const Text('Confirmar eliminación'),
-            content: Text('¿Estás seguro de eliminar la categoría "$categoryName"?'),
-            actions: [
-              TextButton(
-                onPressed: formState.isDeleting ? null : () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Theme.of(context).scaffoldBackgroundColor,
               ),
-              ElevatedButton(
-                onPressed: formState.isDeleting
-                    ? null
-                    : () async {
-                        if (context.mounted) {
-                          formNotifier.setDeleting(true);
-                        }
-
-                        try {
-                          final success = await ref.read(categoryProvider.notifier).deleteCategory(categoryId);
-
-                          if (context.mounted) {
-                            formNotifier.setDeleting(false);
-                            if (success) {
-                              Navigator.of(context).pop();
-                            }
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            formNotifier.setDeleting(false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
-                          }
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white,
-                ),
-                child: formState.isDeleting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: AppColors.error.withValues(alpha: 0.2),
                         ),
-                      )
-                    : const Text('Eliminar'),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.warning_rounded,
+                            color: AppColors.error,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: AppSizes.spacing12),
+                        Expanded(
+                          child: Text(
+                            'Eliminar Categoría',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.error,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '¿Estás seguro de que deseas eliminar la categoría "$categoryName"?',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(height: AppSizes.spacing16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.error.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(
+                                Icons.info_outlined,
+                                color: AppColors.error,
+                                size: 18,
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Esta acción no se puede deshacer',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.error,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Footer
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: AppColors.border, width: 1),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: formState.isDeleting
+                              ? null
+                              : () => Navigator.of(dialogContext).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).primaryColor,
+                          ),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: AppSizes.spacing12),
+                        ElevatedButton.icon(
+                          icon: formState.isDeleting
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Icon(Icons.delete_outlined),
+                          label: const Text('Eliminar Permanentemente'),
+                          onPressed: formState.isDeleting
+                              ? null
+                              : () async {
+                                  if (dialogContext.mounted) {
+                                    formNotifier.setDeleting(true);
+                                  }
+
+                                  try {
+                                    final success = await ref
+                                        .read(categoryProvider.notifier)
+                                        .deleteCategory(categoryId);
+
+                                    if (dialogContext.mounted) {
+                                      formNotifier.setDeleting(false);
+                                      Navigator.of(dialogContext).pop();
+                                      if (!success) {
+                                        final errorMsg = ref
+                                            .read(categoryProvider)
+                                            .errorMessage;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              errorMsg.isNotEmpty
+                                                  ? errorMsg
+                                                  : 'Error al eliminar categoría',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  } catch (e) {
+                                    if (dialogContext.mounted) {
+                                      formNotifier.setDeleting(false);
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Error: $e'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.error,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           );
         },
       ),
     );
   }
 
-  void _showCategoryProducts(BuildContext context, WidgetRef ref, Map<String, dynamic> category, List<dynamic> products) {
+  void _showCategoryProducts(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> category,
+    List<dynamic> products,
+  ) {
     final categoryName = category['name'] ?? 'Categoría';
     final categoryId = category['_id'];
-    
+
     // Filtrar productos por categoría
     final categoryProducts = products.where((product) {
-      final productCategoryId = product['categoryId'] is Map 
-          ? product['categoryId']['_id'] 
+      final productCategoryId = product['categoryId'] is Map
+          ? product['categoryId']['_id']
           : product['categoryId'];
       return productCategoryId == categoryId;
     }).toList();
@@ -603,84 +959,129 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.8,
           height: MediaQuery.of(context).size.height * 0.8,
-          padding: const EdgeInsets.all(AppSizes.spacing24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Productos en: $categoryName',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${categoryProducts.length} producto(s) encontrado(s)',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
+              // HEADER mejorado
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).primaryColor,
+                      Theme.of(context).primaryColor.withValues(alpha: 0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                    tooltip: 'Cerrar',
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSizes.spacing16),
-              const Divider(),
-              const SizedBox(height: AppSizes.spacing16),
-              
-              // Lista de productos
-              Expanded(
-                child: categoryProducts.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.inventory_2_outlined,
-                              size: 64,
-                              color: AppColors.textSecondary.withValues(alpha: 0.5),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No hay productos en esta categoría',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: AppColors.textSecondary.withValues(alpha: 0.7),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.inventory_2_outlined,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                               ),
+                              const SizedBox(width: AppSizes.spacing12),
+                              Expanded(
+                                child: Text(
+                                  'Productos en: $categoryName',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${categoryProducts.length} producto(s) encontrado(s)',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.white70,
                             ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: categoryProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = categoryProducts[index];
-                          final stock = product['stock'] ?? 0;
-                          final isOutOfStock = stock == 0;
-                          final isLowStock = stock > 0 && stock < 10;
-                          
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: AppSizes.spacing12),
-                            child: ListTile(
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Cerrar',
+                    ),
+                  ],
+                ),
+              ),
+
+              // CONTENT - Lista de productos
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing16),
+                  child: categoryProducts.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 64,
+                                color: AppColors.textSecondary.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: AppSizes.spacing16),
+                              Text(
+                                'No hay productos en esta categoría',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: categoryProducts.length,
+                          itemBuilder: (context, index) {
+                            final product = categoryProducts[index];
+                            final stock = product['stock'] ?? 0;
+                            final isOutOfStock = stock == 0;
+                            final isLowStock = stock > 0 && stock < 10;
+
+                            return Card(
+                              margin: const EdgeInsets.only(
+                                bottom: AppSizes.spacing12,
+                              ),
+                              child: ListTile(
                               leading: product['foto'] != null
                                   ? ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
@@ -689,16 +1090,22 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                                         width: 50,
                                         height: 50,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            Container(
-                                          width: 50,
-                                          height: 50,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.gray100,
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: const Icon(Icons.inventory_2_outlined),
-                                        ),
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Container(
+                                                  width: 50,
+                                                  height: 50,
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.gray100,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.inventory_2_outlined,
+                                                  ),
+                                                ),
                                       ),
                                     )
                                   : Container(
@@ -708,11 +1115,15 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                                         color: AppColors.gray100,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Icon(Icons.inventory_2_outlined),
+                                      child: const Icon(
+                                        Icons.inventory_2_outlined,
+                                      ),
                                     ),
                               title: Text(
                                 product['name'] ?? 'Sin nombre',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -737,11 +1148,19 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: isOutOfStock
-                                              ? AppColors.error.withValues(alpha: 0.1)
+                                              ? AppColors.error.withValues(
+                                                  alpha: 0.1,
+                                                )
                                               : isLowStock
-                                                  ? AppColors.warning.withValues(alpha: 0.1)
-                                                  : AppColors.success.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(4),
+                                              ? AppColors.warning.withValues(
+                                                  alpha: 0.1,
+                                                )
+                                              : AppColors.success.withValues(
+                                                  alpha: 0.1,
+                                                ),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                         ),
                                         child: Text(
                                           '$stock',
@@ -751,8 +1170,8 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                                             color: isOutOfStock
                                                 ? AppColors.error
                                                 : isLowStock
-                                                    ? AppColors.warning
-                                                    : AppColors.success,
+                                                ? AppColors.warning
+                                                : AppColors.success,
                                           ),
                                         ),
                                       ),
@@ -772,14 +1191,17 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  if (product['supplierId'] != null && 
+                                  if (product['supplierId'] != null &&
                                       product['supplierId'] is Map)
                                     Chip(
                                       label: Text(
-                                        product['supplierId']['name'] ?? 'Sin proveedor',
+                                        product['supplierId']['name'] ??
+                                            'Sin proveedor',
                                         style: const TextStyle(fontSize: 11),
                                       ),
-                                      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                                      backgroundColor: Theme.of(
+                                        context,
+                                      ).primaryColor.withValues(alpha: 0.1),
                                       padding: EdgeInsets.zero,
                                     ),
                                 ],
@@ -788,6 +1210,34 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                           );
                         },
                       ),
+                ),
+              ),
+
+              // FOOTER
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: AppColors.border, width: 1),
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      icon: const Icon(Icons.close_outlined),
+                      label: const Text('Cerrar'),
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -797,9 +1247,12 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
   }
 
   /// Calcula el tamaño de fuente responsivo basado en el ancho de la pantalla
-  double _calculateResponsiveFontSize(BuildContext context, double baseFontSize) {
+  double _calculateResponsiveFontSize(
+    BuildContext context,
+    double baseFontSize,
+  ) {
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     // Escala el tamaño de fuente basado en el ancho de la pantalla
     // En pantallas muy anchas (>1400px) mantiene el tamaño base
     // En pantallas más estrechas reduce proporcionalmente
@@ -818,4 +1271,3 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     }
   }
 }
-

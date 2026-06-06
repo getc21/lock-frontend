@@ -133,9 +133,12 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       );
 
       if (result['success']) {
+        final newCustomer = Map<String, dynamic>.from(result['data'] as Map);
         _cache.invalidatePattern('customers:');
-        await loadCustomersForCurrentStore(forceRefresh: true);
-        state = state.copyWith(isLoading: false);
+        state = state.copyWith(
+          customers: [...state.customers, newCustomer],
+          isLoading: false,
+        );
         return true;
       } else {
         state = state.copyWith(
@@ -175,9 +178,14 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
       );
 
       if (result['success']) {
+        final updated = Map<String, dynamic>.from(result['data'] as Map);
         _cache.invalidatePattern('customers:');
-        await loadCustomersForCurrentStore(forceRefresh: true);
-        state = state.copyWith(isLoading: false);
+        state = state.copyWith(
+          customers: state.customers
+              .map((c) => c['_id'] == id ? updated : c)
+              .toList(),
+          isLoading: false,
+        );
         return true;
       } else {
         state = state.copyWith(
@@ -204,10 +212,14 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
 
       if (result['success']) {
         _cache.invalidatePattern('customers:');
-        await loadCustomersForCurrentStore(forceRefresh: true);
-        state = state.copyWith(isLoading: false);
+        state = state.copyWith(
+          customers: state.customers.where((c) => c['_id'] != id).toList(),
+          isLoading: false,
+        );
         return true;
       } else {
+        _cache.invalidatePattern('customers:');
+        await loadCustomersForCurrentStore(forceRefresh: true);
         state = state.copyWith(
           isLoading: false,
           errorMessage: result['message'] ?? 'Error eliminando cliente',

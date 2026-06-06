@@ -514,14 +514,14 @@ class PdfService {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(
-                        'BELLEZAPP',
+                        'NaturalMarkets',
                         style: pw.TextStyle(
                           fontSize: 24,
                           fontWeight: pw.FontWeight.bold,
                         ),
                       ),
                       pw.Text(
-                        'Sistema de Gestión de Belleza',
+                        'Sistema de Gestión de NaturalMarkets',
                         style: const pw.TextStyle(fontSize: 10),
                       ),
                     ],
@@ -719,7 +719,7 @@ class PdfService {
               // Pie de página
               pw.Divider(),
               pw.Text(
-                'Gracias por tu compra en BellezApp',
+                'Gracias por tu compra en NaturalMarkets',
                 style: const pw.TextStyle(
                   fontSize: 10,
                 ),

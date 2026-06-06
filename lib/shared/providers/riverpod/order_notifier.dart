@@ -218,7 +218,6 @@ class OrderNotifier extends StateNotifier<OrderState> {
         
         // Refrescar lista de órdenes
         await loadOrders(storeId: storeId, forceRefresh: true);
-        state = state.copyWith(isLoading: false);
         
         // Retornar los datos de la orden creada (incluye receiptNumber)
         final createdOrder = result['data'] as Map<String, dynamic>?;

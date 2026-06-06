@@ -328,242 +328,405 @@ class _StoresPageState extends ConsumerState<StoresPage> {
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  isEdit ? Icons.edit : Icons.add_business,
-                  color: Theme.of(context).primaryColor,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(isEdit ? 'Editar Tienda' : 'Nueva Tienda'),
-            ],
-          ),
-          content: SizedBox(
+        builder: (context, setState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
             width: 500,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nombre de la tienda *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.store),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).scaffoldBackgroundColor,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // HEADER
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
                     ),
                   ),
-                  const SizedBox(height: AppSizes.spacing16),
-                  TextField(
-                    controller: addressController,
-                    decoration: const InputDecoration(
-                      labelText: 'Dirección',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.location_on),
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                isEdit ? Icons.edit : Icons.add_business,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: AppSizes.spacing12),
+                            Text(
+                              isEdit ? 'Editar Tienda' : 'Nueva Tienda',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+                // CONTENT
+                Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextField(
+                          controller: nameController,
+                          enabled: !isLoading,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre de la tienda *',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.store),
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.spacing16),
+                        TextField(
+                          controller: addressController,
+                          enabled: !isLoading,
+                          decoration: const InputDecoration(
+                            labelText: 'Dirección',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.location_on),
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: AppSizes.spacing16),
+                        TextField(
+                          controller: phoneController,
+                          enabled: !isLoading,
+                          decoration: const InputDecoration(
+                            labelText: 'Teléfono',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.phone),
+                          ),
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: AppSizes.spacing16),
+                        TextField(
+                          controller: emailController,
+                          enabled: !isLoading,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.email),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: AppSizes.spacing8),
+                        const Text(
+                          '* Campos requeridos',
+                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
                     ),
-                    maxLines: 2,
                   ),
-                  const SizedBox(height: AppSizes.spacing16),
-                  TextField(
-                    controller: phoneController,
-                    decoration: const InputDecoration(
-                      labelText: 'Teléfono',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.phone),
-                    ),
-                    keyboardType: TextInputType.phone,
+                ),
+                // FOOTER
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: AppColors.border, width: 1)),
                   ),
-                  const SizedBox(height: AppSizes.spacing16),
-                  TextField(
-                    controller: emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
+                  padding: const EdgeInsets.all(AppSizes.spacing16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: isLoading ? null : () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Theme.of(context).primaryColor,
+                        ),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: AppSizes.spacing12),
+                      ElevatedButton.icon(
+                        icon: isLoading
+                          ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Icon(isEdit ? Icons.save_outlined : Icons.add_rounded),
+                        label: Text(isEdit ? 'Guardar' : 'Crear'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: isLoading
+                            ? null
+                            : () async {
+                                if (nameController.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('El nombre de la tienda es obligatorio'),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setState(() => isLoading = true);
+
+                                bool success;
+                                if (isEdit) {
+                                  success = await ref.read(storeProvider.notifier).updateStore(
+                                    id: store['_id'],
+                                    name: nameController.text.trim(),
+                                    address: addressController.text.trim().isEmpty 
+                                        ? null 
+                                        : addressController.text.trim(),
+                                    phone: phoneController.text.trim().isEmpty 
+                                        ? null 
+                                        : phoneController.text.trim(),
+                                    email: emailController.text.trim().isEmpty 
+                                        ? null 
+                                        : emailController.text.trim(),
+                                  );
+                                } else {
+                                  success = await ref.read(storeProvider.notifier).createStore(
+                                    name: nameController.text.trim(),
+                                    address: addressController.text.trim().isEmpty 
+                                        ? null 
+                                        : addressController.text.trim(),
+                                    phone: phoneController.text.trim().isEmpty 
+                                        ? null 
+                                        : phoneController.text.trim(),
+                                    email: emailController.text.trim().isEmpty 
+                                        ? null 
+                                        : emailController.text.trim(),
+                                  );
+                                }
+
+                                setState(() => isLoading = false);
+
+                                if (success && dialogContext.mounted) {
+                                  Navigator.pop(dialogContext);
+                                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        isEdit 
+                                          ? 'Tienda actualizada exitosamente' 
+                                          : 'Tienda creada exitosamente',
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              },
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AppSizes.spacing8),
-                  const Text(
-                    '* Campos requeridos',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: isLoading
-                  ? null
-                  : () async {
-                      if (nameController.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('El nombre de la tienda es obligatorio'),
-                          ),
-                        );
-                        return;
-                      }
-
-                      setState(() => isLoading = true);
-
-                      bool success;
-                      if (isEdit) {
-                        success = await ref.read(storeProvider.notifier).updateStore(
-                          id: store['_id'],
-                          name: nameController.text.trim(),
-                          address: addressController.text.trim().isEmpty 
-                              ? null 
-                              : addressController.text.trim(),
-                          phone: phoneController.text.trim().isEmpty 
-                              ? null 
-                              : phoneController.text.trim(),
-                          email: emailController.text.trim().isEmpty 
-                              ? null 
-                              : emailController.text.trim(),
-                        );
-                      } else {
-                        success = await ref.read(storeProvider.notifier).createStore(
-                          name: nameController.text.trim(),
-                          address: addressController.text.trim().isEmpty 
-                              ? null 
-                              : addressController.text.trim(),
-                          phone: phoneController.text.trim().isEmpty 
-                              ? null 
-                              : phoneController.text.trim(),
-                          email: emailController.text.trim().isEmpty 
-                              ? null 
-                              : emailController.text.trim(),
-                        );
-                      }
-
-                      setState(() => isLoading = false);
-
-                      if (success && dialogContext.mounted) {
-                        Navigator.pop(dialogContext);
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              isEdit 
-                                ? 'Tienda actualizada exitosamente' 
-                                : 'Tienda creada exitosamente',
-                            ),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-              ),
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Text(isEdit ? 'Guardar' : 'Crear'),
-            ),
-          ],
         ),
       ),
     );
   }
 
   void _confirmDelete(Map<String, dynamic> store) {
+    final isLoading = ValueNotifier<bool>(false);
+
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: AppColors.error),
-            SizedBox(width: 12),
-            Text('Confirmar eliminación'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '¿Estás seguro de que deseas eliminar esta tienda?',
-              style: TextStyle(fontSize: 14),
+      builder: (dialogContext) => ValueListenableBuilder<bool>(
+        valueListenable: isLoading,
+        builder: (ctx, loading, _) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).scaffoldBackgroundColor,
             ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    store['name'] ?? 'Sin nombre',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  if (store['address'] != null && (store['address'] as String).isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        store['address'] ?? '',
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                      ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
                     ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              '⚠️ Esta acción no se puede deshacer',
-              style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              final success = await ref.read(storeProvider.notifier).deleteStore(store['_id']);
-              if (success && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Tienda eliminada exitosamente'),
-                    duration: Duration(seconds: 2),
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.error.withValues(alpha: 0.2)),
+                    ),
                   ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.warning_rounded, color: AppColors.error, size: 20),
+                      ),
+                      const SizedBox(width: AppSizes.spacing12),
+                      Expanded(
+                        child: Text(
+                          'Eliminar Tienda',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '¿Estás seguro de que deseas eliminar esta tienda?',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              store['name'] ?? 'Sin nombre',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            if (store['address'] != null && (store['address'] as String).isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  store['address'] ?? '',
+                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        '⚠️ Esta acción no se puede deshacer',
+                        style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+                // Footer
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                  ),
+                  padding: const EdgeInsets.all(AppSizes.spacing16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: loading ? null : () => Navigator.of(dialogContext).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Theme.of(context).primaryColor,
+                        ),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: AppSizes.spacing12),
+                      ElevatedButton.icon(
+                        icon: loading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.delete_outlined),
+                        label: const Text('Eliminar Permanentemente'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: loading
+                            ? null
+                            : () async {
+                              if (dialogContext.mounted) isLoading.value = true;
+                              try {
+                                final success = await ref
+                                    .read(storeProvider.notifier)
+                                    .deleteStore(store['_id']);
+
+                                if (dialogContext.mounted) {
+                                  Navigator.of(dialogContext).pop();
+                                  if (success) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Tienda eliminada exitosamente'),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
+                                  } else {
+                                    if (mounted) {
+                                      final errorMsg = ref.read(storeProvider).errorMessage;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(errorMsg.isNotEmpty ? errorMsg : 'Error al eliminar tienda'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                }
+                              } finally {
+                                if (dialogContext.mounted) isLoading.value = false;
+                              }
+                            },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            child: const Text('Eliminar'),
           ),
-        ],
+        ),
       ),
     );
   }

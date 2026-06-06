@@ -4,6 +4,8 @@ import 'package:bellezapp_web/shared/models/quotation.dart';
 import 'package:bellezapp_web/shared/providers/riverpod/quotation_detail_notifier.dart';
 import 'package:bellezapp_web/shared/providers/riverpod/quotation_list_notifier.dart';
 import 'package:intl/intl.dart';
+import 'package:bellezapp_web/core/constants/app_colors.dart';
+import 'package:bellezapp_web/core/constants/app_sizes.dart';
 import '../services/quotation_pdf_service.dart';
 
 void showQuotationDetailDialog(
@@ -315,47 +317,142 @@ class QuotationDetailDialog extends ConsumerWidget {
   void _showConvertDialog(BuildContext context, WidgetRef ref, String quotationId) {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Convertir a pedido'),
-        content: const Text(
-          '¿Desea convertir esta cotización a un pedido?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 450,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
           ),
-          TextButton(
-            onPressed: () async {
-              // Guardar messenger antes de cerrar los diálogos
-              final messenger = ScaffoldMessenger.of(context);
-              Navigator.pop(dialogContext);
-              Navigator.pop(context);
-
-              final success = await ref
-                  .read(quotationDetailProvider(quotationId).notifier)
-                  .convertToOrder();
-
-              if (storeId != null) {
-                await ref
-                    .read(quotationListProvider(storeId).notifier)
-                    .refreshQuotations();
-              }
-
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(
-                    success
-                        ? '¡Cotización convertida a venta exitosamente!'
-                        : 'No se pudo convertir la cotización. Verifica el stock disponible.',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // HEADER
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
-                  backgroundColor: success ? Colors.green : Colors.red,
                 ),
-              );
-            },
-            child: const Text('Convertir'),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.transform_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    const Expanded(
+                      child: Text(
+                        'Convertir a pedido',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // CONTENT
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '¿Desea convertir esta cotización a un pedido?',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSizes.spacing16),
+                    Container(
+                      padding: const EdgeInsets.all(AppSizes.spacing12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.2)),
+                      ),
+                      child: const Text(
+                        'Se creará un nuevo pedido con los datos de esta cotización',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // FOOTER
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    ElevatedButton(
+                      onPressed: () async {
+                        // Guardar messenger antes de cerrar los diálogos
+                        final messenger = ScaffoldMessenger.of(context);
+                        Navigator.pop(dialogContext);
+                        Navigator.pop(context);
+
+                        final success = await ref
+                            .read(quotationDetailProvider(quotationId).notifier)
+                            .convertToOrder();
+
+                        if (success && storeId != null) {
+                          ref
+                              .read(quotationListProvider(storeId).notifier)
+                              .removeFromList(quotationId);
+                        }
+
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              success
+                                  ? '¡Cotización convertida a venta exitosamente!'
+                                  : 'No se pudo convertir la cotización. Verifica el stock disponible.',
+                            ),
+                            backgroundColor: success ? Colors.green : Colors.red,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Convertir'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

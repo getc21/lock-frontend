@@ -207,97 +207,156 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isEditing ? 'Editar Ubicación' : 'Nueva Ubicación'),
-        content: SizedBox(
-          width: 400,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.white,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre *',
-                  hintText: 'Ej: Estante A1, Vitrina Principal, Bodega',
-                  border: OutlineInputBorder(),
+              // Header
+              Container(
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isEditing ? Icons.edit : Icons.add_location,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    Text(
+                      isEditing ? 'Editar Ubicación' : 'Nueva Ubicación',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: AppSizes.spacing16),
-              TextField(
-                controller: descriptionController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Descripción',
-                  hintText: 'Detalles adicionales de la ubicación',
-                  border: OutlineInputBorder(),
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre *',
+                        hintText: 'Ej: Estante A1, Vitrina Principal, Bodega',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spacing16),
+                    TextField(
+                      controller: descriptionController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Descripción',
+                        hintText: 'Detalles adicionales de la ubicación',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Footer
+              Container(
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: AppColors.border),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: isLoading,
+                      builder: (context, loading, _) => ElevatedButton(
+                        onPressed: loading
+                            ? null
+                            : () async {
+                                if (nameController.text.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('El nombre es requerido'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                if (context.mounted) {
+                                  isLoading.value = true;
+                                }
+                                try {
+                                  bool success;
+                                  if (isEditing) {
+                                    success = await ref
+                                        .read(locationProvider.notifier)
+                                        .updateLocation(
+                                          id: location['_id'],
+                                          name: nameController.text,
+                                          description: descriptionController.text.isEmpty
+                                              ? null
+                                              : descriptionController.text,
+                                        );
+                                  } else {
+                                    success = await ref
+                                        .read(locationProvider.notifier)
+                                        .createLocation(
+                                          name: nameController.text,
+                                          description: descriptionController.text.isEmpty
+                                              ? null
+                                              : descriptionController.text,
+                                        );
+                                  }
+
+                                  if (success && context.mounted) {
+                                    Navigator.pop(context);
+                                  }
+                                } finally {
+                                  if (context.mounted) {
+                                    isLoading.value = false;
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: Text(isEditing ? 'Actualizar' : 'Crear'),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ValueListenableBuilder<bool>(
-            valueListenable: isLoading,
-            builder: (context, loading, _) => ElevatedButton(
-              onPressed: loading
-                  ? null
-                  : () async {
-                      if (nameController.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('El nombre es requerido'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-
-                      if (context.mounted) {
-                        isLoading.value = true;
-                      }
-                      try {
-                        bool success;
-                        if (isEditing) {
-                          success = await ref
-                              .read(locationProvider.notifier)
-                              .updateLocation(
-                                id: location['_id'],
-                                name: nameController.text,
-                                description: descriptionController.text.isEmpty
-                                    ? null
-                                    : descriptionController.text,
-                              );
-                        } else {
-                          success = await ref
-                              .read(locationProvider.notifier)
-                              .createLocation(
-                                name: nameController.text,
-                                description: descriptionController.text.isEmpty
-                                    ? null
-                                    : descriptionController.text,
-                              );
-                        }
-
-                        if (success && context.mounted) {
-                          Navigator.pop(context);
-                        }
-                      } finally {
-                        if (context.mounted) {
-                          isLoading.value = false;
-                        }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-              ),
-              child: Text(isEditing ? 'Actualizar' : 'Crear'),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -319,43 +378,166 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text(
-          '¿Estás seguro de eliminar la ubicación "$locationName"?',
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  border: Border(
+                    bottom: BorderSide(color: AppColors.error.withValues(alpha: 0.2)),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.warning_rounded, color: AppColors.error, size: 20),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    Expanded(
+                      child: Text(
+                        'Eliminar Ubicación',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '¿Estás seguro de eliminar la ubicación "$locationName"?',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(height: AppSizes.spacing16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.info_outlined, color: AppColors.error, size: 18),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Esta acción no se puede deshacer',
+                              style: TextStyle(fontSize: 12, color: AppColors.error),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Footer
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: isDeleting,
+                      builder: (context, deleting, _) => ElevatedButton.icon(
+                        icon: deleting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.delete_outlined),
+                        label: const Text('Eliminar Permanentemente'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: deleting
+                            ? null
+                            : () async {
+                              if (context.mounted) {
+                                isDeleting.value = true;
+                              }
+                              try {
+                                final success = await ref
+                                    .read(locationProvider.notifier)
+                                    .deleteLocation(locationId);
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  if (!success) {
+                                    final errorMsg = ref
+                                        .read(locationProvider)
+                                        .errorMessage;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          errorMsg.isNotEmpty
+                                              ? errorMsg
+                                              : 'No se pudo eliminar la ubicación',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              } finally {
+                                if (context.mounted) {
+                                  isDeleting.value = false;
+                                }
+                              }
+                            },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ValueListenableBuilder<bool>(
-            valueListenable: isDeleting,
-            builder: (context, deleting, _) => ElevatedButton(
-              onPressed: deleting
-                  ? null
-                  : () async {
-                      if (context.mounted) {
-                        isDeleting.value = true;
-                      }
-                      try {
-                        final success = await ref
-                            .read(locationProvider.notifier)
-                            .deleteLocation(locationId);
-                        if (success && context.mounted) {
-                          Navigator.pop(context);
-                        }
-                      } finally {
-                        if (context.mounted) {
-                          isDeleting.value = false;
-                        }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-              child: const Text('Eliminar'),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -378,218 +560,270 @@ class _LocationsPageState extends ConsumerState<LocationsPage> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.8,
           height: MediaQuery.of(context).size.height * 0.8,
-          padding: const EdgeInsets.all(AppSizes.spacing24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Productos en: $locationName',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${locationProducts.length} producto(s) encontrado(s)',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
+              // HEADER
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).primaryColor,
+                      Theme.of(context).primaryColor.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.inventory_2_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                    tooltip: 'Cerrar',
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSizes.spacing16),
-              const Divider(),
-              const SizedBox(height: AppSizes.spacing16),
-
-              // Lista de productos
-              Expanded(
-                child: locationProducts.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.inventory_2_outlined,
-                              size: 64,
-                              color: AppColors.textSecondary.withValues(
-                                alpha: 0.5,
-                              ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Productos en: $locationName',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No hay productos en esta ubicación',
-                              style: TextStyle(
-                                fontSize: 16,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${locationProducts.length} producto(s) encontrado(s)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Cerrar',
+                    ),
+                  ],
+                ),
+              ),
+
+              // CONTENT
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing16),
+                  child: locationProducts.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 64,
                                 color: AppColors.textSecondary.withValues(
-                                  alpha: 0.7,
+                                  alpha: 0.5,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: locationProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = locationProducts[index];
-                          final stock = product['stock'] ?? 0;
-                          final isOutOfStock = stock == 0;
-                          final isLowStock = stock > 0 && stock < 10;
+                              const SizedBox(height: 16),
+                              Text(
+                                'No hay productos en esta ubicación',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: locationProducts.length,
+                          itemBuilder: (context, index) {
+                            final product = locationProducts[index];
+                            final stock = product['stock'] ?? 0;
+                            final isOutOfStock = stock == 0;
+                            final isLowStock = stock > 0 && stock < 10;
 
-                          return Card(
-                            margin: const EdgeInsets.only(
-                              bottom: AppSizes.spacing12,
-                            ),
-                            child: ListTile(
-                              leading: product['foto'] != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.network(
-                                        product['foto'],
+                            return Card(
+                              margin: const EdgeInsets.only(
+                                bottom: AppSizes.spacing12,
+                              ),
+                              child: ListTile(
+                                leading: product['foto'] != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          product['foto'],
+                                          width: 50,
+                                          height: 50,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                                    width: 50,
+                                                    height: 50,
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.gray100,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.inventory_2_outlined,
+                                                    ),
+                                                  ),
+                                        ),
+                                      )
+                                    : Container(
                                         width: 50,
                                         height: 50,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                Container(
-                                                  width: 50,
-                                                  height: 50,
-                                                  decoration: BoxDecoration(
-                                                    color: AppColors.gray100,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.inventory_2_outlined,
-                                                  ),
-                                                ),
-                                      ),
-                                    )
-                                  : Container(
-                                      width: 50,
-                                      height: 50,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.gray100,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Icon(
-                                        Icons.inventory_2_outlined,
-                                      ),
-                                    ),
-                              title: Text(
-                                product['name'] ?? 'Sin nombre',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (product['description'] != null)
-                                    Text(
-                                      product['description'],
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Stock: ',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 2,
-                                        ),
                                         decoration: BoxDecoration(
-                                          color: isOutOfStock
-                                              ? AppColors.error.withValues(
-                                                  alpha: 0.1,
-                                                )
-                                              : isLowStock
-                                              ? AppColors.warning.withValues(
-                                                  alpha: 0.1,
-                                                )
-                                              : AppColors.success.withValues(
-                                                  alpha: 0.1,
-                                                ),
-                                          borderRadius: BorderRadius.circular(
-                                            4,
+                                          color: AppColors.gray100,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(
+                                          Icons.inventory_2_outlined,
+                                        ),
+                                      ),
+                                title: Text(
+                                  product['name'] ?? 'Sin nombre',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (product['description'] != null)
+                                      Text(
+                                        product['description'],
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Stock: ',
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isOutOfStock
+                                                ? AppColors.error.withValues(
+                                                    alpha: 0.1,
+                                                  )
+                                                : isLowStock
+                                                ? AppColors.warning.withValues(
+                                                    alpha: 0.1,
+                                                  )
+                                                : AppColors.success.withValues(
+                                                    alpha: 0.1,
+                                                  ),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '$stock',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: isOutOfStock
+                                                  ? AppColors.error
+                                                  : isLowStock
+                                                  ? AppColors.warning
+                                                  : AppColors.success,
+                                            ),
                                           ),
                                         ),
-                                        child: Text(
-                                          '$stock',
+                                        const SizedBox(width: 16),
+                                        Text(
+                                          'Precio: \$${(product['salePrice'] as num).toStringAsFixed(2)}',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: isOutOfStock
-                                                ? AppColors.error
-                                                : isLowStock
-                                                ? AppColors.warning
-                                                : AppColors.success,
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(context).primaryColor,
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Text(
-                                        'Precio: \$${(product['salePrice'] as num).toStringAsFixed(2)}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: Theme.of(context).primaryColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (product['categoryId'] != null &&
-                                      product['categoryId'] is Map)
-                                    Chip(
-                                      label: Text(
-                                        product['categoryId']['name'] ??
-                                            'Sin categoría',
-                                        style: const TextStyle(fontSize: 11),
-                                      ),
-                                      backgroundColor: Theme.of(
-                                        context,
-                                      ).primaryColor.withValues(alpha: 0.1),
-                                      padding: EdgeInsets.zero,
+                                      ],
                                     ),
-                                ],
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (product['categoryId'] != null &&
+                                        product['categoryId'] is Map)
+                                      Chip(
+                                        label: Text(
+                                          product['categoryId']['name'] ??
+                                              'Sin categoría',
+                                          style: const TextStyle(fontSize: 11),
+                                        ),
+                                        backgroundColor: Theme.of(
+                                          context,
+                                        ).primaryColor.withValues(alpha: 0.1),
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
+                ),
+              ),
+
+              // FOOTER
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
                       ),
+                      child: const Text('Cerrar'),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

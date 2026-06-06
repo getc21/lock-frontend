@@ -345,6 +345,9 @@ class _CreateQuotationPageState extends ConsumerState<CreateQuotationPage> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => context.go('/quotations'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).primaryColor,
+                    ),
                     child: const Text('Cancelar'),
                   ),
                 ),

@@ -279,8 +279,25 @@ class StoreNotifier extends StateNotifier<StoreState> {
       final result = await _storeProvider.deleteStore(id);
 
       if (result['success']) {
-        // Recargar lista de tiendas para sincronizar estado
-        await loadStores(autoSelect: true);
+        final remaining = state.stores.where((s) => s['_id'] != id).toList();
+        final wasCurrentStore = state.currentStore?['_id'] == id;
+
+        if (wasCurrentStore) {
+          // La tienda activa fue eliminada: seleccionar la primera disponible
+          final newCurrent = remaining.isNotEmpty ? remaining.first : null;
+          if (newCurrent != null) _saveSelectedStore(newCurrent);
+          state = StoreState(
+            stores: remaining,
+            currentStore: newCurrent,
+            isLoading: false,
+            errorMessage: '',
+          );
+        } else {
+          state = state.copyWith(
+            stores: remaining,
+            isLoading: false,
+          );
+        }
         return true;
       } else {
         state = state.copyWith(

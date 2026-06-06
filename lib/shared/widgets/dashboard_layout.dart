@@ -33,6 +33,9 @@ class DashboardLayout extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).primaryColor,
+            ),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
@@ -316,6 +319,10 @@ class DashboardLayout extends ConsumerWidget {
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
                   child: const Text('Cerrar'),
                 ),
               ],
@@ -762,6 +769,9 @@ class DashboardLayout extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).primaryColor,
+            ),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
@@ -904,13 +914,15 @@ class _SidebarWidget extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 0),
                 children: [
-                  _buildNavItem(
-                    context: context,
-                    icon: Icons.dashboard_outlined,
-                    label: 'Dashboard',
-                    route: '/dashboard',
-                    isSidebarCollapsed: isSidebarCollapsed,
-                  ),
+                  // ⭐ DASHBOARD - SOLO PARA ADMIN Y MANAGER
+                  if (isAdmin || isManager)
+                    _buildNavItem(
+                      context: context,
+                      icon: Icons.dashboard_outlined,
+                      label: 'Dashboard',
+                      route: '/dashboard',
+                      isSidebarCollapsed: isSidebarCollapsed,
+                    ),
                   _buildNavItem(
                     context: context,
                     icon: Icons.inventory_2_outlined,
@@ -995,13 +1007,14 @@ class _SidebarWidget extends StatelessWidget {
                     route: '/quotations',
                     isSidebarCollapsed: isSidebarCollapsed,
                   ),
-                  _buildNavItem(
-                    context: context,
-                    icon: Icons.account_balance_wallet_outlined,
-                    label: 'Caja',
-                    route: '/cash-register',
-                    isSidebarCollapsed: isSidebarCollapsed,
-                  ),
+                  if (isAdmin)
+                    _buildNavItem(
+                      context: context,
+                      icon: Icons.account_balance_wallet_outlined,
+                      label: 'Caja',
+                      route: '/cash-register',
+                      isSidebarCollapsed: isSidebarCollapsed,
+                    ),
                   if (isAdmin)
                     _buildNavItem(
                       context: context,

@@ -326,174 +326,246 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(isEditing ? 'Editar Cliente: ${customer['name']}' : 'Nuevo Cliente'),
-        content: SizedBox(
-          width: 500,
-          child: SingleChildScrollView(
+      builder: (dialogContext) => ValueListenableBuilder<bool>(
+        valueListenable: isLoading,
+        builder: (ctx, loading, _) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            width: 500,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).scaffoldBackgroundColor,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre *',
-                    hintText: 'Ingrese el nombre completo',
-                    border: OutlineInputBorder(),
+                // HEADER
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
                   ),
-                  textCapitalization: TextCapitalization.words,
-                ),
-                const SizedBox(height: AppSizes.spacing16),
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'ejemplo@correo.com',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: AppSizes.spacing16),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Teléfono',
-                    hintText: '591-XXXXXXXX',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: AppSizes.spacing16),
-                TextField(
-                  controller: addressController,
-                  decoration: const InputDecoration(
-                    labelText: 'Dirección',
-                    hintText: 'Dirección del cliente',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: AppSizes.spacing16),
-                TextField(
-                  controller: notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Notas',
-                    hintText: 'Información adicional',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              nameController.dispose();
-              emailController.dispose();
-              phoneController.dispose();
-              addressController.dispose();
-              notesController.dispose();
-              Navigator.of(dialogContext).pop();
-            },
-            child: const Text('Cancelar'),
-          ),
-          ValueListenableBuilder<bool>(
-            valueListenable: isLoading,
-            builder: (ctx, loading, _) => ElevatedButton(
-              onPressed: loading
-                  ? null
-                  : () async {
-                      final name = nameController.text.trim();
-                      if (name.isEmpty) {
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                          const SnackBar(
-                            content: Text('El nombre es requerido'),
-                            backgroundColor: Colors.red,
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          isEditing ? 'Editar Cliente: ${customer['name']}' : 'Nuevo Cliente',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
                           ),
-                        );
-                        return;
-                      }
-
-                      if (dialogContext.mounted) {
-                        isLoading.value = true;
-                      }
-
-                      try {
-                        bool success;
-                        if (isEditing) {
-                          success = await ref
-                              .read(customerProvider.notifier)
-                              .updateCustomer(
-                                id: customer['_id'],
-                                name: name,
-                                email: emailController.text.trim().isNotEmpty
-                                    ? emailController.text.trim()
-                                    : null,
-                                phone: phoneController.text.trim().isNotEmpty
-                                    ? phoneController.text.trim()
-                                    : null,
-                                address:
-                                    addressController.text.trim().isNotEmpty
-                                        ? addressController.text.trim()
-                                        : null,
-                                notes: notesController.text.trim().isNotEmpty
-                                    ? notesController.text.trim()
-                                    : null,
-                              );
-                        } else {
-                          success = await ref
-                              .read(customerProvider.notifier)
-                              .createCustomer(
-                                name: name,
-                                email: emailController.text.trim().isNotEmpty
-                                    ? emailController.text.trim()
-                                    : null,
-                                phone: phoneController.text.trim().isNotEmpty
-                                    ? phoneController.text.trim()
-                                    : null,
-                                address:
-                                    addressController.text.trim().isNotEmpty
-                                        ? addressController.text.trim()
-                                        : null,
-                                notes: notesController.text.trim().isNotEmpty
-                                    ? notesController.text.trim()
-                                    : null,
-                              );
-                        }
-
-                        if (success) {
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: loading ? null : () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+                // CONTENT
+                Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextField(
+                          controller: nameController,
+                          enabled: !loading,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre *',
+                            hintText: 'Ingrese el nombre completo',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          textCapitalization: TextCapitalization.words,
+                        ),
+                        const SizedBox(height: AppSizes.spacing16),
+                        TextField(
+                          controller: emailController,
+                          enabled: !loading,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            hintText: 'ejemplo@correo.com',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.email_outlined),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: AppSizes.spacing16),
+                        TextField(
+                          controller: phoneController,
+                          enabled: !loading,
+                          decoration: const InputDecoration(
+                            labelText: 'Teléfono',
+                            hintText: '591-XXXXXXXX',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.phone_outlined),
+                          ),
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: AppSizes.spacing16),
+                        TextField(
+                          controller: addressController,
+                          enabled: !loading,
+                          decoration: const InputDecoration(
+                            labelText: 'Dirección',
+                            hintText: 'Dirección del cliente',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.location_on_outlined),
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: AppSizes.spacing16),
+                        TextField(
+                          controller: notesController,
+                          enabled: !loading,
+                          decoration: const InputDecoration(
+                            labelText: 'Notas',
+                            hintText: 'Información adicional',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.note_outlined),
+                          ),
+                          maxLines: 3,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // FOOTER
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                  ),
+                  padding: const EdgeInsets.all(AppSizes.spacing16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: loading ? null : () {
                           nameController.dispose();
                           emailController.dispose();
                           phoneController.dispose();
                           addressController.dispose();
                           notesController.dispose();
+                          Navigator.of(context).pop();
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: Theme.of(context).primaryColor,
+                        ),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: AppSizes.spacing12),
+                      ElevatedButton.icon(
+                        icon: loading
+                          ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Icon(isEditing ? Icons.update_outlined : Icons.add_rounded),
+                        label: Text(isEditing ? 'Actualizar' : 'Crear'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: loading
+                            ? null
+                            : () async {
+                                final name = nameController.text.trim();
+                                if (name.isEmpty) {
+                                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('El nombre es requerido'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                          if (dialogContext.mounted) {
-                            Navigator.of(dialogContext).pop();
-                          }
-                        }
-                      } finally {
-                        if (dialogContext.mounted) {
-                          isLoading.value = false;
-                        }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(dialogContext).primaryColor,
-              ),
-              child: loading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(isEditing ? 'Actualizar' : 'Crear'),
+                                if (dialogContext.mounted) {
+                                  isLoading.value = true;
+                                }
+
+                                try {
+                                  bool success;
+                                  if (isEditing) {
+                                    success = await ref
+                                        .read(customerProvider.notifier)
+                                        .updateCustomer(
+                                          id: customer['_id'],
+                                          name: name,
+                                          email: emailController.text.trim().isNotEmpty
+                                              ? emailController.text.trim()
+                                              : null,
+                                          phone: phoneController.text.trim().isNotEmpty
+                                              ? phoneController.text.trim()
+                                              : null,
+                                          address:
+                                              addressController.text.trim().isNotEmpty
+                                                  ? addressController.text.trim()
+                                                  : null,
+                                          notes: notesController.text.trim().isNotEmpty
+                                              ? notesController.text.trim()
+                                              : null,
+                                        );
+                                  } else {
+                                    success = await ref
+                                        .read(customerProvider.notifier)
+                                        .createCustomer(
+                                          name: name,
+                                          email: emailController.text.trim().isNotEmpty
+                                              ? emailController.text.trim()
+                                              : null,
+                                          phone: phoneController.text.trim().isNotEmpty
+                                              ? phoneController.text.trim()
+                                              : null,
+                                          address:
+                                              addressController.text.trim().isNotEmpty
+                                                  ? addressController.text.trim()
+                                                  : null,
+                                          notes: notesController.text.trim().isNotEmpty
+                                              ? notesController.text.trim()
+                                              : null,
+                                        );
+                                  }
+
+                                  if (success) {
+                                    nameController.dispose();
+                                    emailController.dispose();
+                                    phoneController.dispose();
+                                    addressController.dispose();
+                                    notesController.dispose();
+
+                                    if (dialogContext.mounted) {
+                                      Navigator.of(dialogContext).pop();
+                                    }
+                                  }
+                                } finally {
+                                  if (dialogContext.mounted) {
+                                    isLoading.value = false;
+                                  }
+                                }
+                              },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -514,12 +586,15 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: null,
-        contentPadding: EdgeInsets.zero,
-        content: SizedBox(
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
           width: 600,
-          height: 700,
+          constraints: const BoxConstraints(maxHeight: 800),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
           child: Consumer(
             builder: (ctx, ref, child) {
               // Obtener órdenes cargadas
@@ -555,35 +630,40 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
               
               final isVIP = loyaltyPoints >= 100;
 
-              return SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header con avatar y nombre
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Theme.of(context).primaryColor,
-                            Theme.of(context).primaryColor.withValues(alpha: .7),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // HEADER con avatar y nombre
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).primaryColor,
+                          Theme.of(context).primaryColor.withValues(alpha: .7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      child: Column(
-                        children: [
-                          Stack(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Stack(
                             alignment: Alignment.center,
                             children: [
                               CircleAvatar(
-                                radius: 40,
+                                radius: 32,
                                 backgroundColor: AppColors.white.withValues(alpha: 0.2),
                                 child: Text(
                                   fullName.isNotEmpty ? fullName[0].toUpperCase() : 'C',
                                   style: const TextStyle(
-                                    fontSize: 40,
+                                    fontSize: 32,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.white,
                                   ),
@@ -594,7 +674,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                                   bottom: 0,
                                   right: 0,
                                   child: Container(
-                                    padding: const EdgeInsets.all(4),
+                                    padding: const EdgeInsets.all(3),
                                     decoration: const BoxDecoration(
                                       color: AppColors.warning,
                                       shape: BoxShape.circle,
@@ -602,138 +682,170 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                                     child: const Icon(
                                       Icons.star,
                                       color: AppColors.white,
-                                      size: 20,
+                                      size: 16,
                                     ),
                                   ),
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            fullName,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.white,
-                            ),
-                          ),
-                          if (isVIP)
-                            Container(
-                              margin: const EdgeInsets.only(top: 8),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.warning.withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Text(
-                                'Cliente VIP',
-                                style: TextStyle(
-                                  color: AppColors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-
-                    // Contenido principal
-                    Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Estadísticas
-                          Row(
+                        ),
+                        const SizedBox(width: AppSizes.spacing16),
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: _buildStatCard(
-                                  'Total Gastado',
-                                  '\$${totalSpent.toStringAsFixed(2)}',
-                                  Icons.shopping_bag,
-                                  AppColors.success,
+                              Text(
+                                fullName,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.white,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildStatCard(
-                                  'Compras',
-                                  totalOrders.toString(),
-                                  Icons.receipt,
-                                  AppColors.info,
+                              if (isVIP)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.warning.withValues(alpha: 0.3),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text(
+                                    'Cliente VIP',
+                                    style: TextStyle(
+                                      color: AppColors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildStatCard(
-                                  'Puntos',
-                                  loyaltyPoints.toString(),
-                                  Icons.card_giftcard,
-                                  AppColors.warning,
-                                ),
-                              ),
                             ],
                           ),
-                          const SizedBox(height: 24),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: AppColors.white),
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                        ),
+                      ],
+                    ),
+                  ),
 
-                          // Información de contacto
-                          Text(
-                            'Información de Contacto',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                  // CONTENT - Información del cliente
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.spacing20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Estadísticas
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildStatCard(
+                                    'Total Gastado',
+                                    '\$${totalSpent.toStringAsFixed(2)}',
+                                    Icons.shopping_bag,
+                                    AppColors.success,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildStatCard(
+                                    'Compras',
+                                    totalOrders.toString(),
+                                    Icons.receipt,
+                                    AppColors.info,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildStatCard(
+                                    'Puntos',
+                                    loyaltyPoints.toString(),
+                                    Icons.card_giftcard,
+                                    AppColors.warning,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildDetailRow('Email', email, Icons.email),
-                          const SizedBox(height: 12),
-                          _buildDetailRow('Teléfono', phone, Icons.phone),
-                          const SizedBox(height: 12),
-                          _buildDetailRow('Dirección', address, Icons.location_on),
-                          const SizedBox(height: 24),
+                            const SizedBox(height: AppSizes.spacing20),
 
-                          // Información adicional
-                          Text(
-                            'Información Adicional',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                            // Información de contacto
+                            Text(
+                              'Información de Contacto',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildDetailRow(
-                            'Cliente desde',
-                            '${createdAt.day}/${createdAt.month}/${createdAt.year}',
-                            Icons.calendar_today,
-                          ),
-                          const SizedBox(height: 12),
-                          if (lastPurchase != null)
+                            const SizedBox(height: AppSizes.spacing12),
+                            _buildDetailRow('Email', email, Icons.email),
+                            const SizedBox(height: AppSizes.spacing12),
+                            _buildDetailRow('Teléfono', phone, Icons.phone),
+                            const SizedBox(height: AppSizes.spacing12),
+                            _buildDetailRow('Dirección', address, Icons.location_on),
+                            const SizedBox(height: AppSizes.spacing20),
+
+                            // Información adicional
+                            Text(
+                              'Información Adicional',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: AppSizes.spacing12),
                             _buildDetailRow(
-                              'Última compra',
-                              '${lastPurchase.day}/${lastPurchase.month}/${lastPurchase.year}',
-                              Icons.shopping_cart,
+                              'Cliente desde',
+                              '${createdAt.day}/${createdAt.month}/${createdAt.year}',
+                              Icons.calendar_today,
                             ),
-                          if (notes.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            _buildDetailRow('Notas', notes, Icons.note),
+                            const SizedBox(height: AppSizes.spacing12),
+                            if (lastPurchase != null)
+                              _buildDetailRow(
+                                'Última compra',
+                                '${lastPurchase.day}/${lastPurchase.month}/${lastPurchase.year}',
+                                Icons.shopping_cart,
+                              ),
+                            if (notes.isNotEmpty) ...[
+                              const SizedBox(height: AppSizes.spacing12),
+                              _buildDetailRow('Notas', notes, Icons.note),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+
+                  // FOOTER
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).primaryColor,
+                          ),
+                          child: const Text('Cerrar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               );
             },
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cerrar'),
-          ),
-        ],
       ),
     );
   }
@@ -825,64 +937,170 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       context: context,
       builder: (dialogContext) => ValueListenableBuilder<bool>(
         valueListenable: isLoading,
-        builder: (ctx, loading, _) => AlertDialog(
-          title: const Text('Confirmar eliminación'),
-          content: Text(
-            '¿Estás seguro de que deseas eliminar a $customerName? Esta acción no se puede deshacer.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: loading
-                  ? null
-                  : () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancelar'),
+        builder: (ctx, loading, _) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).scaffoldBackgroundColor,
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              onPressed: loading
-                  ? null
-                  : () async {
-                if (dialogContext.mounted) {
-                  isLoading.value = true;
-                }
-
-                try {
-                  final success = await ref
-                      .read(customerProvider.notifier)
-                      .deleteCustomer(customer['_id']);
-
-                  if (success && dialogContext.mounted) {
-                    Navigator.of(dialogContext).pop();
-                    
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('$customerName eliminado correctamente'),
-                          backgroundColor: Colors.green,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.error.withValues(alpha: 0.2)),
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
                         ),
-                      );
-                    }
-                  }
-                } finally {
-                  if (dialogContext.mounted) {
-                    isLoading.value = false;
-                  }
-                }
-                    },
-              child: loading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        child: const Icon(Icons.warning_rounded, color: AppColors.error, size: 20),
                       ),
-                    )
-                  : const Text('Eliminar'),
+                      const SizedBox(width: AppSizes.spacing12),
+                      Expanded(
+                        child: Text(
+                          'Eliminar Cliente',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '¿Estás seguro de que deseas eliminar a $customerName?',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: AppSizes.spacing16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.info_outlined, color: AppColors.error, size: 18),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Esta acción no se puede deshacer',
+                                style: TextStyle(fontSize: 12, color: AppColors.error),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Footer
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                  ),
+                  padding: const EdgeInsets.all(AppSizes.spacing16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: loading ? null : () => Navigator.of(dialogContext).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Theme.of(context).primaryColor,
+                        ),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: AppSizes.spacing12),
+                      ElevatedButton.icon(
+                        icon: loading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.delete_outlined),
+                        label: const Text('Eliminar Permanentemente'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: loading
+                            ? null
+                            : () async {
+                              if (dialogContext.mounted) {
+                                isLoading.value = true;
+                              }
+
+                              try {
+                                final success = await ref
+                                    .read(customerProvider.notifier)
+                                    .deleteCustomer(customer['_id']);
+
+                                if (dialogContext.mounted) {
+                                  Navigator.of(dialogContext).pop();
+                                  if (success) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('$customerName eliminado correctamente'),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                    }
+                                  } else {
+                                    if (mounted) {
+                                      final errorMsg = ref.read(customerProvider).errorMessage;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(errorMsg.isNotEmpty ? errorMsg : 'Error al eliminar cliente'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                }
+                              } finally {
+                                if (dialogContext.mounted) {
+                                  isLoading.value = false;
+                                }
+                              }
+                            },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

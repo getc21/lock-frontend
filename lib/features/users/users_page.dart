@@ -268,176 +268,239 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => ValueListenableBuilder<bool>(
           valueListenable: isLoading,
-          builder: (ctx, loading, _) => AlertDialog(
-            title: Text(user == null ? 'Nuevo Usuario' : 'Editar Usuario'),
-            content: SizedBox(
+          builder: (ctx, loading, _) => Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
               width: 500,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: usernameController,
-                      enabled: user == null && !loading,
-                      decoration: InputDecoration(
-                        labelText: 'Username',
-                        border: const OutlineInputBorder(),
-                        hintText: 'Ej: carlos',
-                        filled: user != null,
-                        fillColor: user != null ? Colors.grey[200] : null,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Theme.of(context).scaffoldBackgroundColor,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // HEADER
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
                       ),
                     ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: firstNameController,
-                      enabled: !loading,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre',
-                        border: OutlineInputBorder(),
-                        hintText: 'Ej: Carlos',
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: lastNameController,
-                      enabled: !loading,
-                      decoration: const InputDecoration(
-                        labelText: 'Apellido',
-                        border: OutlineInputBorder(),
-                        hintText: 'Ej: Pérez',
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: emailController,
-                      enabled: !loading,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: passwordController,
-                      enabled: !loading,
-                      decoration: InputDecoration(
-                        labelText: user == null ? 'Contraseña' : 'Nueva Contraseña (opcional)',
-                        border: const OutlineInputBorder(),
-                      ),
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedRole,
-                      decoration: const InputDecoration(
-                        labelText: 'Rol',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'admin', child: Text('Administrador')),
-                        DropdownMenuItem(value: 'manager', child: Text('Gerente')),
-                        DropdownMenuItem(value: 'employee', child: Text('Empleado')),
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            user == null ? 'Nuevo Usuario' : 'Editar Usuario',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: loading ? null : () => Navigator.of(context).pop(),
+                        ),
                       ],
-                      onChanged: loading
-                          ? null
-                          : (value) {
-                              if (value != null) {
-                                setState(() => selectedRole = value);
-                              }
-                            },
                     ),
-                    const SizedBox(height: AppSizes.spacing16),
-                  ],
-                ),
+                  ),
+                  // CONTENT
+                  Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            controller: usernameController,
+                            enabled: user == null && !loading,
+                            decoration: InputDecoration(
+                              labelText: 'Username',
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.person_outline),
+                              hintText: 'Ej: carlos',
+                              filled: user != null,
+                              fillColor: user != null ? Colors.grey[200] : null,
+                            ),
+                          ),
+                          const SizedBox(height: AppSizes.spacing16),
+                          TextField(
+                            controller: firstNameController,
+                            enabled: !loading,
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.edit_outlined),
+                              hintText: 'Ej: Carlos',
+                            ),
+                          ),
+                          const SizedBox(height: AppSizes.spacing16),
+                          TextField(
+                            controller: lastNameController,
+                            enabled: !loading,
+                            decoration: const InputDecoration(
+                              labelText: 'Apellido',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.edit_outlined),
+                              hintText: 'Ej: Pérez',
+                            ),
+                          ),
+                          const SizedBox(height: AppSizes.spacing16),
+                          TextField(
+                            controller: emailController,
+                            enabled: !loading,
+                            decoration: const InputDecoration(
+                              labelText: 'Email',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.email_outlined),
+                            ),
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          const SizedBox(height: AppSizes.spacing16),
+                          TextField(
+                            controller: passwordController,
+                            enabled: !loading,
+                            decoration: InputDecoration(
+                              labelText: user == null ? 'Contraseña' : 'Nueva Contraseña (opcional)',
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.lock_outline),
+                            ),
+                            obscureText: true,
+                          ),
+                          const SizedBox(height: AppSizes.spacing16),
+                          DropdownButtonFormField<String>(
+                            initialValue: selectedRole,
+                            decoration: const InputDecoration(
+                              labelText: 'Rol',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.security_outlined),
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'admin', child: Text('Administrador')),
+                              DropdownMenuItem(value: 'manager', child: Text('Gerente')),
+                              DropdownMenuItem(value: 'employee', child: Text('Empleado')),
+                            ],
+                            onChanged: loading
+                                ? null
+                                : (value) {
+                                    if (value != null) {
+                                      setState(() => selectedRole = value);
+                                    }
+                                  },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // FOOTER
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: loading ? null : () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).primaryColor,
+                          ),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: AppSizes.spacing12),
+                        ElevatedButton.icon(
+                          icon: loading
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : Icon(user == null ? Icons.add_rounded : Icons.save_outlined),
+                          label: Text(user == null ? 'Crear' : 'Guardar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: loading
+                              ? null
+                              : () async {
+                                  if (isLoading.value) return;
+                                  isLoading.value = true;
+
+                                  final username = usernameController.text.trim();
+                                  final firstName = firstNameController.text.trim();
+                                  final lastName = lastNameController.text.trim();
+                                  final email = emailController.text.trim();
+                                  final password = passwordController.text.trim();
+
+                                  if (username.isEmpty || firstName.isEmpty || email.isEmpty) {
+                                    isLoading.value = false;
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Username, nombre y email son requeridos')),
+                                      );
+                                    }
+                                    return;
+                                  }
+
+                                  if (user == null && password.isEmpty) {
+                                    isLoading.value = false;
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('La contraseña es requerida para nuevos usuarios')),
+                                      );
+                                    }
+                                    return;
+                                  }
+
+                                  try {
+                                    bool success;
+                                    if (user == null) {
+                                      success = await ref.read(userProvider.notifier).createUser(
+                                        username: username,
+                                        firstName: firstName,
+                                        lastName: lastName,
+                                        email: email,
+                                        password: password,
+                                        role: selectedRole,
+                                      );
+                                    } else {
+                                      success = await ref.read(userProvider.notifier).updateUser(
+                                        id: user.id ?? '',
+                                        username: username,
+                                        firstName: firstName,
+                                        lastName: lastName,
+                                        email: email,
+                                        role: selectedRole,
+                                        password: password.isEmpty ? null : password,
+                                      );
+                                    }
+
+                                    if (success && context.mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+                                  } finally {
+                                    if (context.mounted) {
+                                      isLoading.value = false;
+                                    }
+                                  }
+                                },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: loading ? null : () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: loading
-                    ? null
-                    : () async {
-                        if (isLoading.value) return;
-                        isLoading.value = true;
-
-                        final username = usernameController.text.trim();
-                        final firstName = firstNameController.text.trim();
-                        final lastName = lastNameController.text.trim();
-                        final email = emailController.text.trim();
-                        final password = passwordController.text.trim();
-
-                        if (username.isEmpty || firstName.isEmpty || email.isEmpty) {
-                          isLoading.value = false;
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Username, nombre y email son requeridos')),
-                            );
-                          }
-                          return;
-                        }
-
-                        if (user == null && password.isEmpty) {
-                          isLoading.value = false;
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('La contraseña es requerida para nuevos usuarios')),
-                            );
-                          }
-                          return;
-                        }
-
-                        try {
-                          bool success;
-                          if (user == null) {
-                            success = await ref.read(userProvider.notifier).createUser(
-                              username: username,
-                              firstName: firstName,
-                              lastName: lastName,
-                              email: email,
-                              password: password,
-                              role: selectedRole,
-                            );
-                          } else {
-                            success = await ref.read(userProvider.notifier).updateUser(
-                              id: user.id ?? '',
-                              username: username,
-                              firstName: firstName,
-                              lastName: lastName,
-                              email: email,
-                              role: selectedRole,
-                              password: password.isEmpty ? null : password,
-                            );
-                          }
-
-                          if (success && context.mounted) {
-                            Navigator.of(context).pop();
-                          }
-                        } finally {
-                          if (context.mounted) {
-                            isLoading.value = false;
-                          }
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-                child: loading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : Text(user == null ? 'Crear' : 'Actualizar'),
-              ),
-            ],
           ),
         ),
       ),
@@ -453,51 +516,149 @@ class _UsersPageState extends ConsumerState<UsersPage> {
 
     showDialog(
       context: context,
-      builder: (context) => ValueListenableBuilder<bool>(
+      builder: (dialogContext) => ValueListenableBuilder<bool>(
         valueListenable: isLoading,
-        builder: (ctx, loading, _) => AlertDialog(
-          title: const Text('Eliminar Usuario'),
-          content: Text('¿Está seguro de que desea eliminar al usuario "$userName"?'),
-          actions: [
-            TextButton(
-              onPressed: loading ? null : () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
+        builder: (ctx, loading, _) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).scaffoldBackgroundColor,
             ),
-            ElevatedButton(
-              onPressed: loading
-                  ? null
-                  : () async {
-                if (isLoading.value) return;
-                isLoading.value = true;
-
-                try {
-                  final success = await ref.read(userProvider.notifier).deleteUser(userId);
-
-                  if (success && context.mounted) {
-                    Navigator.of(context).pop();
-                  }
-                } finally {
-                  if (context.mounted) {
-                    isLoading.value = false;
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: Colors.white,
-              ),
-              child: loading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.error.withValues(alpha: 0.2)),
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.warning_rounded, color: AppColors.error, size: 20),
                       ),
-                    )
-                  : const Text('Eliminar'),
+                      const SizedBox(width: AppSizes.spacing12),
+                      Expanded(
+                        child: Text(
+                          'Eliminar Usuario',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '¿Está seguro de que desea eliminar al usuario "$userName"?',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: AppSizes.spacing16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.info_outlined, color: AppColors.error, size: 18),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Esta acción no se puede deshacer',
+                                style: TextStyle(fontSize: 12, color: AppColors.error),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Footer
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                  ),
+                  padding: const EdgeInsets.all(AppSizes.spacing16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: loading ? null : () => Navigator.of(dialogContext).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Theme.of(context).primaryColor,
+                        ),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: AppSizes.spacing12),
+                      ElevatedButton.icon(
+                        icon: loading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.delete_outlined),
+                        label: const Text('Eliminar Permanentemente'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: loading
+                            ? null
+                            : () async {
+                              if (isLoading.value) return;
+                              isLoading.value = true;
+
+                              try {
+                                final success = await ref.read(userProvider.notifier).deleteUser(userId);
+
+                                if (success && context.mounted) {
+                                  Navigator.of(context).pop();
+                                }
+                              } finally {
+                                if (context.mounted) {
+                                  isLoading.value = false;
+                                }
+                              }
+                            },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -516,98 +677,158 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => ValueListenableBuilder<bool>(
           valueListenable: isLoading,
-          builder: (ctx, loading, _) => AlertDialog(
-            title: const Text('Asignar Tienda'),
-            content: SizedBox(
-              width: 400,
+          builder: (ctx, loading, _) => Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Theme.of(context).scaffoldBackgroundColor,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Asignar tienda a: ${user.fullName}'),
-                  const SizedBox(height: AppSizes.spacing16),
-                  if (storeState.stores.isEmpty)
-                    const Text('No hay tiendas disponibles')
-                  else
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Seleccionar Tienda',
-                        border: OutlineInputBorder(),
+                  // HEADER
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
                       ),
-                      items: storeState.stores.map((store) {
-                        return DropdownMenuItem<String>(
-                          value: store['_id'],
-                          child: Text(store['name'] ?? 'Sin nombre'),
-                        );
-                      }).toList(),
-                      onChanged: loading
-                          ? null
-                          : (value) {
-                              if (value != null) {
-                                setState(() => selectedStoreId = value);
-                              }
-                            },
                     ),
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Asignar Tienda',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: loading ? null : () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // CONTENT
+                  Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: SizedBox(
+                      width: 400,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Asignar tienda a: ${user.fullName}'),
+                          const SizedBox(height: AppSizes.spacing16),
+                          if (storeState.stores.isEmpty)
+                            const Text('No hay tiendas disponibles')
+                          else
+                            DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                labelText: 'Seleccionar Tienda',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: storeState.stores.map((store) {
+                                return DropdownMenuItem<String>(
+                                  value: store['_id'],
+                                  child: Text(store['name'] ?? 'Sin nombre'),
+                                );
+                              }).toList(),
+                              onChanged: loading
+                                  ? null
+                                  : (value) {
+                                      if (value != null) {
+                                        setState(() => selectedStoreId = value);
+                                      }
+                                    },
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // FOOTER
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: loading ? null : () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).primaryColor,
+                          ),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: AppSizes.spacing12),
+                        ElevatedButton.icon(
+                          icon: loading 
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.check_circle_outlined),
+                          label: const Text('Asignar Tienda'),
+                          onPressed: loading
+                              ? null
+                              : () async {
+                                  debugPrint('[UsersPage] Asignar button tapped — isLoading=${isLoading.value} storeId=$selectedStoreId userId=${user.id}');
+                                  if (isLoading.value) {
+                                    debugPrint('[UsersPage] BLOCKED by isLoading guard');
+                                    return;
+                                  }
+                                  isLoading.value = true;
+
+                                  if (selectedStoreId.isEmpty) {
+                                    isLoading.value = false;
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Debe seleccionar una tienda')),
+                                      );
+                                    }
+                                    return;
+                                  }
+
+                                  try {
+                                    final success = await ref.read(userProvider.notifier).assignStoreToUser(
+                                      user.id ?? '',
+                                      selectedStoreId,
+                                    );
+
+                                    if (success && context.mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+                                  } finally {
+                                    if (context.mounted) {
+                                      isLoading.value = false;
+                                    }
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: loading ? null : () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: loading
-                    ? null
-                    : () async {
-                        debugPrint('[UsersPage] Asignar button tapped — isLoading=${isLoading.value} storeId=$selectedStoreId userId=${user.id}');
-                        if (isLoading.value) {
-                          debugPrint('[UsersPage] BLOCKED by isLoading guard');
-                          return;
-                        }
-                        isLoading.value = true;
-
-                        if (selectedStoreId.isEmpty) {
-                          isLoading.value = false;
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Debe seleccionar una tienda')),
-                            );
-                          }
-                          return;
-                        }
-
-                        try {
-                          final success = await ref.read(userProvider.notifier).assignStoreToUser(
-                            user.id ?? '',
-                            selectedStoreId,
-                          );
-
-                          if (success && context.mounted) {
-                            Navigator.of(context).pop();
-                          }
-                        } finally {
-                          if (context.mounted) {
-                            isLoading.value = false;
-                          }
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-                child: loading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Text('Asignar'),
-              ),
-            ],
           ),
         ),
       ),

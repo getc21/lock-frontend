@@ -131,7 +131,12 @@ class CategoryProvider {
 
 
         if (response.statusCode == 201 || response.statusCode == 200) {
-          return {'success': true, 'message': 'Categoría creada exitosamente'};
+          try {
+            final data = json.decode(response.body);
+            return {'success': true, 'message': 'Categoría creada exitosamente', 'data': data['data']};
+          } catch (e) {
+            return {'success': true, 'message': 'Categoría creada exitosamente'};
+          }
         } else {
           try {
             final data = json.decode(response.body);
@@ -162,7 +167,12 @@ class CategoryProvider {
 
 
         if (response.statusCode == 201 || response.statusCode == 200) {
-          return {'success': true, 'message': 'Categoría creada exitosamente'};
+          try {
+            final data = json.decode(response.body);
+            return {'success': true, 'message': 'Categoría creada exitosamente', 'data': data['data']};
+          } catch (e) {
+            return {'success': true, 'message': 'Categoría creada exitosamente'};
+          }
         } else {
           try {
             final data = json.decode(response.body);
@@ -221,7 +231,12 @@ class CategoryProvider {
 
 
         if (response.statusCode == 200) {
-          return {'success': true, 'message': 'Categoría actualizada exitosamente'};
+          try {
+            final data = json.decode(response.body);
+            return {'success': true, 'message': 'Categoría actualizada exitosamente', 'data': data['data']};
+          } catch (e) {
+            return {'success': true, 'message': 'Categoría actualizada exitosamente'};
+          }
         } else {
           try {
             final data = json.decode(response.body);
@@ -251,7 +266,12 @@ class CategoryProvider {
 
 
         if (response.statusCode == 200) {
-          return {'success': true, 'message': 'Categoría actualizada exitosamente'};
+          try {
+            final data = json.decode(response.body);
+            return {'success': true, 'message': 'Categoría actualizada exitosamente', 'data': data['data']};
+          } catch (e) {
+            return {'success': true, 'message': 'Categoría actualizada exitosamente'};
+          }
         } else {
           try {
             final data = json.decode(response.body);

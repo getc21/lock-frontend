@@ -707,6 +707,9 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => context.go('/orders'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Theme.of(context).primaryColor,
+                        ),
                         child: const Text('Cancelar'),
                       ),
                     ),
@@ -916,6 +919,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
         storeId: currentStoreId,
         items: items,
         customerId: customerId,
+        discountAmount: formState.discountAmount,
       );
 
       // Verificar que el widget todavía está montado antes de actualizar UI
@@ -931,10 +935,8 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
           ),
         );
 
-        // Recargar las cotizaciones para mostrar la nueva
-        await ref.read(quotationListProvider(currentStoreId).notifier).refreshQuotations();
-
         // Redirigir a la página de cotizaciones
+        // (la lista ya se actualizó directamente en el notifier)
         if (mounted) {
           context.go('/quotations');
         }
@@ -1017,52 +1019,121 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('✓ Orden Creada Exitosamente'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Tu orden ha sido creada correctamente.'),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    border: Border.all(color: Colors.green.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Número de Comprobante:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        receiptNumber,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                          fontFamily: 'Courier',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
+          builder: (context) => Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
+              width: 450,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Theme.of(context).scaffoldBackgroundColor,
               ),
-            ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // HEADER
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.success,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.check_circle_outline,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: AppSizes.spacing12),
+                        const Expanded(
+                          child: Text(
+                            '✓ Orden Creada Exitosamente',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // CONTENT
+                  Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Tu orden ha sido creada correctamente.'),
+                        const SizedBox(height: AppSizes.spacing20),
+                        Container(
+                          padding: const EdgeInsets.all(AppSizes.spacing12),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.1),
+                            border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Número de Comprobante:',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: AppSizes.spacing8),
+                              Text(
+                                receiptNumber,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.success,
+                                  fontFamily: 'Courier',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // FOOTER
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         );
 
@@ -1072,9 +1143,6 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
         // Recargar productos para actualizar el stock (FORZAR recarga desde servidor)
         final productNotifier = ref.read(productProvider.notifier);
         await productNotifier.loadProductsForCurrentStore(forceRefresh: true);
-
-        // Recargar las órdenes con forzar actualización para mostrar la nueva orden
-        await ref.read(orderProvider.notifier).loadOrdersForCurrentStore(forceRefresh: true);
 
         // Redirigir a la página de órdenes
         if (mounted) {

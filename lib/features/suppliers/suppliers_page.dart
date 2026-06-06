@@ -393,6 +393,10 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     BuildContext context, {
     Map<String, dynamic>? supplier,
   }) {
+    if (supplier == null) {
+      ref.read(supplierFormProvider(null).notifier).reset();
+    }
+
     final nameController = TextEditingController(text: supplier?['name'] ?? '');
     final contactPersonController = TextEditingController(
       text: supplier?['contactName'] ?? '',
@@ -416,59 +420,111 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
             supplierFormProvider(supplier).notifier,
           );
 
-          return AlertDialog(
-            title: Text(
-              supplier == null ? 'Nuevo Proveedor' : 'Editar Proveedor',
-            ),
-            content: SizedBox(
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
               width: 500,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Selector de imagen
-                    GestureDetector(
-                      onTap: () async {
-                        try {
-                          await formNotifier.selectImage();
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Error al seleccionar imagen'),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).primaryColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(
-                              context,
-                            ).primaryColor.withValues(alpha: 0.3),
-                            width: 2,
-                            style: BorderStyle.solid,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Theme.of(context).scaffoldBackgroundColor,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // HEADER
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            supplier == null ? 'Nuevo Proveedor' : 'Editar Proveedor',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                        child: formState.imagePreview.isNotEmpty
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  formState.imagePreview,
-                                  width: 120,
-                                  height: 120,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: formState.isLoading ? null : () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // CONTENT
+                  Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Selector de imagen
+                          GestureDetector(
+                            onTap: () async {
+                              try {
+                                await formNotifier.selectImage();
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Error al seleccionar imagen'),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            child: Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+                                  width: 2,
+                                  style: BorderStyle.solid,
+                                ),
+                              ),
+                              child: formState.imagePreview.isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.network(
+                                        formState.imagePreview,
+                                        width: 120,
+                                        height: 120,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.add_photo_alternate,
+                                                size: 40,
+                                                color: Theme.of(context).primaryColor,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              const Text(
+                                                'Seleccionar imagen',
+                                                style: TextStyle(fontSize: 12),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                    )
+                                  : Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           Icons.add_photo_alternate,
@@ -476,217 +532,215 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                                           color: Theme.of(context).primaryColor,
                                         ),
                                         const SizedBox(height: 8),
-                                        Text(
+                                        const Text(
                                           'Seleccionar imagen',
                                           style: TextStyle(fontSize: 12),
                                         ),
                                       ],
-                                    );
-                                  },
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSizes.spacing24),
+                          TextField(
+                            controller: nameController,
+                            enabled: !formState.isLoading,
+                            onChanged: formNotifier.setName,
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre *',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.business_outlined),
+                            ),
+                          ),
+                          const SizedBox(height: AppSizes.spacing16),
+                          TextField(
+                            controller: contactPersonController,
+                            enabled: !formState.isLoading,
+                            onChanged: formNotifier.setContactName,
+                            decoration: const InputDecoration(
+                              labelText: 'Persona de Contacto',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                          ),
+                          const SizedBox(height: AppSizes.spacing16),
+                          TextField(
+                            controller: phoneController,
+                            enabled: !formState.isLoading,
+                            onChanged: formNotifier.setContactPhone,
+                            decoration: const InputDecoration(
+                              labelText: 'Teléfono',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.phone_outlined),
+                            ),
+                            keyboardType: TextInputType.phone,
+                          ),
+                          const SizedBox(height: AppSizes.spacing16),
+                          TextField(
+                            controller: emailController,
+                            enabled: !formState.isLoading,
+                            onChanged: formNotifier.setContactEmail,
+                            decoration: const InputDecoration(
+                              labelText: 'Email',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.email_outlined),
+                            ),
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          const SizedBox(height: AppSizes.spacing16),
+                          TextField(
+                            controller: addressController,
+                            enabled: !formState.isLoading,
+                            onChanged: formNotifier.setAddress,
+                            decoration: const InputDecoration(
+                              labelText: 'Dirección',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.location_on_outlined),
+                            ),
+                            maxLines: 2,
+                          ),
+                          const SizedBox(height: AppSizes.spacing8),
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '* Campos requeridos',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // FOOTER
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: formState.isLoading
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).primaryColor,
+                          ),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: AppSizes.spacing12),
+                        ElevatedButton.icon(
+                          icon: formState.isLoading
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
                               )
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.add_photo_alternate,
-                                    size: 40,
-                                    color: Theme.of(context).primaryColor,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Seleccionar imagen',
-                                    style: TextStyle(fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.spacing24),
-                    TextField(
-                      controller: nameController,
-                      enabled: !formState.isLoading,
-                      onChanged: formNotifier.setName,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre *',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.business_outlined),
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: contactPersonController,
-                      enabled: !formState.isLoading,
-                      onChanged: formNotifier.setContactName,
-                      decoration: const InputDecoration(
-                        labelText: 'Persona de Contacto',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person_outline),
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: phoneController,
-                      enabled: !formState.isLoading,
-                      onChanged: formNotifier.setContactPhone,
-                      decoration: const InputDecoration(
-                        labelText: 'Teléfono',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.phone_outlined),
-                      ),
-                      keyboardType: TextInputType.phone,
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: emailController,
-                      enabled: !formState.isLoading,
-                      onChanged: formNotifier.setContactEmail,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.email_outlined),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: AppSizes.spacing16),
-                    TextField(
-                      controller: addressController,
-                      enabled: !formState.isLoading,
-                      onChanged: formNotifier.setAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Dirección',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.location_on_outlined),
-                      ),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: AppSizes.spacing8),
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '* Campos requeridos',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
+                            : Icon(supplier == null ? Icons.add_rounded : Icons.save_outlined),
+                          label: Text(supplier == null ? 'Crear' : 'Actualizar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: formState.isLoading
+                              ? null
+                              : () async {
+                                  final name = nameController.text.trim();
+
+                                  if (name.isEmpty) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('El nombre es requerido'),
+                                        ),
+                                      );
+                                    }
+                                    return;
+                                  }
+
+                                  if (context.mounted) {
+                                    formNotifier.setLoading(true);
+                                  }
+
+                                  try {
+                                    bool success;
+                                    if (supplier == null) {
+                                      success = await ref
+                                          .read(supplierProvider.notifier)
+                                          .createSupplier(
+                                            name: name,
+                                            contactPerson:
+                                                contactPersonController.text
+                                                    .trim()
+                                                    .isEmpty
+                                                ? null
+                                                : contactPersonController.text.trim(),
+                                            phone: phoneController.text.trim().isEmpty
+                                                ? null
+                                                : phoneController.text.trim(),
+                                            email: emailController.text.trim().isEmpty
+                                                ? null
+                                                : emailController.text.trim(),
+                                            address: addressController.text.trim().isEmpty
+                                                ? null
+                                                : addressController.text.trim(),
+                                            imageFile: formState.selectedImage,
+                                            imageBytes: formState.imageBytes,
+                                          );
+                                    } else {
+                                      success = await ref
+                                          .read(supplierProvider.notifier)
+                                          .updateSupplier(
+                                            id: supplier['_id'] ?? supplier['id'] ?? '',
+                                            name: name,
+                                            contactPerson:
+                                                contactPersonController.text
+                                                    .trim()
+                                                    .isEmpty
+                                                ? null
+                                                : contactPersonController.text.trim(),
+                                            phone: phoneController.text.trim().isEmpty
+                                                ? null
+                                                : phoneController.text.trim(),
+                                            email: emailController.text.trim().isEmpty
+                                                ? null
+                                                : emailController.text.trim(),
+                                            address: addressController.text.trim().isEmpty
+                                                ? null
+                                                : addressController.text.trim(),
+                                            imageFile: formState.selectedImage,
+                                            imageBytes: formState.imageBytes,
+                                          );
+                                    }
+
+                                    if (context.mounted) {
+                                      formNotifier.setLoading(false);
+                                      if (success) {
+                                        Navigator.of(context).pop();
+                                      }
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      formNotifier.setLoading(false);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')),
+                                      );
+                                    }
+                                  }
+                                },
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: formState.isLoading
-                    ? null
-                    : () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: formState.isLoading
-                    ? null
-                    : () async {
-                        final name = nameController.text.trim();
-
-                        if (name.isEmpty) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('El nombre es requerido'),
-                              ),
-                            );
-                          }
-                          return;
-                        }
-
-                        if (context.mounted) {
-                          formNotifier.setLoading(true);
-                        }
-
-                        try {
-                          bool success;
-                          if (supplier == null) {
-                            success = await ref
-                                .read(supplierProvider.notifier)
-                                .createSupplier(
-                                  name: name,
-                                  contactPerson:
-                                      contactPersonController.text
-                                          .trim()
-                                          .isEmpty
-                                      ? null
-                                      : contactPersonController.text.trim(),
-                                  phone: phoneController.text.trim().isEmpty
-                                      ? null
-                                      : phoneController.text.trim(),
-                                  email: emailController.text.trim().isEmpty
-                                      ? null
-                                      : emailController.text.trim(),
-                                  address: addressController.text.trim().isEmpty
-                                      ? null
-                                      : addressController.text.trim(),
-                                  imageFile: formState.selectedImage,
-                                  imageBytes: formState.imageBytes,
-                                );
-                          } else {
-                            success = await ref
-                                .read(supplierProvider.notifier)
-                                .updateSupplier(
-                                  id: supplier['_id'] ?? supplier['id'] ?? '',
-                                  name: name,
-                                  contactPerson:
-                                      contactPersonController.text
-                                          .trim()
-                                          .isEmpty
-                                      ? null
-                                      : contactPersonController.text.trim(),
-                                  phone: phoneController.text.trim().isEmpty
-                                      ? null
-                                      : phoneController.text.trim(),
-                                  email: emailController.text.trim().isEmpty
-                                      ? null
-                                      : emailController.text.trim(),
-                                  address: addressController.text.trim().isEmpty
-                                      ? null
-                                      : addressController.text.trim(),
-                                  imageFile: formState.selectedImage,
-                                  imageBytes: formState.imageBytes,
-                                );
-                          }
-
-                          if (context.mounted) {
-                            formNotifier.setLoading(false);
-                            if (success) {
-                              Navigator.of(context).pop();
-                            }
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            formNotifier.setLoading(false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
-                          }
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-                child: formState.isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
-                    : Text(supplier == null ? 'Crear' : 'Actualizar'),
-              ),
-            ],
           );
         },
       ),
@@ -700,69 +754,171 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
   ) {
     showDialog(
       context: context,
-      builder: (context) => Consumer(
+      builder: (dialogContext) => Consumer(
         builder: (context, ref, _) {
           final formState = ref.watch(supplierFormProvider(null));
           final formNotifier = ref.watch(supplierFormProvider(null).notifier);
 
-          return AlertDialog(
-            title: const Text('Eliminar Proveedor'),
-            content: Text(
-              '¿Está seguro de que desea eliminar al proveedor "$supplierName"?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: formState.isDeleting
-                    ? null
-                    : () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Theme.of(context).scaffoldBackgroundColor,
               ),
-              ElevatedButton(
-                onPressed: formState.isDeleting
-                    ? null
-                    : () async {
-                        if (context.mounted) {
-                          formNotifier.setDeleting(true);
-                        }
-
-                        try {
-                          final success = await ref
-                              .read(supplierProvider.notifier)
-                              .deleteSupplier(supplierId);
-
-                          if (context.mounted) {
-                            formNotifier.setDeleting(false);
-                            if (success) {
-                              Navigator.of(context).pop();
-                            }
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            formNotifier.setDeleting(false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
-                          }
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white,
-                ),
-                child: formState.isDeleting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                      border: Border(
+                        bottom: BorderSide(color: AppColors.error.withValues(alpha: 0.2)),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.warning_rounded, color: AppColors.error, size: 20),
+                        ),
+                        const SizedBox(width: AppSizes.spacing12),
+                        Expanded(
+                          child: Text(
+                            'Eliminar Proveedor',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.error,
+                            ),
                           ),
                         ),
-                      )
-                    : const Text('Eliminar'),
+                      ],
+                    ),
+                  ),
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '¿Está seguro de que desea eliminar al proveedor "$supplierName"?',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(height: AppSizes.spacing16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.info_outlined, color: AppColors.error, size: 18),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Esta acción no se puede deshacer',
+                                  style: TextStyle(fontSize: 12, color: AppColors.error),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Footer
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: formState.isDeleting
+                              ? null
+                              : () => Navigator.of(dialogContext).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).primaryColor,
+                          ),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: AppSizes.spacing12),
+                        ElevatedButton.icon(
+                          icon: formState.isDeleting
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Icon(Icons.delete_outlined),
+                          label: const Text('Eliminar Permanentemente'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.error,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: formState.isDeleting
+                              ? null
+                              : () async {
+                                  if (context.mounted) {
+                                    formNotifier.setDeleting(true);
+                                  }
+
+                                  try {
+                                    final success = await ref
+                                        .read(supplierProvider.notifier)
+                                        .deleteSupplier(supplierId);
+
+                                    if (context.mounted) {
+                                      formNotifier.setDeleting(false);
+                                      Navigator.of(context).pop();
+                                      if (!success) {
+                                        final errorMsg = ref.read(supplierProvider).errorMessage;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(errorMsg.isNotEmpty ? errorMsg : 'Error al eliminar proveedor'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      formNotifier.setDeleting(false);
+                                      Navigator.of(context).pop();
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                      );
+                                    }
+                                  }
+                                },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           );
         },
       ),
@@ -788,218 +944,285 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.8,
           height: MediaQuery.of(context).size.height * 0.8,
-          padding: const EdgeInsets.all(AppSizes.spacing24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Productos de: $supplierName',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${supplierProducts.length} producto(s) encontrado(s)',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
+              // HEADER mejorado
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).primaryColor,
+                      Theme.of(context).primaryColor.withValues(alpha: 0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                    tooltip: 'Cerrar',
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSizes.spacing16),
-              const Divider(),
-              const SizedBox(height: AppSizes.spacing16),
-
-              // Lista de productos
-              Expanded(
-                child: supplierProducts.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.inventory_2_outlined,
-                              size: 64,
-                              color: AppColors.textSecondary.withValues(
-                                alpha: 0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No hay productos de este proveedor',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: AppColors.textSecondary.withValues(
-                                  alpha: 0.7,
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.inventory_2_outlined,
+                                  color: Colors.white,
+                                  size: 20,
                                 ),
                               ),
+                              const SizedBox(width: AppSizes.spacing12),
+                              Expanded(
+                                child: Text(
+                                  'Productos de: $supplierName',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${supplierProducts.length} producto(s) encontrado(s)',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.white70,
                             ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: supplierProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = supplierProducts[index];
-                          final stock = product['stock'] ?? 0;
-                          final isOutOfStock = stock == 0;
-                          final isLowStock = stock > 0 && stock < 10;
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Cerrar',
+                    ),
+                  ],
+                ),
+              ),
 
-                          return Card(
-                            margin: const EdgeInsets.only(
-                              bottom: AppSizes.spacing12,
-                            ),
-                            child: ListTile(
-                              leading: product['foto'] != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.network(
-                                        product['foto'],
+              // CONTENT - Lista de productos
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing16),
+                  child: supplierProducts.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 64,
+                                color: AppColors.textSecondary.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: AppSizes.spacing16),
+                              Text(
+                                'No hay productos de este proveedor',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: supplierProducts.length,
+                          itemBuilder: (context, index) {
+                            final product = supplierProducts[index];
+                            final stock = product['stock'] ?? 0;
+                            final isOutOfStock = stock == 0;
+                            final isLowStock = stock > 0 && stock < 10;
+
+                            return Card(
+                              margin: const EdgeInsets.only(
+                                bottom: AppSizes.spacing12,
+                              ),
+                              child: ListTile(
+                                leading: product['foto'] != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          product['foto'],
+                                          width: 50,
+                                          height: 50,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                                    width: 50,
+                                                    height: 50,
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.gray100,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.inventory_2_outlined,
+                                                    ),
+                                                  ),
+                                        ),
+                                      )
+                                    : Container(
                                         width: 50,
                                         height: 50,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                Container(
-                                                  width: 50,
-                                                  height: 50,
-                                                  decoration: BoxDecoration(
-                                                    color: AppColors.gray100,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.inventory_2_outlined,
-                                                  ),
-                                                ),
-                                      ),
-                                    )
-                                  : Container(
-                                      width: 50,
-                                      height: 50,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.gray100,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Icon(
-                                        Icons.inventory_2_outlined,
-                                      ),
-                                    ),
-                              title: Text(
-                                product['name'] ?? 'Sin nombre',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (product['description'] != null)
-                                    Text(
-                                      product['description'],
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Stock: ',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 2,
-                                        ),
                                         decoration: BoxDecoration(
-                                          color: isOutOfStock
-                                              ? AppColors.error.withValues(
-                                                  alpha: 0.1,
-                                                )
-                                              : isLowStock
-                                              ? AppColors.warning.withValues(
-                                                  alpha: 0.1,
-                                                )
-                                              : AppColors.success.withValues(
-                                                  alpha: 0.1,
-                                                ),
-                                          borderRadius: BorderRadius.circular(
-                                            4,
+                                          color: AppColors.gray100,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(
+                                          Icons.inventory_2_outlined,
+                                        ),
+                                      ),
+                                title: Text(
+                                  product['name'] ?? 'Sin nombre',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (product['description'] != null)
+                                      Text(
+                                        product['description'],
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Stock: ',
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isOutOfStock
+                                                ? AppColors.error.withValues(
+                                                    alpha: 0.1,
+                                                  )
+                                                : isLowStock
+                                                ? AppColors.warning.withValues(
+                                                    alpha: 0.1,
+                                                  )
+                                                : AppColors.success.withValues(
+                                                    alpha: 0.1,
+                                                  ),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '$stock',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: isOutOfStock
+                                                  ? AppColors.error
+                                                  : isLowStock
+                                                  ? AppColors.warning
+                                                  : AppColors.success,
+                                            ),
                                           ),
                                         ),
-                                        child: Text(
-                                          '$stock',
+                                        const SizedBox(width: 16),
+                                        Text(
+                                          'Precio: ${_formatCurrency((product['salePrice'] as num))}',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: isOutOfStock
-                                                ? AppColors.error
-                                                : isLowStock
-                                                ? AppColors.warning
-                                                : AppColors.success,
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(context).primaryColor,
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Text(
-                                        'Precio: ${_formatCurrency((product['salePrice'] as num))}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: Theme.of(context).primaryColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (product['categoryId'] != null &&
-                                      product['categoryId'] is Map)
-                                    Chip(
-                                      label: Text(
-                                        product['categoryId']['name'] ??
-                                            'Sin categoría',
-                                        style: const TextStyle(fontSize: 11),
-                                      ),
-                                      backgroundColor: Theme.of(
-                                        context,
-                                      ).primaryColor.withValues(alpha: 0.1),
-                                      padding: EdgeInsets.zero,
+                                      ],
                                     ),
-                                ],
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (product['categoryId'] != null &&
+                                        product['categoryId'] is Map)
+                                      Chip(
+                                        label: Text(
+                                          product['categoryId']['name'] ??
+                                              'Sin categoría',
+                                          style: const TextStyle(fontSize: 11),
+                                        ),
+                                        backgroundColor: Theme.of(
+                                          context,
+                                        ).primaryColor.withValues(alpha: 0.1),
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
+                ),
+              ),
+
+              // FOOTER
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: AppColors.border, width: 1),
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      icon: const Icon(Icons.close_outlined),
+                      label: const Text('Cerrar'),
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
                       ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

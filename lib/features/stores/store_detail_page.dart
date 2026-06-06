@@ -145,7 +145,13 @@ class _StoreDetailContentState extends ConsumerState<_StoreDetailContent> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                OutlinedButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).primaryColor,
+                  ),
+                  child: const Text('Cancelar'),
+                ),
                 const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: () {

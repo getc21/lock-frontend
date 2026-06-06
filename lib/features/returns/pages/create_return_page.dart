@@ -68,6 +68,30 @@ class _CreateReturnPageState extends ConsumerState<CreateReturnPage> {
     super.dispose();
   }
 
+  /// Devuelve el precio efectivo pagado por unidad, ya con el descuento aplicado.
+  /// Así el total de reembolso mostrado coincide con lo que el cliente pagó.
+  double _effectiveUnitPrice(Map item) {
+    final fullPrice = (item['price'] as num?)?.toDouble() ?? 0;
+    if (orderData == null) return fullPrice;
+
+    final totalOrden = (orderData!['totalOrden'] as num?)?.toDouble();
+    final subtotal = (orderData!['subtotal'] as num?)?.toDouble();
+
+    // Si el pedido tiene subtotal guardado, usamos la proporción real
+    if (subtotal != null && subtotal > 0 && totalOrden != null) {
+      return fullPrice * (totalOrden / subtotal);
+    }
+
+    // Fallback: aplicar el descuento manualmente
+    final discountType = orderData!['discountType'] as String?;
+    final discountValue = (orderData!['discountValue'] as num?)?.toDouble() ?? 0;
+    if (discountType == 'percent' && discountValue > 0) {
+      return fullPrice * (1 - discountValue / 100);
+    }
+
+    return fullPrice;
+  }
+
   List<ReturnItem> _getSelectedItems() {
     if (orderData == null) return [];
     
@@ -91,7 +115,7 @@ class _CreateReturnPageState extends ConsumerState<CreateReturnPage> {
             productId: productId,
             originalQuantity: originalQuantity,
             returnQuantity: quantity,
-            unitPrice: (item['price'] as num?)?.toDouble() ?? 0,
+            unitPrice: _effectiveUnitPrice(item),
             returnReason: selectedReturnReason,
           ),
         );
@@ -432,6 +456,9 @@ class _CreateReturnPageState extends ConsumerState<CreateReturnPage> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).primaryColor,
+                    ),
                     child: const Text('Cancelar'),
                   ),
                 ),

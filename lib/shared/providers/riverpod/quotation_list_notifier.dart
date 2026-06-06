@@ -127,6 +127,12 @@ class QuotationListNotifier extends StateNotifier<QuotationListState> {
     );
   }
 
+  void removeFromList(String quotationId) {
+    state = state.copyWith(
+      quotations: state.quotations.where((q) => q.id != quotationId).toList(),
+    );
+  }
+
   Future<void> deleteQuotation(String quotationId) async {
     try {
       await quotationApi.deleteQuotation(quotationId);
@@ -144,12 +150,18 @@ class QuotationListNotifier extends StateNotifier<QuotationListState> {
     required String storeId,
     required List<Map<String, dynamic>> items,
     String? customerId,
+    double discountAmount = 0.0,
   }) async {
     try {
-      await quotationApi.createQuotation(
+      final newQuotation = await quotationApi.createQuotation(
         storeId: storeId,
         customerId: customerId,
         items: items,
+        discountAmount: discountAmount,
+      );
+      // Agregar al inicio de la lista directamente (más reciente primero)
+      state = state.copyWith(
+        quotations: [newQuotation, ...state.quotations],
       );
       return true;
     } catch (e) {

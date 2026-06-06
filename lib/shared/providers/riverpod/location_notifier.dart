@@ -37,6 +37,12 @@ class LocationNotifier extends StateNotifier<LocationState> {
 
   late location_api.LocationProvider _locationProvider;
 
+  // Incremented whenever the locations list is mutated directly (create/update/delete).
+  // loadLocations() captures this value at the start and skips the state update if
+  // the value changed while the API call was in flight, preventing stale in-flight
+  // responses from overwriting freshly-mutated state.
+  int _mutationVersion = 0;
+
   String _getCacheKey(String storeId) => 'locations:$storeId';
 
   void _initLocationProvider() {
@@ -47,6 +53,7 @@ class LocationNotifier extends StateNotifier<LocationState> {
   Future<void> loadLocations({String? storeId, bool forceRefresh = false}) async {
     _initLocationProvider();
     state = state.copyWith(isLoading: true, errorMessage: '');
+    final capturedMutationVersion = _mutationVersion;
 
     try {
       final effectiveStoreId = storeId ?? ref.read(storeProvider).currentStore?['_id'];
@@ -73,15 +80,19 @@ class LocationNotifier extends StateNotifier<LocationState> {
 
       if (result['success']) {
         final locations = List<Map<String, dynamic>>.from(result['data'] ?? []);
-        if (effectiveStoreId != null) {
-          _cache.set(
-            cacheKey,
-            locations,
-            ttl: const Duration(minutes: 10),
-          );
+        // Only update state/cache if no mutation occurred since this load started,
+        // OR if this is a forced refresh (explicitly requesting fresh data).
+        if (forceRefresh || _mutationVersion == capturedMutationVersion) {
+          if (effectiveStoreId != null) {
+            _cache.set(
+              cacheKey,
+              locations,
+              ttl: const Duration(minutes: 10),
+            );
+          }
+          _lastLoadedStoreId = effectiveStoreId;
+          state = state.copyWith(locations: locations);
         }
-        _lastLoadedStoreId = effectiveStoreId;
-        state = state.copyWith(locations: locations);
       } else {
         state = state.copyWith(
           errorMessage: result['message'] ?? 'Error cargando ubicaciones',
@@ -154,8 +165,27 @@ class LocationNotifier extends StateNotifier<LocationState> {
 
       if (result['success']) {
         _cache.invalidatePattern('locations:');
-        await loadLocationsForCurrentStore(forceRefresh: true);
-        state = state.copyWith(isLoading: false);
+        _mutationVersion++;
+
+        // Agregar la nueva ubicación directamente al estado desde la
+        // respuesta del POST para evitar desfase de "un paso atrás"
+        final rawData = result['data'];
+        Map<String, dynamic>? newLocation;
+        if (rawData is Map && rawData.containsKey('location')) {
+          newLocation = Map<String, dynamic>.from(rawData['location'] as Map);
+        }
+
+        if (newLocation != null) {
+          state = state.copyWith(
+            locations: [...state.locations, newLocation],
+            isLoading: false,
+          );
+        } else {
+          // Fallback: recargar desde el servidor si la respuesta no tiene datos
+          await loadLocationsForCurrentStore(forceRefresh: true);
+          state = state.copyWith(isLoading: false);
+        }
+
         return true;
       } else {
         state = state.copyWith(
@@ -190,6 +220,7 @@ class LocationNotifier extends StateNotifier<LocationState> {
 
       if (result['success']) {
         _cache.invalidatePattern('locations:');
+        _mutationVersion++;
         await loadLocationsForCurrentStore(forceRefresh: true);
         state = state.copyWith(isLoading: false);
         return true;
@@ -218,10 +249,17 @@ class LocationNotifier extends StateNotifier<LocationState> {
 
       if (result['success']) {
         _cache.invalidatePattern('locations:');
-        await loadLocationsForCurrentStore(forceRefresh: true);
-        state = state.copyWith(isLoading: false);
+        _mutationVersion++;
+        state = state.copyWith(
+          locations: state.locations.where((l) => l['_id'] != id).toList(),
+          isLoading: false,
+        );
         return true;
       } else {
+        // Aunque falle, recargar desde el servidor para eliminar
+        // ubicaciones fantasma que ya no existen en la BD
+        _cache.invalidatePattern('locations:');
+        await loadLocationsForCurrentStore(forceRefresh: true);
         state = state.copyWith(
           isLoading: false,
           errorMessage: result['message'] ?? 'Error eliminando ubicación',

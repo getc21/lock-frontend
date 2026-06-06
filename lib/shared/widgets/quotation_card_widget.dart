@@ -15,36 +15,6 @@ class QuotationCardWidget extends StatelessWidget {
     required this.onDelete,
   });
 
-  Color _getStatusColor() {
-    switch (quotation.status) {
-      case 'pending':
-        return Colors.orange;
-      case 'converted':
-        return Colors.green;
-      case 'expired':
-        return Colors.red;
-      case 'cancelled':
-        return Colors.grey;
-      default:
-        return Colors.blue;
-    }
-  }
-
-  String _getStatusLabel() {
-    switch (quotation.status) {
-      case 'pending':
-        return 'Pendiente';
-      case 'converted':
-        return 'Convertido';
-      case 'expired':
-        return 'Expirado';
-      case 'cancelled':
-        return 'Cancelado';
-      default:
-        return quotation.status;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Card(

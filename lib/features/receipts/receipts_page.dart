@@ -553,15 +553,90 @@ class _ReceiptsPageState extends ConsumerState<ReceiptsPage> {
                     // Mostrar detalles del comprobante
                     showDialog(
                       context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Detalles del Comprobante'),
-                        content: _buildReceiptDetail(receipt),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Cerrar'),
+                      builder: (context) => Dialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 650, maxHeight: 750),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: Theme.of(context).scaffoldBackgroundColor,
                           ),
-                        ],
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // HEADER
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).primaryColor,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    topRight: Radius.circular(16),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.all(AppSizes.spacing16),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(
+                                        Icons.receipt_long_outlined,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSizes.spacing12),
+                                    const Expanded(
+                                      child: Text(
+                                        'Detalles del Comprobante',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.close, color: Colors.white),
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // CONTENT
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(AppSizes.spacing16),
+                                    child: _buildReceiptDetail(receipt),
+                                  ),
+                                ),
+                              ),
+                              // FOOTER
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                                ),
+                                padding: const EdgeInsets.all(AppSizes.spacing16),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Theme.of(context).primaryColor,
+                                      ),
+                                      child: const Text('Cerrar'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     );
                   },

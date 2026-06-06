@@ -43,8 +43,9 @@ class ThemeState {
 }
 
 class ThemeNotifier extends StateNotifier<ThemeState> {
-  // Temas disponibles
+  // Temas disponibles - Sincronizados con lock-movil
   static final List<ThemeModel> _availableThemes = [
+    // Tema por defecto de belleza
     ThemeModel(
       id: 'beauty',
       name: 'Belleza Rosada',
@@ -52,31 +53,46 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
       primaryColor: const Color(0xFFEC407A),
       accentColor: const Color(0xFFF06292),
     ),
+    // Temas de la mobile
+    ThemeModel(
+      id: 'professional',
+      name: 'Profesional',
+      description: 'Tema profesional y formal',
+      primaryColor: const Color(0xFF1565C0),
+      accentColor: const Color(0xFF424242),
+    ),
+    ThemeModel(
+      id: 'slate',
+      name: 'Pizarra',
+      description: 'Tema gris y elegante',
+      primaryColor: const Color(0xFF455A64),
+      accentColor: const Color(0xFF37474F),
+    ),
     ThemeModel(
       id: 'ocean',
       name: 'Océano Azul',
       description: 'Tema fresco y profesional',
-      primaryColor: const Color(0xFF1565C0),
-      accentColor: const Color(0xFF1976D2),
+      primaryColor: const Color(0xFF0277BD),
+      accentColor: const Color(0xFF03A9F4),
     ),
     ThemeModel(
       id: 'nature',
       name: 'Naturaleza Verde',
       description: 'Tema natural y relajante',
-      primaryColor: const Color(0xFF2E7D32),
-      accentColor: const Color(0xFF43A047),
+      primaryColor: const Color(0xFF388E3C),
+      accentColor: const Color(0xFF4CAF50),
     ),
     ThemeModel(
-      id: 'sunset',
-      name: 'Atardecer Naranja',
-      description: 'Tema cálido y energético',
-      primaryColor: const Color(0xFFE65100),
-      accentColor: const Color(0xFFFF6D00),
+      id: 'teal',
+      name: 'Verde Azulado',
+      description: 'Tema fresco y moderno',
+      primaryColor: const Color(0xFF00897B),
+      accentColor: const Color(0xFF004D40),
     ),
   ];
 
   ThemeNotifier() : super(ThemeState(
-    currentThemeId: 'nature',
+    currentThemeId: 'beauty',
     themeMode: ThemeMode.system,
     isInitialized: false,
   ));
@@ -95,7 +111,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   Future<void> initializeTheme() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedThemeId = prefs.getString('theme_id') ?? 'nature';
+      final savedThemeId = prefs.getString('theme_id') ?? 'beauty';
       final savedThemeMode = prefs.getString('theme_mode') ?? 'system';
 
       state = state.copyWith(
@@ -145,7 +161,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
       await prefs.remove('theme_mode');
 
       state = state.copyWith(
-        currentThemeId: 'nature',
+        currentThemeId: 'beauty',
         themeMode: ThemeMode.system,
       );
     } catch (e) {

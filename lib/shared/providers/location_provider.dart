@@ -29,15 +29,8 @@ class LocationProvider {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        // Manejar diferentes estructuras de respuesta
+        // Data ahora es directamente un array o un Map
         var locationsData = data['data'];
-        
-        // Si data es un Map que contiene un array, extraerlo
-        if (locationsData is Map && locationsData.containsKey('locations')) {
-          locationsData = locationsData['locations'];
-        } else if (locationsData is Map && locationsData.containsKey('data')) {
-          locationsData = locationsData['data'];
-        }
         
         // Asegurar que sea una lista
         if (locationsData is! List) {

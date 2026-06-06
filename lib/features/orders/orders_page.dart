@@ -30,19 +30,8 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     super.initState();
     _scrollController = ScrollController();
     
-    // Cargar órdenes cuando se abre la página (sin forzar recarga)
+    // Cargar órdenes con datos frescos cada vez que se abre la página
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(orderProvider.notifier).loadOrdersForCurrentStore();
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Detectar si la tienda cambió y recargar órdenes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Recargar órdenes cuando volvemos a esta página
-      // Usa caché si existe, carga nuevos datos en background
       ref.read(orderProvider.notifier).loadOrdersForCurrentStore(forceRefresh: true);
     });
   }
@@ -347,6 +336,10 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     final customerPhone = customerData is Map ? (customerData['phone'] ?? '') : '';
     final paymentMethod = order['paymentMethod'] as String? ?? 'efectivo';
     final totalOrden = (order['totalOrden'] as num? ?? 0).toDouble();
+    final subtotal = (order['subtotal'] as num? ?? totalOrden).toDouble();
+    final discountType = order['discountType'] as String?;
+    final discountValue = (order['discountValue'] as num? ?? 0).toDouble();
+    final discountAmount = subtotal - totalOrden;
     final items = order['items'] as List? ?? [];
 
     showDialog(
@@ -466,13 +459,39 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                             child: _buildDetailSection(
                               icon: Icons.attach_money,
                               title: 'Total',
-                              child: Text(
-                                _formatCurrency(totalOrden, ref),
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).primaryColor,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (discountAmount > 0) ...[
+                                    Text(
+                                      'Subtotal: ${_formatCurrency(subtotal, ref)}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      discountType == 'percent'
+                                          ? 'Descuento (${discountValue.toStringAsFixed(0)}%): -${_formatCurrency(discountAmount, ref)}'
+                                          : 'Descuento: -${_formatCurrency(discountAmount, ref)}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                  ],
+                                  Text(
+                                    _formatCurrency(totalOrden, ref),
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),

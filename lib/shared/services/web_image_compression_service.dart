@@ -25,6 +25,24 @@ class WebImageCompressionService {
   /// [quality] - calidad de compresión (0-1, default 0.85)
   /// [maxWidth] - ancho máximo (default 1200)
   /// [maxHeight] - alto máximo (default 1200)
+  /// Lee los bytes de un XFile de forma confiable en Flutter Web.
+  /// Usa openRead() en vez de readAsBytes() para evitar el error
+  /// 'NativeArrayBuffer is not a subtype of NativeUint8List'.
+  static Future<Uint8List> _readFileBytes(XFile file) async {
+    final chunks = <List<int>>[];
+    await for (final chunk in file.openRead()) {
+      chunks.add(chunk);
+    }
+    final totalLength = chunks.fold(0, (sum, c) => sum + c.length);
+    final result = Uint8List(totalLength);
+    var offset = 0;
+    for (final chunk in chunks) {
+      result.setRange(offset, offset + chunk.length, chunk);
+      offset += chunk.length;
+    }
+    return result;
+  }
+
   static Future<Map<String, dynamic>> compressImage({
     required XFile imageFile,
     double quality = defaultQuality,
@@ -37,8 +55,8 @@ class WebImageCompressionService {
         print('   - Archivo original: ${imageFile.name}');
       }
 
-      // Leer bytes de la imagen
-      final Uint8List imageBytes = await imageFile.readAsBytes();
+      // Leer bytes usando stream (evita NativeArrayBuffer TypeError en web)
+      final Uint8List imageBytes = await _readFileBytes(imageFile);
       final int originalSize = imageBytes.length;
 
       if (kDebugMode) {
@@ -113,16 +131,21 @@ class WebImageCompressionService {
       if (kDebugMode) {
         print('❌ [WEB COMPRESS] Error comprimiendo imagen: $e');
       }
-      // Si hay error, retornar la imagen original en base64
-      return {
-        'base64': 'data:image/jpeg;base64,${base64Encode(await imageFile.readAsBytes())}',
-        'blob': Blob([(await imageFile.readAsBytes()).toJS].toJS),
-        'url': null,
-        'originalSize': (await imageFile.readAsBytes()).length,
-        'compressedSize': (await imageFile.readAsBytes()).length,
-        'reduction': 0.0,
-        'error': e.toString(),
-      };
+      // Si hay error, retornar la imagen original en base64 (sin comprimir)
+      try {
+        final fallbackBytes = await _readFileBytes(imageFile);
+        return {
+          'base64': 'data:image/jpeg;base64,${base64Encode(fallbackBytes)}',
+          'blob': Blob([fallbackBytes.toJS].toJS),
+          'url': null,
+          'originalSize': fallbackBytes.length,
+          'compressedSize': fallbackBytes.length,
+          'reduction': 0.0,
+          'error': e.toString(),
+        };
+      } catch (fallbackError) {
+        rethrow;
+      }
     }
   }
 
@@ -158,27 +181,31 @@ class WebImageCompressionService {
     return {'width': width.toInt(), 'height': height.toInt()};
   }
 
-  /// Convierte un Blob a base64
+  /// Convierte un Blob a base64.
+  /// Usa readAsDataURL() (devuelve `"data:image/jpeg;base64,<datos>"`) para
+  /// evitar el error de cast JSArrayBuffer → JSUint8Array al usar
+  /// readAsArrayBuffer().
   static Future<String> _blobToBase64(Blob blob) async {
     final completer = Completer<String>();
     final reader = FileReader();
-    
+
     reader.addEventListener('load', ((JSObject event) {
       try {
-        final List<int> bytes = List<int>.from(
-          (reader.result as JSUint8Array).toDart,
-        );
-        completer.complete(base64Encode(bytes));
+        // reader.result es una data URL: "data:<mime>;base64,<base64>"
+        final dataUrl = (reader.result as JSString).toDart;
+        // Extraer solo la parte base64 después de la coma
+        final base64Data = dataUrl.split(',').last;
+        completer.complete(base64Data);
       } catch (e) {
         completer.completeError(e);
       }
     }).toJS as EventListener);
-    
+
     reader.addEventListener('error', ((JSObject event) {
-      completer.completeError('Failed to read blob');
+      completer.completeError('Failed to read blob as data URL');
     }).toJS as EventListener);
-    
-    reader.readAsArrayBuffer(blob);
+
+    reader.readAsDataURL(blob);
     return completer.future;
   }
 

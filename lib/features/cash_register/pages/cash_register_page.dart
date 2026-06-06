@@ -1,3 +1,5 @@
+import 'package:bellezapp_web/core/constants/app_colors.dart';
+import 'package:bellezapp_web/core/constants/app_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -412,40 +414,116 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
     _openingAmountController.clear();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Abrir Caja'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Ingrese el monto inicial para abrir la caja'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _openingAmountController,
-              decoration: InputDecoration(
-                labelText: 'Monto de apertura',
-                hintText: '0.00',
-                prefixText: 'Bs. ',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () {
-              final amount = double.tryParse(_openingAmountController.text) ?? 0;
-              if (amount <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese un monto válido')));
-                return;
-              }
-              ref.read(cashRegisterProvider(storeId ?? 'default').notifier).openCash(amount);
-              Navigator.pop(context);
-            },
-            child: const Text('Abrir'),
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  border: Border(
+                    bottom: BorderSide(color: Theme.of(context).primaryColor.withValues(alpha: 0.2)),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.account_balance_wallet, color: Theme.of(context).primaryColor, size: 20),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    Expanded(
+                      child: Text(
+                        'Abrir Caja',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Ingrese el monto inicial para abrir la caja'),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _openingAmountController,
+                      decoration: InputDecoration(
+                        labelText: 'Monto de apertura',
+                        hintText: '0.00',
+                        prefixText: 'Bs. ',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ],
+                ),
+              ),
+              // Footer
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.check_circle),
+                      label: const Text('Abrir'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () {
+                        final amount = double.tryParse(_openingAmountController.text) ?? 0;
+                        if (amount <= 0) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese un monto válido')));
+                          return;
+                        }
+                        ref.read(cashRegisterProvider(storeId ?? 'default').notifier).openCash(amount);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -454,40 +532,96 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
     _closingAmountController.clear();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cerrar Caja'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Ingrese el monto final para cerrar la caja'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _closingAmountController,
-              decoration: InputDecoration(
-                labelText: 'Monto de cierre',
-                hintText: '0.00',
-                prefixText: 'Bs. ',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () {
-              final amount = double.tryParse(_closingAmountController.text) ?? 0;
-              if (amount < 0) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese un monto válido')));
-                return;
-              }
-              ref.read(cashRegisterProvider(storeId ?? 'default').notifier).closeCash(amount);
-              Navigator.pop(context);
-            },
-            child: const Text('Cerrar'),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.white,
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.account_balance_wallet, color: Colors.white, size: 24),
+                    SizedBox(width: AppSizes.spacing12),
+                    Text(
+                      'Cerrar Caja',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Ingrese el monto final para cerrar la caja'),
+                    const SizedBox(height: AppSizes.spacing16),
+                    TextField(
+                      controller: _closingAmountController,
+                      decoration: InputDecoration(
+                        labelText: 'Monto de cierre',
+                        hintText: '0.00',
+                        prefixText: 'Bs. ',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ],
+                ),
+              ),
+              // Footer
+              Container(
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: Colors.grey.shade200),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    ElevatedButton(
+                      onPressed: () {
+                        final amount = double.tryParse(_closingAmountController.text) ?? 0;
+                        if (amount < 0) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese un monto válido')));
+                          return;
+                        }
+                        ref.read(cashRegisterProvider(storeId ?? 'default').notifier).closeCash(amount);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Cerrar'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -497,35 +631,107 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
     _incomeDescriptionController.clear();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Registrar Entrada'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _incomeDescriptionController,
-              decoration: InputDecoration(
-                labelText: 'Descripción',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 400,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // HEADER
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.add_circle_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    const Expanded(
+                      child: Text(
+                        'Registrar Entrada',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _incomeAmountController,
-              decoration: InputDecoration(
-                labelText: 'Monto',
-                hintText: '0.00',
-                prefixText: 'Bs. ',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              // CONTENT
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: _incomeDescriptionController,
+                      decoration: InputDecoration(
+                        labelText: 'Descripción',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        prefixIcon: const Icon(Icons.description_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spacing12),
+                    TextField(
+                      controller: _incomeAmountController,
+                      decoration: InputDecoration(
+                        labelText: 'Monto',
+                        hintText: '0.00',
+                        prefixIcon: const Icon(Icons.monetization_on_outlined),
+                        prefixText: 'Bs. ',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ],
+                ),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () async {
+              // FOOTER
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: AppSizes.spacing8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () async {
               final amount = double.tryParse(_incomeAmountController.text) ?? 0;
               final description = _incomeDescriptionController.text;
               
@@ -573,10 +779,15 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
                     cashRegisterState.currentCashRegister?.openingTime,
                   )).notifier)
                   .refreshMovements();
-            },
-            child: const Text('Agregar'),
+                      },
+                      child: const Text('Agregar'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -586,35 +797,107 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
     _incomeDescriptionController.clear();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Registrar Salida'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _incomeDescriptionController,
-              decoration: InputDecoration(
-                labelText: 'Descripción',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 400,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // HEADER
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.remove_circle_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    const Expanded(
+                      child: Text(
+                        'Registrar Salida',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _outcomeAmountController,
-              decoration: InputDecoration(
-                labelText: 'Monto',
-                hintText: '0.00',
-                prefixText: 'Bs. ',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              // CONTENT
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: _incomeDescriptionController,
+                      decoration: InputDecoration(
+                        labelText: 'Descripción',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        prefixIcon: const Icon(Icons.description_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spacing12),
+                    TextField(
+                      controller: _outcomeAmountController,
+                      decoration: InputDecoration(
+                        labelText: 'Monto',
+                        hintText: '0.00',
+                        prefixIcon: const Icon(Icons.monetization_on_outlined),
+                        prefixText: 'Bs. ',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ],
+                ),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () async {
+              // FOOTER
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: AppSizes.spacing8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () async {
               final amount = double.tryParse(_outcomeAmountController.text) ?? 0;
               final description = _incomeDescriptionController.text;
               
@@ -662,10 +945,15 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
                     cashRegisterState.currentCashRegister?.openingTime,
                   )).notifier)
                   .refreshMovements();
-            },
-            child: const Text('Agregar'),
+                      },
+                      child: const Text('Agregar'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

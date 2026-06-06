@@ -65,7 +65,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         if (kDebugMode) debugPrint('ProductsPage: Loading data in optimized sequence');
         final supplierState = ref.read(supplierProvider);
         final categoryState = ref.read(categoryProvider);
-        final locationState = ref.read(locationProvider);
         
         // CRITICAL: Load categories and suppliers (needed for dropdowns)
         final criticalFutures = <Future>[];
@@ -76,11 +75,9 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           criticalFutures.add(ref.read(supplierProvider.notifier).loadSuppliers());
         }
         
-        // PARALLEL: Load locations only
+        // PARALLEL: Load locations only (always reload to pick up new locations)
         final parallelFutures = <Future>[];
-        if (locationState.locations.isEmpty) {
-          parallelFutures.add(ref.read(locationProvider.notifier).loadLocations());
-        }
+        parallelFutures.add(ref.read(locationProvider.notifier).loadLocations());
         
         // Execute critical first, then parallel
         if (criticalFutures.isNotEmpty) {
@@ -173,6 +170,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               final authState = ref.watch(authProvider);
               final userRole = authState.currentUser?['role'] ?? '';
               final canSeePurchasePrice = userRole == 'admin' || userRole == 'manager';
+              final canAdjustStock = userRole == 'admin' || userRole == 'manager' || userRole == 'employee';
               
       if (kDebugMode) debugPrint(' ProductsPage: Consumer rebuilding...');
       if (kDebugMode) debugPrint('   - isLoading: ${productState.isLoading}');
@@ -238,7 +236,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                             const DataColumn2(label: Text('F. Caducidad'), size: ColumnSize.M),
                             const DataColumn2(label: Text('Acciones'), size: ColumnSize.M),
                           ],
-                          rows: _buildProductRows(productState.products, canSeePurchasePrice),
+                          rows: _buildProductRows(productState.products, canSeePurchasePrice, canAdjustStock),
                         ),
                       ),
                     ),
@@ -332,10 +330,11 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     );
   }
 
-  List<DataRow2> _buildProductRows(List<dynamic> products, bool canSeePurchasePrice) {
+  List<DataRow2> _buildProductRows(List<dynamic> products, bool canSeePurchasePrice, bool canAdjustStock) {
       if (kDebugMode) debugPrint(' ProductsPage: _buildProductRows called');
       if (kDebugMode) debugPrint('   - Total products: ${products.length}');
       if (kDebugMode) debugPrint('   - Search query: "$_searchQuery"');
+      if (kDebugMode) debugPrint('   - canAdjustStock: $canAdjustStock');
     
     final filteredProducts = products
         .where((p) {
@@ -516,9 +515,9 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.add_shopping_cart, size: 18),
-                  onPressed: () => _showAdjustStockDialog(product),
-                  tooltip: 'Ajustar Stock',
-                  color: AppColors.textPrimary,
+                  onPressed: canAdjustStock ? () => _showAdjustStockDialog(product) : null,
+                  tooltip: canAdjustStock ? 'Ajustar Stock' : 'Solo admin/gerente puede ajustar stock',
+                  color: canAdjustStock ? AppColors.textPrimary : AppColors.textSecondary,
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 18),
@@ -551,74 +550,265 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   void _showProductPreview(Map<String, dynamic> product) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(product['name'] ?? 'Producto'),
-        content: SizedBox(
-          width: 400,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (product['foto'] != null)
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        product['foto'],
-                        height: 240,
-                        width: 240,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => 
-                          Container(
-                            height: 240,
-                            width: 240,
-                            color: AppColors.gray100,
-                            child: const Icon(Icons.inventory_2_outlined, size: 64),
-                          ),
-                      ),
-                    ),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 500,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).primaryColor,
+                      Theme.of(context).primaryColor.withValues(alpha: 0.8),
+                    ],
                   ),
-                const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: () => _showMultiStoreStockDialog(product),
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: Text(
-                      'Stock: ${product['stock']}',
-                      style: TextStyle(
-                        fontSize: 16,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      product['name'] ?? 'Producto',
+                      style: const TextStyle(
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).primaryColor,
-                        decoration: TextDecoration.underline,
+                        color: Colors.white,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (product['foto'] != null)
+                        Center(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              product['foto'],
+                              height: 240,
+                              width: 240,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => 
+                                Container(
+                                  height: 240,
+                                  width: 240,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.gray100,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(Icons.inventory_2_outlined, size: 64),
+                                ),
+                            ),
+                          ),
+                        ),
+                      if (product['foto'] != null)
+                        const SizedBox(height: AppSizes.spacing20),
+                      
+                      // Stock info
+                      GestureDetector(
+                        onTap: () => _showMultiStoreStockDialog(product),
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.inventory_2_outlined,
+                                  color: Theme.of(context).primaryColor,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Stock: ${product['stock']}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '(ver por sucursal)',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Theme.of(context).primaryColor.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.spacing16),
+                      
+                      // Precios
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.gray50,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Precio Compra',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _formatCurrency((product['purchasePrice'] as num)),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Precio Venta',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Theme.of(context).primaryColor.withValues(alpha: 0.7),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _formatCurrency((product['salePrice'] as num)),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      if (product['description'] != null && (product['description'] as String).isNotEmpty) ...[
+                        const SizedBox(height: AppSizes.spacing16),
+                        Text(
+                          'Descripción',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.gray50,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            product['description'] as String,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Actions
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: AppColors.border,
+                      width: 1,
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text('Precio Compra: ${_formatCurrency((product['purchasePrice'] as num))}'),
-                Text('Precio Venta: ${_formatCurrency((product['salePrice'] as num))}'),
-                if (product['description'] != null && (product['description'] as String).isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Descripción:', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text(product['description'] as String),
-                      ],
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.spacing20,
+                          vertical: AppSizes.spacing12,
+                        ),
+                      ),
+                      child: const Text('Cerrar'),
                     ),
-                  ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
-          ),
-        ],
       ),
     );
   }
@@ -644,60 +834,170 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   }
 
   void _showEditProductDialog(Map<String, dynamic> product) {
-    _showProductDialog(product: product);
+    final authState = ref.read(authProvider);
+    final userRole = authState.currentUser?['role'] ?? '';
+    _showProductDialog(product: product, userRole: userRole);
   }
 
   void _confirmDeleteProduct(Map<String, dynamic> product) {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('¿Estás seguro de eliminar "${product['name']}"?'),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.warning_outlined, color: AppColors.error, size: 18),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Este producto se eliminará de todas las sucursales permanentemente.',
-                      style: TextStyle(fontSize: 12, color: AppColors.error),
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppColors.error.withValues(alpha: 0.2),
                     ),
                   ),
-                ],
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.warning_rounded, color: AppColors.error, size: 24),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Confirmar Eliminación',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.error,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Esta acción no se puede deshacer',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.error.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '¿Estás seguro de que deseas eliminar "${product['name']}"?',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spacing16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.error.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outlined, color: AppColors.error, size: 18),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Este producto se eliminará de todas las sucursales de forma permanente.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.error,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Actions
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: AppColors.border,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.spacing20,
+                          vertical: AppSizes.spacing12,
+                        ),
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: AppSizes.spacing12),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        Navigator.of(dialogContext).pop();
+                        await ref.read(productProvider.notifier).deleteProduct(product['_id']);
+                      },
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Eliminar Permanentemente'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.spacing20,
+                          vertical: AppSizes.spacing12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-            },
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(dialogContext).pop();
-              await ref.read(productProvider.notifier).deleteProduct(product['_id']);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-            ),
-            child: const Text('Eliminar Permanentemente'),
-          ),
-        ],
       ),
     );
   }
@@ -706,15 +1006,8 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     _showProductDialog();
   }
 
-  Future<void> _showProductDialog({Map<String, dynamic>? product}) async {
-    // Cargar ubicaciones de la tienda actual ANTES de mostrar el dialog
-    // Esto detectará automáticamente si cambió la tienda
-    await ref.read(locationProvider.notifier).loadLocationsForCurrentStore();
-    
-    if (!mounted) return;
-    
+  void _showProductDialog({Map<String, dynamic>? product, String userRole = ''}) {
     final categoryState = ref.read(categoryProvider);
-    final locationState = ref.read(locationProvider);
     final storeState = ref.read(storeProvider);
     final supplierState = ref.read(supplierProvider);
     
@@ -746,6 +1039,18 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     }
     
     final isEditing = product != null;
+    
+    // Role-based field access control for employees
+    final isEmployee = userRole == 'employee';
+    final isEditingAsEmployee = isEditing && isEmployee;
+    final canEditBasicFields = !isEditingAsEmployee;
+    final canEditPrice = !isEditingAsEmployee;
+    final canEditImage = !isEditingAsEmployee;
+    final canEditCategory = !isEditingAsEmployee;
+    final canEditSupplier = !isEditingAsEmployee;
+    final canEditLocation = !isEditingAsEmployee;
+    final canEditWeight = !isEditingAsEmployee;
+    
     final nameController = TextEditingController(text: product?['name'] ?? '');
     final descriptionController = TextEditingController(text: product?['description'] ?? '');
     final purchasePriceController = TextEditingController(
@@ -786,17 +1091,17 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     // Ensure IDs are clean (no null or empty values) and exist in current data
     selectedCategoryId = getValidInitialValue(selectedCategoryId, categoryState.categories);
     selectedSupplierId = getValidInitialValue(selectedSupplierId, supplierState.suppliers);
-    selectedLocationId = getValidInitialValue(selectedLocationId, locationState.locations);
-    
-    if (kDebugMode) {
-      debugPrint('   selectedLocationId después de validar: "$selectedLocationId"');
-    }
+    // Note: selectedLocationId validation is handled by _LocationDropdownField
     
     var selectedExpiryDate = product?['expiryDate'] != null 
         ? DateTime.parse(product!['expiryDate']) 
         : null;
 
+    var isPickingImage = false;
+
     Future<void> pickImage() async {
+      if (isPickingImage) return;
+      isPickingImage = true;
       try {
         final XFile? image = await picker.pickImage(
           source: ImageSource.gallery,
@@ -826,326 +1131,619 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             const SnackBar(content: Text('Error al seleccionar imagen')),
           );
         }
+      } finally {
+        isPickingImage = false;
       }
     }
 
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(isEditing ? 'Editar Producto' : 'Nuevo Producto'),
-          content: SizedBox(
-            width: 600,
+        builder: (context, setState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            width: 650,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).scaffoldBackgroundColor,
+            ),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  GestureDetector(
-                    onTap: () async {
-                      await pickImage();
-                      setState(() {});
-                    },
-                    child: Center(
-                      child: Container(
-                        width: 144,
-                        height: 144,
-                        decoration: BoxDecoration(
-                          color: Theme.of(dialogContext).primaryColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(dialogContext).primaryColor.withValues(alpha: 0.3),
-                            width: 2,
-                            style: BorderStyle.solid,
+                  // Header mejorado con gradiente
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).primaryColor,
+                          Theme.of(context).primaryColor.withValues(alpha: 0.8),
+                        ],
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                isEditing ? 'Editar Producto' : 'Crear Nuevo Producto',
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                isEditing 
+                                  ? 'Actualiza los detalles del producto'
+                                  : 'Completa la información del nuevo producto',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: imagePreview.isNotEmpty
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  imagePreview,
-                                  width: 144,
-                                  height: 144,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Column(
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Contenido
+                  Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Sección de Imagen
+                        Text(
+                          'Imagen del Producto',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.spacing12),
+                        GestureDetector(
+                          onTap: canEditImage ? () async {
+                            await pickImage();
+                            setState(() {});
+                          } : null,
+                          child: Center(
+                            child: Container(
+                              width: 160,
+                              height: 160,
+                              decoration: BoxDecoration(
+                                color: Theme.of(dialogContext).primaryColor.withValues(alpha: canEditImage ? 0.1 : 0.05),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Theme.of(dialogContext).primaryColor.withValues(alpha: canEditImage ? 0.4 : 0.2),
+                                  width: 2,
+                                  style: BorderStyle.solid,
+                                ),
+                              ),
+                              child: imagePreview.isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Stack(
+                                        children: [
+                                          Image.network(
+                                            imagePreview,
+                                            width: 160,
+                                            height: 160,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Column(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(Icons.add_photo_alternate, size: 48, color: Theme.of(dialogContext).primaryColor),
+                                                  const SizedBox(height: 8),
+                                                  const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                          if (canEditImage)
+                                            Positioned(
+                                              bottom: 8,
+                                              right: 8,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(context).primaryColor,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withValues(alpha: 0.2),
+                                                      blurRadius: 8,
+                                                      offset: const Offset(0, 2),
+                                                    ),
+                                                  ],
+                                                ),
+                                                padding: const EdgeInsets.all(6),
+                                                child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    )
+                                  : Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(dialogContext).primaryColor),
-                                        const SizedBox(height: 8),
-                                        const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(dialogContext).primaryColor.withValues(alpha: 0.2),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(Icons.add_photo_alternate, size: 48, color: Theme.of(dialogContext).primaryColor),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        const Text(
+                                          'Seleccionar imagen',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
                                       ],
-                                    );
-                                  },
+                                    ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.spacing32),
+                        
+                        // Sección de Información Básica
+                        Text(
+                          'Información Básica',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.spacing12),
+                        
+                        TextField(
+                          controller: nameController,
+                          enabled: canEditBasicFields,
+                          decoration: InputDecoration(
+                            labelText: 'Nombre del Producto *',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            prefixIcon: const Icon(Icons.inventory_2_outlined),
+                            filled: true,
+                            fillColor: canEditBasicFields ? Colors.transparent : AppColors.gray50,
+                            helperText: !canEditBasicFields ? 'Solo admin/gerente puede editar' : null,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.spacing12),
+
+                        TextField(
+                          controller: descriptionController,
+                          enabled: canEditBasicFields,
+                          decoration: InputDecoration(
+                            labelText: 'Descripción',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            prefixIcon: const Icon(Icons.description_outlined),
+                            filled: true,
+                            fillColor: canEditBasicFields ? Colors.transparent : AppColors.gray50,
+                            helperText: !canEditBasicFields ? 'Solo admin/gerente puede editar' : null,
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: AppSizes.spacing32),
+                        
+                        // Sección de Categoría y Proveedor
+                        Text(
+                          'Clasificación',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.spacing12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: AbsorbPointer(
+                                absorbing: !canEditCategory,
+                                child: Opacity(
+                                  opacity: canEditCategory ? 1.0 : 0.6,
+                                  child: DropdownButtonFormField<String>(
+                                    initialValue: selectedCategoryId,
+                                    decoration: InputDecoration(
+                                      labelText: 'Categoría *',
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                      prefixIcon: const Icon(Icons.category_outlined),
+                                      filled: true,
+                                      fillColor: canEditCategory ? Colors.transparent : AppColors.gray50,
+                                      helperText: !canEditCategory ? 'Solo admin/gerente' : null,
+                                      helperMaxLines: 1,
+                                    ),
+                                    items: categoryState.categories.map((category) {
+                                      final id = (category['_id']?.toString() ?? category['id']?.toString() ?? '').trim();
+                                      final name = category['name']?.toString() ?? 'Sin nombre';
+                                      return DropdownMenuItem<String>(
+                                        value: id,
+                                        child: Text(name),
+                                      );
+                                    }).toList(),
+                                    onChanged: canEditCategory ? (value) => setState(() => selectedCategoryId = value) : null,
+                                  ),
                                 ),
-                              )
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(dialogContext).primaryColor),
-                                  const SizedBox(height: 8),
-                                  const Text('Seleccionar imagen', style: TextStyle(fontSize: 12)),
+                              ),
+                            ),
+                            const SizedBox(width: AppSizes.spacing12),
+                            Expanded(
+                              child: AbsorbPointer(
+                                absorbing: !canEditSupplier,
+                                child: Opacity(
+                                  opacity: canEditSupplier ? 1.0 : 0.6,
+                                  child: DropdownButtonFormField<String>(
+                                    initialValue: selectedSupplierId,
+                                    decoration: InputDecoration(
+                                      labelText: 'Proveedor *',
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                      prefixIcon: const Icon(Icons.local_shipping_outlined),
+                                      filled: true,
+                                      fillColor: canEditSupplier ? Colors.transparent : AppColors.gray50,
+                                      helperText: !canEditSupplier ? 'Solo admin/gerente' : null,
+                                      helperMaxLines: 1,
+                                    ),
+                                    items: supplierState.suppliers.map((supplier) {
+                                      final id = (supplier['_id']?.toString() ?? supplier['id']?.toString() ?? '').trim();
+                                      final name = supplier['name']?.toString() ?? 'Sin nombre';
+                                      return DropdownMenuItem<String>(
+                                        value: id,
+                                        child: Text(name),
+                                      );
+                                    }).toList(),
+                                    onChanged: canEditSupplier ? (value) => setState(() => selectedSupplierId = value) : null,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSizes.spacing12),
+
+                        AbsorbPointer(
+                          absorbing: !canEditLocation,
+                          child: Opacity(
+                            opacity: canEditLocation ? 1.0 : 0.6,
+                            child: _LocationDropdownField(
+                              selectedValue: selectedLocationId,
+                              onChanged: canEditLocation ? (value) => setState(() => selectedLocationId = value) : (_) {},
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.spacing32),
+                        
+                        // Sección de Precios
+                        Text(
+                          'Precios y Valores',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.spacing12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: purchasePriceController,
+                                enabled: canEditPrice,
+                                decoration: InputDecoration(
+                                  labelText: 'Precio Compra *',
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  prefixIcon: const Icon(Icons.attach_money),
+                                  filled: true,
+                                  fillColor: canEditPrice ? Colors.transparent : AppColors.gray50,
+                                  helperText: !canEditPrice ? 'Solo admin' : null,
+                                  helperMaxLines: 1,
+                                ),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                                 ],
                               ),
-                      ),
+                            ),
+                            const SizedBox(width: AppSizes.spacing12),
+                            Expanded(
+                              child: TextField(
+                                controller: salePriceController,
+                                enabled: true,
+                                decoration: InputDecoration(
+                                  labelText: 'Precio Venta *',
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  prefixIcon: const Icon(Icons.sell_outlined),
+                                  filled: true,
+                                ),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSizes.spacing12),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: stockController,
+                                decoration: InputDecoration(
+                                  labelText: 'Stock Inicial *',
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  prefixIcon: const Icon(Icons.inventory_outlined),
+                                  filled: true,
+                                  fillColor: isEditing ? AppColors.gray50 : Colors.transparent,
+                                ),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                enabled: !isEditing,
+                              ),
+                            ),
+                            const SizedBox(width: AppSizes.spacing12),
+                            Expanded(
+                              child: TextField(
+                                controller: weightController,
+                                enabled: canEditWeight,
+                                decoration: InputDecoration(
+                                  labelText: 'Peso (kg)',
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  prefixIcon: const Icon(Icons.scale_outlined),
+                                  filled: true,
+                                  fillColor: canEditWeight ? Colors.transparent : AppColors.gray50,
+                                  helperText: !canEditWeight ? 'Solo admin' : null,
+                                  helperMaxLines: 1,
+                                ),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSizes.spacing32),
+                        
+                        // Sección de Caducidad
+                        Text(
+                          'Vencimiento',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.spacing12),
+                        InkWell(
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: selectedExpiryDate ?? DateTime.now().add(const Duration(days: 30)),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(const Duration(days: 3650)),
+                            );
+                            if (date != null) {
+                              setState(() => selectedExpiryDate = date);
+                            }
+                          },
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              labelText: 'Fecha de Caducidad *',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              prefixIcon: const Icon(Icons.event_outlined),
+                              filled: true,
+                            ),
+                            child: Text(
+                              selectedExpiryDate != null
+                                  ? DateFormat('dd/MM/yyyy').format(selectedExpiryDate!)
+                                  : 'Seleccionar fecha',
+                              style: TextStyle(
+                                color: selectedExpiryDate != null
+                                    ? AppColors.textPrimary
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.spacing16),
+
+                        // Notas informativas
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.info_outlined, size: 16, color: AppColors.info),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Campos requeridos: * ',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (isEditing) ...[
+                                const SizedBox(height: 8),
+                                const Row(
+                                  children: [
+                                    Icon(Icons.warning_amber, size: 16, color: AppColors.warning),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'El stock se ajusta en inventario',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.warning,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: AppSizes.spacing24),
                   
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nombre del Producto *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.inventory_2_outlined),
+                  // Botones de acción mejorados
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(
+                          color: AppColors.border,
+                          width: 1,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSizes.spacing16),
-
-                  TextField(
-                    controller: descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Descripción',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.description_outlined),
-                    ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: AppSizes.spacing16),
-
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedCategoryId,
-                    decoration: const InputDecoration(
-                      labelText: 'Categoría *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.category_outlined),
-                    ),
-                    items: categoryState.categories.map((category) {
-                      final id = (category['_id']?.toString() ?? category['id']?.toString() ?? '').trim();
-                      final name = category['name']?.toString() ?? 'Sin nombre';
-                      return DropdownMenuItem<String>(
-                        value: id,
-                        child: Text(name),
-                      );
-                    }).toList(),
-                    onChanged: (value) => setState(() => selectedCategoryId = value),
-                  ),
-                  const SizedBox(height: AppSizes.spacing16),
-
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedSupplierId,
-                    decoration: const InputDecoration(
-                      labelText: 'Proveedor *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.local_shipping_outlined),
-                    ),
-                    items: supplierState.suppliers.map((supplier) {
-                      final id = (supplier['_id']?.toString() ?? supplier['id']?.toString() ?? '').trim();
-                      final name = supplier['name']?.toString() ?? 'Sin nombre';
-                      return DropdownMenuItem<String>(
-                        value: id,
-                        child: Text(name),
-                      );
-                    }).toList(),
-                    onChanged: (value) => setState(() => selectedSupplierId = value),
-                  ),
-                  const SizedBox(height: AppSizes.spacing16),
-
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedLocationId,
-                    decoration: const InputDecoration(
-                      labelText: 'Ubicación *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.location_on_outlined),
-                    ),
-                    items: locationState.locations.map((location) {
-                      final id = (location['_id']?.toString() ?? location['id']?.toString() ?? '').trim();
-                      final name = location['name']?.toString() ?? 'Sin nombre';
-                      return DropdownMenuItem<String>(
-                        value: id,
-                        child: Text(name),
-                      );
-                    }).toList(),
-                    onChanged: (value) => setState(() => selectedLocationId = value),
-                  ),
-                  const SizedBox(height: AppSizes.spacing16),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: purchasePriceController,
-                          decoration: const InputDecoration(
-                            labelText: 'Precio Compra *',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.attach_money),
+                    padding: const EdgeInsets.all(AppSizes.spacing16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                            }
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.spacing24,
+                              vertical: AppSizes.spacing12,
+                            ),
                           ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: AppSizes.spacing16),
-                      Expanded(
-                        child: TextField(
-                          controller: salePriceController,
-                          decoration: const InputDecoration(
-                            labelText: 'Precio Venta *',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.sell_outlined),
+                          child: Text(
+                            'Cancelar',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSizes.spacing16),
+                        const SizedBox(width: AppSizes.spacing12),
+                        ElevatedButton.icon(
+                          onPressed: isLoading ? null : () async {
+                // For employees editing existing products, validate only editable fields
+                if (isEditingAsEmployee) {
+                  if (salePriceController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('El precio de venta es requerido')),
+                    );
+                    return;
+                  }
+                  if (selectedExpiryDate == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Seleccione la fecha de caducidad')),
+                    );
+                    return;
+                  }
+                  
+                  final salePrice = double.tryParse(salePriceController.text.trim());
+                  if (salePrice == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('El precio de venta debe ser un número válido')),
+                    );
+                    return;
+                  }
+                } else {
+                  // For admins/managers creating or editing products
+                  if (nameController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('El nombre es requerido')),
+                    );
+                    return;
+                  }
+                  if (selectedCategoryId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Seleccione una categoría')),
+                    );
+                    return;
+                  }
+                  if (selectedSupplierId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Seleccione un proveedor')),
+                    );
+                    return;
+                  }
+                  if (selectedLocationId == null || selectedLocationId!.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Seleccione una ubicación')),
+                    );
+                    return;
+                  }
+                  if (purchasePriceController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('El precio de compra es requerido')),
+                    );
+                    return;
+                  }
+                  if (salePriceController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('El precio de venta es requerido')),
+                    );
+                    return;
+                  }
+                  if (!isEditing && stockController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('El stock inicial es requerido')),
+                    );
+                    return;
+                  }
+                  if (selectedExpiryDate == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Seleccione la fecha de caducidad')),
+                    );
+                    return;
+                  }
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: stockController,
-                          decoration: const InputDecoration(
-                            labelText: 'Stock Inicial *',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.inventory_outlined),
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          enabled: !isEditing,
-                        ),
-                      ),
-                      const SizedBox(width: AppSizes.spacing16),
-                      Expanded(
-                        child: TextField(
-                          controller: weightController,
-                          decoration: const InputDecoration(
-                            labelText: 'Peso (kg)',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.scale_outlined),
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSizes.spacing16),
+                  final purchasePrice = double.tryParse(purchasePriceController.text.trim());
+                  final salePrice = double.tryParse(salePriceController.text.trim());
+                  
+                  if (purchasePrice == null || salePrice == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Los precios deben ser números válidos')),
+                    );
+                    setState(() => isLoading = false);
+                    return;
+                  }
 
-                  InkWell(
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: selectedExpiryDate ?? DateTime.now().add(const Duration(days: 30)),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 3650)),
-                      );
-                      if (date != null) {
-                        setState(() => selectedExpiryDate = date);
-                      }
-                    },
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Fecha de Caducidad *',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.event_outlined),
-                      ),
-                      child: Text(
-                        selectedExpiryDate != null
-                            ? DateFormat('dd/MM/yyyy').format(selectedExpiryDate!)
-                            : 'Seleccionar fecha',
-                        style: TextStyle(
-                          color: selectedExpiryDate != null
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSizes.spacing8),
-
-                  const Text(
-                    '* Campos requeridos',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                  ),
-                  if (isEditing) ...[
-                    const SizedBox(height: AppSizes.spacing8),
-                    const Text(
-                      'Nota: El stock no se puede editar aquí. Use la función de ajuste de inventario.',
-                      style: TextStyle(fontSize: 12, color: AppColors.warning),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                }
-              },
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: isLoading ? null : () async {
-                if (nameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El nombre es requerido')),
-                  );
-                  return;
-                }
-                if (selectedCategoryId == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Seleccione una categoría')),
-                  );
-                  return;
-                }
-                if (selectedSupplierId == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Seleccione un proveedor')),
-                  );
-                  return;
-                }
-                if (selectedLocationId == null || selectedLocationId!.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Seleccione una ubicación')),
-                  );
-                  return;
-                }
-                if (purchasePriceController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El precio de compra es requerido')),
-                  );
-                  return;
-                }
-                if (salePriceController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El precio de venta es requerido')),
-                  );
-                  return;
-                }
-                if (!isEditing && stockController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El stock inicial es requerido')),
-                  );
-                  return;
-                }
-                if (selectedExpiryDate == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Seleccione la fecha de caducidad')),
-                  );
-                  return;
+                  if (salePrice <= purchasePrice) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('El precio de venta debe ser mayor al precio de compra')),
+                    );
+                    setState(() => isLoading = false);
+                    return;
+                  }
                 }
 
                 setState(() => isLoading = true);
@@ -1170,23 +1768,33 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
                 bool success;
                 if (isEditing) {
-                  success = await ref.read(productProvider.notifier).updateProduct(
-                    id: product['_id'],
-                    name: nameController.text.trim(),
-                    description: descriptionController.text.trim().isEmpty 
-                        ? null 
-                        : descriptionController.text.trim(),
-                    categoryId: selectedCategoryId,
-                    locationId: selectedLocationId,
-                    purchasePrice: purchasePrice,
-                    salePrice: salePrice,
-                    weight: weightController.text.trim().isEmpty 
-                        ? null 
-                        : double.tryParse(weightController.text.trim()),
-                    expiryDate: selectedExpiryDate,
-                    imageFile: selectedImage.isNotEmpty ? selectedImage[0] : null,
-                    imageBytes: imageBytes.isNotEmpty ? imageBytes : null,
-                  );
+                  if (isEditingAsEmployee) {
+                    // Employees can only update sale price and expiry date
+                    success = await ref.read(productProvider.notifier).updateProduct(
+                      id: product['_id'],
+                      salePrice: salePrice,
+                      expiryDate: selectedExpiryDate,
+                    );
+                  } else {
+                    // Admins/managers can update all fields
+                    success = await ref.read(productProvider.notifier).updateProduct(
+                      id: product['_id'],
+                      name: nameController.text.trim(),
+                      description: descriptionController.text.trim().isEmpty 
+                          ? null 
+                          : descriptionController.text.trim(),
+                      categoryId: selectedCategoryId,
+                      locationId: selectedLocationId,
+                      purchasePrice: purchasePrice,
+                      salePrice: salePrice,
+                      weight: weightController.text.trim().isEmpty 
+                          ? null 
+                          : double.tryParse(weightController.text.trim()),
+                      expiryDate: selectedExpiryDate,
+                      imageFile: selectedImage.isNotEmpty ? selectedImage[0] : null,
+                      imageBytes: imageBytes.isNotEmpty ? imageBytes : null,
+                    );
+                  }
                 } else {
                   final stock = int.tryParse(stockController.text.trim()) ?? 0;
                   final currentStore = storeState.currentStore;
@@ -1258,22 +1866,40 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   );
                 }
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
+                          icon: isLoading 
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : Icon(isEditing ? Icons.update_outlined : Icons.add_rounded),
+                          label: Text(
+                            isEditing ? 'Actualizar Producto' : 'Crear Producto',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.spacing24,
+                              vertical: AppSizes.spacing12,
+                            ),
+                            elevation: isLoading ? 0 : 2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Text(isEditing ? 'Actualizar' : 'Crear'),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1286,15 +1912,61 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     final adjustmentController = TextEditingController();
     var isLoading = false;
     var isAdding = true;
+    
+    final authState = ref.read(authProvider);
+    final userRole = authState.currentUser?['role'] ?? '';
+    final isEmployee = userRole == 'employee';
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text('Ajustar Stock - $productName'),
-          content: SizedBox(
-            width: 400,
+        builder: (context, setState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            width: 450,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).scaffoldBackgroundColor,
+            ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // HEADER
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Ajustar Stock - $productName',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                // CONTENT
+                Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
+                  child: SizedBox(
+                    width: 400,
+                    child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1306,24 +1978,50 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment<bool>(
-                      value: true,
-                      label: Text('Agregar'),
-                      icon: Icon(Icons.add),
+                if (isEmployee)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
                     ),
-                    ButtonSegment<bool>(
-                      value: false,
-                      label: Text('Quitar'),
-                      icon: Icon(Icons.remove),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.info_outlined, color: Colors.blue, size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Solo puedes agregar stock',
+                            style: TextStyle(fontSize: 12, color: Colors.blue),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                  selected: {isAdding},
-                  onSelectionChanged: (Set<bool> newSelection) {
-                    setState(() => isAdding = newSelection.first);
-                  },
-                ),
+                  )
+                else
+                  SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment<bool>(
+                        value: true,
+                        label: Text('Agregar'),
+                        icon: Icon(Icons.add),
+                      ),
+                      ButtonSegment<bool>(
+                        value: false,
+                        label: Text('Quitar'),
+                        icon: Icon(Icons.remove),
+                      ),
+                    ],
+                    selected: {isAdding},
+                    onSelectionChanged: (Set<bool> newSelection) {
+                      setState(() => isAdding = newSelection.first);
+                    },
+                  ),
+                if (!isEmployee)
+                  const SizedBox(height: 16),
+                if (isEmployee)
+                  const SizedBox(height: 16),
                 const SizedBox(height: 16),
                 TextField(
                   controller: adjustmentController,
@@ -1357,65 +2055,83 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                     );
                   }
                 ),
+                      ],
+                    ),
+                  ),
+                ),
+                // FOOTER
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: AppColors.border)),
+                  ),
+                  padding: const EdgeInsets.all(AppSizes.spacing16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Theme.of(context).primaryColor,
+                        ),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: isLoading ? null : () async {
+                          final adjustment = int.tryParse(adjustmentController.text.trim());
+                          
+                          if (adjustment == null || adjustment <= 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Ingresa una cantidad válida')),
+                            );
+                            return;
+                          }
+
+                          final newStock = isAdding 
+                              ? currentStock + adjustment 
+                              : currentStock - adjustment;
+
+                          if (newStock < 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('El stock no puede ser negativo')),
+                            );
+                            return;
+                          }
+
+                          setState(() => isLoading = true);
+                          final success = await ref.read(productProvider.notifier).adjustStock(
+                            productId: productId,
+                            adjustment: isAdding ? adjustment : -adjustment,
+                          );
+                          setState(() => isLoading = false);
+
+                          if (success) {
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text('Confirmar'),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: isLoading ? null : () async {
-                final adjustment = int.tryParse(adjustmentController.text.trim());
-                
-                if (adjustment == null || adjustment <= 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Ingresa una cantidad válida')),
-                  );
-                  return;
-                }
-
-                final newStock = isAdding 
-                    ? currentStock + adjustment 
-                    : currentStock - adjustment;
-
-                if (newStock < 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El stock no puede ser negativo')),
-                  );
-                  return;
-                }
-
-                setState(() => isLoading = true);
-                final success = await ref.read(productProvider.notifier).adjustStock(
-                  productId: productId,
-                  adjustment: isAdding ? adjustment : -adjustment,
-                );
-                setState(() => isLoading = false);
-
-                if (success) {
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-              ),
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text('Confirmar'),
-            ),
-          ],
         ),
       ),
     );
@@ -1427,11 +2143,53 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('QR - $productName'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 450,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // HEADER
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'QR - $productName',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(dialogContext),
+                    ),
+                  ],
+                ),
+              ),
+              // CONTENT
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.spacing20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
             Container(
               width: 200,
               height: 200,
@@ -1449,46 +2207,64 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              productId,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cerrar'),
-          ),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.download),
-            label: const Text('Descargar PNG'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              try {
-                await PdfService.downloadProductQrImage(product: product);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('QR descargado correctamente'),
-                      backgroundColor: Colors.green,
+                      Text(
+                        productId,
+                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+              ),
+              // FOOTER
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: AppColors.border)),
+                ),
+                padding: const EdgeInsets.all(AppSizes.spacing16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
+                      ),
+                      child: const Text('Cerrar'),
                     ),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error al descargar QR: $e')),
-                  );
-                }
-              }
-            },
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.download),
+                      label: const Text('Descargar PNG'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(dialogContext);
+                        try {
+                          await PdfService.downloadProductQrImage(product: product);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('QR descargado correctamente'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error al descargar QR: $e')),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1525,11 +2301,53 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   DataColumn(label: Text('Stock')),
                 ];
           
-          return AlertDialog(
-            title: Text('Stock en Todas las Tiendas - $productName'),
-            content: SizedBox(
-              width: canSeePrices ? 700 : 400,
-              child: isLoading
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
+              width: canSeePrices ? 750 : 450,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Theme.of(context).scaffoldBackgroundColor,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // HEADER
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Stock en Todas las Tiendas - $productName',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // CONTENT
+                  Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacing20),
+                    child: SizedBox(
+                      width: canSeePrices ? 700 : 400,
+                      child: isLoading
                   ? const Center(
                       child: CircularProgressIndicator(),
                     )
@@ -1620,13 +2438,27 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                                 }).toList(),
                               ),
                             ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cerrar'),
+                    ),
+                  ),
+                  // FOOTER
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: AppColors.border)),
+                    ),
+                    padding: const EdgeInsets.all(AppSizes.spacing16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cerrar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           );
         },
       ),
@@ -1652,7 +2484,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   Future<void> _loadMultiStoreStocks(
     String productId,
     VoidCallback onLoadComplete,
-    Function(List<Map<String, dynamic>>, String?) callback,
+    void Function(List<Map<String, dynamic>>, String?) callback,
   ) async {
     try {
       final result = await ref.read(productProvider.notifier).getProductStocks(productId);
@@ -1668,6 +2500,67 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     } finally {
       onLoadComplete();
     }
+  }
+}
+
+/// Dropdown de ubicación que carga ubicaciones frescas cada vez que se monta
+/// (es decir, cada vez que el diálogo se abre). Al usar initState + forceRefresh
+/// se evita la condición de carrera entre _loadData y el diálogo.
+class _LocationDropdownField extends ConsumerStatefulWidget {
+  final String? selectedValue;
+  final ValueChanged<String?> onChanged;
+
+  const _LocationDropdownField({
+    required this.selectedValue,
+    required this.onChanged,
+  });
+
+  @override
+  ConsumerState<_LocationDropdownField> createState() =>
+      _LocationDropdownFieldState();
+}
+
+class _LocationDropdownFieldState extends ConsumerState<_LocationDropdownField> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref
+            .read(locationProvider.notifier)
+            .loadLocationsForCurrentStore(forceRefresh: true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locations = ref.watch(locationProvider).locations;
+    final validValue = locations.any((l) =>
+            (l['_id']?.toString() ?? l['id']?.toString() ?? '').trim() ==
+            widget.selectedValue)
+        ? widget.selectedValue
+        : null;
+
+    return DropdownButtonFormField<String>(
+      initialValue: validValue,
+      decoration: const InputDecoration(
+        labelText: 'Ubicación *',
+        border: OutlineInputBorder(),
+        prefixIcon: Icon(Icons.location_on_outlined),
+      ),
+      items: locations.map((location) {
+        final id =
+            (location['_id']?.toString() ?? location['id']?.toString() ?? '')
+                .trim();
+        final name = location['name']?.toString() ?? 'Sin nombre';
+        return DropdownMenuItem<String>(
+          value: id,
+          child: Text(name),
+        );
+      }).toList(),
+      onChanged: widget.onChanged,
+    );
   }
 }
 
