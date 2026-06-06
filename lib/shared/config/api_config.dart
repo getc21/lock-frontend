@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ApiConfig {
+  // URL de producción
+  static const String _productionUrl = 'https://api.naturalmarkets.net';
+  
   // IP de tu computadora en la red local (para desarrollo)
   static const String _localIP = '192.168.0.48';
   
@@ -9,13 +12,14 @@ class ApiConfig {
   
   // Detecta automáticamente si estamos en emulador, web o dispositivo físico
   static String get baseUrl {
-    // Para Web, usar localhost en desarrollo
-    if (kIsWeb) {
-      return 'http://localhost:$_port/api';
-    }
+    // PRODUCCION
+    return _productionUrl;
     
-    // Para dispositivos móviles usar IP local
-    return 'http://$_localIP:$_port/api';
+    // DESARROLLO LOCAL - Descomenta para desarrollo
+    // if (kIsWeb) {
+    //   return 'http://localhost:$_port/api';
+    // }
+    // return 'http://$_localIP:$_port/api';
   }
   
   // Método para cambiar manualmente la configuración (útil para debugging)
