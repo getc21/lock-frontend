@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ApiConfig {
   // URL de producción
-  static const String _productionUrl = 'https://api.naturalmarkets.net';
+  static const String _productionUrl = 'https://api.naturalmarkets.net/api';
   
   // IP de tu computadora en la red local (para desarrollo)
   static const String _localIP = '192.168.0.48';
@@ -25,7 +25,7 @@ class ApiConfig {
   // Método para cambiar manualmente la configuración (útil para debugging)
   static String getUrlForMode({required bool useProduction}) {
     if (useProduction) {
-      return 'https://api.naturalmarkets.net';
+      return 'https://api.naturalmarkets.net/api';
     } else {
       return 'http://$_localIP:$_port/api';
     }
